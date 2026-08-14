@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ویرایش نام دستیار</title>
+    <!-- لود کتابخانه رسمی مینی‌اپلیکیشن کلاینت بله -->
+    <script src="https://tapi.bale.ai/miniapp.js?3"></script>
+    <!-- لود Tailwind CSS جهت استایل‌دهی مدرن و لوکس مینی‌اپ -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col justify-between h-screen p-5">
+
+    <!-- کادر عنوان و فرم ویرایش نام -->
+    <div class="space-y-4">
+        <div class="text-center mt-4">
+            <span class="text-3xl">✏️</span>
+            <h1 class="text-lg font-bold text-gray-800 mt-2">اصلاح نام و نام خانوادگی دستیار</h1>
+            <p class="text-xs text-gray-500 mt-1">لطفاً نام تصحیح‌شده‌ی جدید را در کادر زیر وارد کنید:</p>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+            <label class="block text-xs font-bold text-gray-400 mb-1">نام دستیار</label>
+            <input type="text" id="nameInput" class="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 font-semibold text-gray-700" placeholder="مثلاً: دکتر علی عباسی">
+        </div>
+    </div>
+
+    <!-- دکمه مقتدر ثبت نهایی -->
+    <div class="mb-4">
+        <button id="submitBtn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold p-3.5 rounded-xl text-sm shadow-md transition duration-200 active:scale-95">
+            💾 تایید و اعمال تغییرات
+        </button>
+    </div>
+
+    <script>
+        // ۱. پارس کردن پارامترهای ارسالی از پایتون از طریق آدرس URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const m_id = urlParams.get('m_id');
+        const response_id = urlParams.get('response_id');
+        const field_id = urlParams.get('field_id');
+        const idx = urlParams.get('idx');
+        const old_name = urlParams.get('old_name');
+
+        // قرار دادن نام قدیمی به عنوان پیش‌فرض در کادر ورودی
+        if (old_name) {
+            document.getElementById('nameInput').value = decodeURIComponent(old_name);
+        }
+
+        // ۲. مطلع کردن کلاینت بله که مینی‌اپ لود شده و آماده نمایش است
+        window.Bale.WebApp.ready();
+
+        // ۳. رویداد کلیک روی دکمه ثبت تغییرات
+        document.getElementById('submitBtn').addEventListener('click', () => {
+            const newName = document.getElementById('nameInput').value.trim();
+            if (!newName) {
+                alert("لطفاً نام دستیار را وارد کنید!");
+                return;
+            }
+
+            // ارسال ایمن دیتای جدید به صورت فرمت شده به ربات پایتون و بستن آنی پنجره پاپ‌آپ بله
+            window.Bale.WebApp.sendData(JSON.stringify({
+                action: "edit_name",
+                m_id: m_id,
+                response_id: response_id,
+                field_id: field_id,
+                idx: idx,
+                new_name: newName
+            }));
+        });
+    </script>
+</body>
+</html>
