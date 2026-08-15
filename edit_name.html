@@ -54,6 +54,7 @@
         }
 
         // عملکرد دکمه ثبت
+        // عملکرد دکمه ثبت مجهز به بلاک‌های امنیتی ضد فریز
         const submitBtn = document.getElementById('submitBtn');
         submitBtn.addEventListener('click', () => {
             const newName = nameInput.value.trim();
@@ -62,7 +63,6 @@
                 return;
             }
 
-            // بسته‌بندی نهایی متغیرها
             const payload = {
                 action: 'edit_name',
                 m_id: m_id,
@@ -72,18 +72,26 @@
                 idx: idx
             };
 
-            // ارسال دیتا از هر دو متد برای تضمین سازگاری کامل با بله
-            if (window.Telegram?.WebApp?.sendData) {
-                window.Telegram.WebApp.sendData(JSON.stringify(payload));
-            } else if (window.Bale?.WebApp?.sendData) {
-                window.Bale.WebApp.sendData(JSON.stringify(payload));
-            } else {
-                console.log("عدم پشتیبانی کلاینت از وب‌اپ", payload);
+            // ارسال دیتا در بلاک امن جهت جلوگیری از فریز شدن دکمه در صورت خطای کلاینت
+            try {
+                if (window.Telegram?.WebApp?.sendData) {
+                    window.Telegram.WebApp.sendData(JSON.stringify(payload));
+                } else if (window.Bale?.WebApp?.sendData) {
+                    window.Bale.WebApp.sendData(JSON.stringify(payload));
+                } else {
+                    console.log("عدم پشتیبانی کلاینت از وب‌اپ", payload);
+                }
+            } catch (e_send) {
+                console.error("خطا در ارسال داده به بله:", e_send);
             }
 
-            // بستن خودکار مینی‌اپلیکیشن
-            if (webApp && typeof webApp.close === 'function') {
-                webApp.close();
+            // بستن مینی‌اپلیکیشن
+            try {
+                if (webApp && typeof webApp.close === 'function') {
+                    webApp.close();
+                }
+            } catch (e_close) {
+                console.error("خطا در بستن وب‌اپ:", e_close);
             }
         });
     </script>
