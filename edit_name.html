@@ -2,97 +2,74 @@
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ویرایش نام دستیار</title>
-    <!-- استفاده از استایل شیک و واکنش‌گرا -->
+    <!-- لود کتابخانه رسمی مینی‌اپلیکیشن کلاینت بله -->
+    <script src="https://tapi.bale.ai/miniapp.js?3"></script>
+    <!-- لود Tailwind CSS جهت استایل‌دهی مدرن و لوکس مینی‌اپ -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- لود کیت توسعه وب‌اپ تلگرام و بله -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            background-color: #f3f4f6;
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     </style>
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen p-4">
-    <div class="bg-white rounded-2xl shadow-md p-6 w-full max-w-md border border-gray-100">
-        <h2 class="text-xl font-bold text-gray-800 mb-2 text-center">✏️ ویرایش نام دستیار</h2>
-        <p class="text-gray-500 text-sm mb-6 text-center">لطفاً نام اصلاح‌شده‌ی دستیار را وارد نمایید:</p>
-        
-        <div class="mb-6">
-            <label for="nameInput" class="block text-gray-700 text-sm font-semibold mb-2">نام و نام خانوادگی:</label>
-            <input type="text" id="nameInput" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-800" placeholder="نام جدید را وارد کنید...">
+<body class="bg-gray-100 flex flex-col justify-between h-screen p-5">
+
+    <!-- کادر عنوان و فرم ویرایش نام -->
+    <div class="space-y-4">
+        <div class="text-center mt-4">
+            <span class="text-3xl">✏️</span>
+            <h1 class="text-lg font-bold text-gray-800 mt-2">اصلاح نام و نام خانوادگی دستیار</h1>
+            <p class="text-xs text-gray-500 mt-1">لطفاً نام تصحیح‌شده‌ی جدید را در کادر زیر وارد کنید:</p>
         </div>
-        
-        <button id="submitBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition duration-200">
-            💾 ثبت و بروزرسانی
+
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+            <label class="block text-xs font-bold text-gray-400 mb-1">نام دستیار</label>
+            <input type="text" id="nameInput" class="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 font-semibold text-gray-700" placeholder="مثلاً: دکتر علی عباسی">
+        </div>
+    </div>
+
+    <!-- دکمه مقتدر ثبت نهایی -->
+    <div class="mb-4">
+        <button id="submitBtn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold p-3.5 rounded-xl text-sm shadow-md transition duration-200 active:scale-95">
+            💾 تایید و اعمال تغییرات
         </button>
     </div>
 
     <script>
-        // تعریف و فعال‌سازی کیت وب‌اپ بله و تلگرام
-        const webApp = window.Telegram?.WebApp || window.Bale?.WebApp;
-        
-        if (webApp) {
-            webApp.ready();
-            webApp.expand(); // باز شدن کامل صفحه در موبایل
-        }
-
-        // پارس کردن هوشمند متغیرهای آدرس (هم شتری و هم مارآبی)
+        // ۱. دریافت پارامترهای ارسالی از آدرس URL (پورتال پایتون)
         const urlParams = new URLSearchParams(window.location.search);
         const m_id = urlParams.get('m_id');
-        const response_id = urlParams.get('response_id') || urlParams.get('responseId');
-        const field_id = urlParams.get('field_id') || urlParams.get('fieldId');
-        const idx = urlParams.get('idx') || urlParams.get('index');
+        const response_id = urlParams.get('response_id');
+        const field_id = urlParams.get('field_id');
+        const idx = urlParams.get('idx');
         const old_name = urlParams.get('old_name');
+        const admin_edit = urlParams.get('admin_edit');
 
-        // قرار دادن نام قدیمی دستیار در کادر ورودی
-        const nameInput = document.getElementById('nameInput');
+        // قرار دادن نام قدیمی به عنوان پیش‌فرض در کادر ورودی
         if (old_name) {
-            nameInput.value = decodeURIComponent(old_name);
+            document.getElementById('nameInput').value = decodeURIComponent(old_name);
         }
 
-        // عملکرد دکمه ثبت
-        // عملکرد دکمه ثبت مجهز به بلاک‌های امنیتی ضد فریز
-        const submitBtn = document.getElementById('submitBtn');
-        submitBtn.addEventListener('click', () => {
-            const newName = nameInput.value.trim();
+        // مطلع کردن کلاینت بله که وب‌اپ لود شده است
+        window.Bale.WebApp.ready();
+
+        // ارسال ایمن دیتای جدید به صورت فرمت شده به ربات پایتون
+        document.getElementById('submitBtn').addEventListener('click', () => {
+            const newName = document.getElementById('nameInput').value.trim();
             if (!newName) {
-                alert('لطفاً نام معتبری وارد کنید.');
+                alert("لطفاً نام دستیار را وارد کنید!");
                 return;
             }
 
-            const payload = {
-                action: 'edit_name',
+            window.Bale.WebApp.sendData(JSON.stringify({
+                action: "edit_name",
                 m_id: m_id,
-                new_name: newName,
                 response_id: response_id,
                 field_id: field_id,
-                idx: idx
-            };
-
-            // ارسال دیتا در بلاک امن جهت جلوگیری از فریز شدن دکمه در صورت خطای کلاینت
-            try {
-                if (window.Telegram?.WebApp?.sendData) {
-                    window.Telegram.WebApp.sendData(JSON.stringify(payload));
-                } else if (window.Bale?.WebApp?.sendData) {
-                    window.Bale.WebApp.sendData(JSON.stringify(payload));
-                } else {
-                    console.log("عدم پشتیبانی کلاینت از وب‌اپ", payload);
-                }
-            } catch (e_send) {
-                console.error("خطا در ارسال داده به بله:", e_send);
-            }
-
-            // بستن مینی‌اپلیکیشن
-            try {
-                if (webApp && typeof webApp.close === 'function') {
-                    webApp.close();
-                }
-            } catch (e_close) {
-                console.error("خطا در بستن وب‌اپ:", e_close);
-            }
+                idx: idx,
+                new_name: newName,
+                admin_edit: admin_edit
+            }));
         });
     </script>
 </body>
