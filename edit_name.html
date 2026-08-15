@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ویرایش نام دستیار</title>
+
+    <script src="https://tapi.bale.ai/miniapp.js?3"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 flex flex-col justify-between h-screen p-5">
+
+    <div class="space-y-4">
+
+        <div class="text-center mt-4">
+            <span class="text-3xl">✏️</span>
+
+            <h1 class="text-lg font-bold text-gray-800 mt-2">
+                اصلاح نام و نام خانوادگی دستیار
+            </h1>
+
+            <p class="text-xs text-gray-500 mt-1">
+                لطفاً نام تصحیح‌شده‌ی جدید را در کادر زیر وارد کنید:
+            </p>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+
+            <label class="block text-xs font-bold text-gray-400 mb-1">
+                نام دستیار
+            </label>
+
+            <input
+                type="text"
+                id="nameInput"
+                class="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 font-semibold text-gray-700"
+                placeholder="مثلاً: دکتر علی عباسی"
+            >
+
+        </div>
+
+    </div>
+
+    <div class="mb-4">
+
+        <button
+            id="submitBtn"
+            class="w-full bg-green-500 hover:bg-green-600 text-white font-bold p-3.5 rounded-xl text-sm shadow-md transition duration-200 active:scale-95"
+        >
+            💾 تایید و اعمال تغییرات
+        </button>
+
+    </div>
+
+    <script>
+
+        const urlParams = new URLSearchParams(window.location.search);
+
+        const m_id = urlParams.get('m_id');
+        const response_id = urlParams.get('response_id');
+        const field_id = urlParams.get('field_id');
+        const idx = urlParams.get('idx');
+        const old_name = urlParams.get('old_name');
+
+        /*
+         * این صفحه برای ممبر استفاده می‌شود،
+         * بنابراین عمداً admin_edit = 0 است.
+         */
+        const admin_edit = urlParams.get('admin_edit') || '0';
+
+        /*
+         * نمایش نام قبلی
+         *
+         * URLSearchParams خودش percent-encoding را decode می‌کند،
+         * بنابراین decodeURIComponent دوباره لازم نیست.
+         */
+        if (old_name) {
+            document.getElementById('nameInput').value = old_name;
+        }
+
+        /*
+         * بررسی اولیه اطلاعات دریافتی
+         */
+        console.log("📌 اطلاعات Mini App:", {
+            m_id,
+            response_id,
+            field_id,
+            idx,
+            old_name,
+            admin_edit
+        });
+
+        window.Bale.WebApp.ready();
+
+        document.getElementById('submitBtn').addEventListener('click', function () {
+
+            const newName = document.getElementById('nameInput').value.trim();
+
+            if (!newName) {
+                alert("لطفاً نام دستیار را وارد کنید!");
+                return;
+            }
+
+            if (!m_id) {
+                alert("خطا: شناسه دستیار دریافت نشد.");
+                return;
+            }
+
+            if (!response_id) {
+                alert("خطا: شناسه پاسخ فرم دریافت نشد.");
+                return;
+            }
+
+            if (!field_id) {
+                alert("خطا: شناسه فیلد فرم دریافت نشد.");
+                return;
+            }
+
+            if (idx === null || idx === '') {
+                alert("خطا: شماره مرحله فرم دریافت نشد.");
+                return;
+            }
+
+            const payload = {
+                action: "edit_name",
+
+                m_id: String(m_id),
+                response_id: String(response_id),
+                field_id: String(field_id),
+                idx: String(idx),
+
+                new_name: newName,
+
+                admin_edit: admin_edit
+            };
+
+            console.log("📤 ارسال اطلاعات به ربات:", payload);
+
+            try {
+
+                window.Bale.WebApp.sendData(
+                    JSON.stringify(payload)
+                );
+
+                /*
+                 * بعد از ارسال موفق، مینی‌اپ بسته شود
+                 * تا کاربر دوباره به همان فرم برگردد.
+                 */
+                setTimeout(() => {
+                    try {
+                        window.Bale.WebApp.close();
+                    } catch (e) {
+                        console.log("close:", e);
+                    }
+                }, 150);
+
+            } catch (error) {
+
+                console.error("❌ خطا در ارسال:", error);
+
+                alert(
+                    "ارسال تغییرات انجام نشد.\nلطفاً دوباره تلاش کنید."
+                );
+            }
+
+        });
+
+    </script>
+
+</body>
+</html>
