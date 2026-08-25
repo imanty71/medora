@@ -61,6 +61,23 @@
     </div>
 
     <script>
+        // سیستم اعلان اختصاصی جایگزین Alert مرورگر
+        function showAlert(msg, type = 'error') {
+            const existing = document.getElementById('customAlert');
+            if(existing) existing.remove();
+            
+            const alertBox = document.createElement('div');
+            alertBox.id = 'customAlert';
+            const bgClass = type === 'error' ? 'bg-rose-600' : 'bg-emerald-600';
+            alertBox.className = `fixed top-6 left-1/2 -translate-x-1/2 ${bgClass} text-white px-5 py-3 rounded-2xl shadow-2xl z-[100] text-sm font-bold text-center w-11/12 max-w-sm slide-up`;
+            alertBox.innerText = msg;
+            
+            document.body.appendChild(alertBox);
+            setTimeout(() => {
+                if(document.getElementById('customAlert')) document.getElementById('customAlert').remove();
+            }, 4000);
+        }
+
         const urlParams = new URLSearchParams(window.location.search);
         
         let rawGroup = urlParams.get('group_name') || 'نامشخص';
@@ -140,7 +157,7 @@
             const yearSelect = document.getElementById('newMemberYear');
             const name = input.value.trim();
             if (!name) {
-                alert("لطفاً نام دستیار را وارد کنید.");
+                showAlert("لطفاً نام دستیار را وارد کنید.");
                 return;
             }
 
@@ -157,25 +174,38 @@
         window.Bale.WebApp.ready();
 
         function submitData() {
-            const btn = document.getElementById('saveBtn');
-            btn.innerHTML = '<span class="animate-spin inline-block mr-1">⏳</span> در حال ثبت و همگام‌سازی...';
-            btn.classList.add('opacity-90', 'cursor-wait');
-
-            const payload = {
-                action: "sync_members",
-                group_name: groupName,
-                members: membersArray
-            };
-
             try {
-                window.Bale.WebApp.sendData(JSON.stringify(payload));
+                const btn = document.getElementById('saveBtn');
+                btn.innerHTML = '<span class="animate-spin inline-block mr-1">⏳</span> در حال ثبت و همگام‌سازی...';
+                btn.classList.add('opacity-90', 'cursor-wait');
+
+                const payload = {
+                    action: "sync_members",
+                    group_name: groupName,
+                    members: membersArray
+                };
+
+                const jsonStr = JSON.stringify(payload);
+
+                // استفاده از هر دو متد بله و تلگرام برای اطمینان ۱۰۰ درصدی
+                if (window.Bale && window.Bale.WebApp) {
+                    window.Bale.WebApp.sendData(jsonStr);
+                } else if (window.Telegram && window.Telegram.WebApp) {
+                    window.Telegram.WebApp.sendData(jsonStr);
+                } else {
+                    throw new Error("وب‌اپلیکیشن به درستی در بله لود نشده است.");
+                }
+
                 setTimeout(() => {
                     try { window.Bale.WebApp.close(); } catch(e) {}
+                    try { window.Telegram.WebApp.close(); } catch(e) {}
                 }, 150);
+
             } catch (error) {
+                showAlert("خطا در ارسال اطلاعات: " + error.message);
+                const btn = document.getElementById('saveBtn');
                 btn.innerHTML = '💾 ثبت و اعمال نهایی تغییرات دپارتمان';
                 btn.classList.remove('opacity-90', 'cursor-wait');
-                alert("خطا در ارسال اطلاعات به سرور.");
             }
         }
 
