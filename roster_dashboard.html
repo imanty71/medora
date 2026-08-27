@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>داشبورد کلان دستیاران</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.0.0/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <script src="https://tapi.bale.ai/miniapp.js?3"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; -webkit-font-smoothing: antialiased; }
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50 flex flex-col h-screen selection:bg-indigo-100">
+
+    <!-- Header & Tabs -->
+    <div class="sticky top-0 z-20 bg-white/90 backdrop-blur-xl border-b border-slate-200/60 shadow-sm">
+        <div class="p-4 text-center">
+            <h1 class="text-sm font-extrabold text-indigo-700" id="dashTitle">🏛 داشبورد کلان دستیاران دانشکده</h1>
+            <p class="text-[11px] text-slate-500 mt-1" id="dashSubtitle">آمار، مقایسه و جستجوی جامع</p>
+        </div>
+        
+        <div class="flex px-4 pb-3 gap-3">
+            <button onclick="switchTab('stats')" id="tab_stats" class="flex-1 py-2.5 text-xs font-bold rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-200 transition-all">📊 آمار و مقایسه</button>
+            <button onclick="switchTab('list')" id="tab_list" class="flex-1 py-2.5 text-xs font-bold rounded-xl bg-slate-100 text-slate-500 transition-all">👥 لیست دستیاران</button>
+        </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="flex-grow overflow-y-auto p-4 pb-24">
+        
+        <!-- Tab 1: Stats -->
+        <div id="view_stats" class="space-y-5 fade-in">
+            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-3xl p-5 text-white shadow-lg shadow-indigo-200 flex justify-between items-center">
+                <div>
+                    <p class="text-xs font-medium opacity-80" id="totalLabel">کل دستیاران فعال دانشکده</p>
+                    <p class="text-3xl font-black mt-1" id="stat_total">0</p>
+                </div>
+                <div class="text-5xl opacity-50">👥</div>
+            </div>
+
+            <div id="stat_groups_container" class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
+                <h3 class="text-xs font-black text-slate-700 mb-4 flex items-center gap-2"><span class="text-indigo-500">📁</span> مقایسه دپارتمان‌ها</h3>
+                <div id="stat_groups" class="space-y-3"></div>
+            </div>
+
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 mb-4">
+                <h3 class="text-xs font-black text-slate-700 mb-4 flex items-center gap-2"><span class="text-indigo-500">🎓</span> مقایسه سال تحصیلی</h3>
+                <div id="stat_years" class="space-y-3"></div>
+            </div>
+        </div>
+
+        <!-- Tab 2: List & Filters -->
+        <div id="view_list" class="hidden space-y-4 fade-in">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+                <div class="relative">
+                    <span class="absolute inset-y-0 right-3 flex items-center text-slate-400">🔍</span>
+                    <input type="text" id="searchInput" onkeyup="renderList()" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pr-9 pl-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-indigo-400 outline-none" placeholder="جستجوی نام...">
+                </div>
+                <div class="flex gap-2">
+                    <select id="filterGroup" onchange="renderList()" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-700 outline-none">
+                        <option value="all">همه گروه‌ها</option>
+                    </select>
+                    <select id="filterYear" onchange="renderList()" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-700 outline-none">
+                        <option value="all">همه سال‌ها</option>
+                        <option value="سال ۱">سال ۱ (R1)</option>
+                        <option value="سال ۲">سال ۲ (R2)</option>
+                        <option value="سال ۳">سال ۳ (R3)</option>
+                        <option value="سال ۴">سال ۴ (R4)</option>
+                        <option value="سال ۵">سال ۵ (R5)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="membersList" class="space-y-2"></div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 fade-in">
+        <div class="bg-white rounded-3xl w-full max-w-sm p-5 shadow-2xl">
+            <h3 class="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2">✏️ ویرایش دستیار</h3>
+            <input type="hidden" id="m_id">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1 ml-1">نام و نام خانوادگی</label>
+                    <input type="text" id="m_name" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-indigo-400 outline-none">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1 ml-1">گروه آموزشی</label>
+                    <select id="m_group" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-indigo-700 outline-none appearance-none"></select>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1 ml-1">سال تحصیلی</label>
+                    <select id="m_year" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-indigo-700 outline-none appearance-none">
+                        <option value="سال ۱">سال ۱ (R1)</option>
+                        <option value="سال ۲">سال ۲ (R2)</option>
+                        <option value="سال ۳">سال ۳ (R3)</option>
+                        <option value="سال ۴">سال ۴ (R4)</option>
+                        <option value="سال ۵">سال ۵ (R5)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mt-6 flex gap-3">
+                <button onclick="closeModal()" class="w-1/3 bg-slate-100 text-slate-600 font-bold p-3 rounded-xl text-sm active:scale-95">انصراف</button>
+                <button id="saveBtn" onclick="submitEdit()" class="w-2/3 bg-indigo-600 text-white font-bold p-3 rounded-xl text-sm active:scale-95">💾 ذخیره و اعمال</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Button -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg p-4 border-t border-slate-200/60">
+        <button onclick="closeApp()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold p-3.5 rounded-2xl text-sm transition-all active:scale-[0.98]">
+            🔙 بازگشت به منوی اصلی
+        </button>
+    </div>
+
+    <script>
+        let db_members = []; 
+        let db_groups = [];
+        let isAdmin = 0;
+        let isLocal = "";
+
+        function init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            try {
+                const compressedData = urlParams.get('d');
+                if (compressedData) {
+                    const binaryString = window.atob(compressedData.replace(/-/g, '+').replace(/_/g, '/'));
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+                    const decompressed = pako.inflate(bytes, { to: 'string' });
+                    const data = JSON.parse(decompressed);
+                    db_members = data.m || [];
+                    db_groups = data.g || [];
+                    isAdmin = data.a || 0;
+                    isLocal = data.local || "";
+                }
+                
+                const grpSelect = document.getElementById('filterGroup');
+                const mGroupSelect = document.getElementById('m_group');
+                db_groups.forEach(g => {
+                    grpSelect.innerHTML += `<option value="${g}">${g}</option>`;
+                    mGroupSelect.innerHTML += `<option value="${g}">${g}</option>`;
+                });
+
+                if (isLocal) {
+                    document.getElementById('dashTitle').innerText = `داشبورد دستیاران (${isLocal})`;
+                    document.getElementById('dashSubtitle').innerText = "آمار و لیست اختصاصی گروه شما";
+                    document.getElementById('totalLabel').innerText = "کل دستیاران فعال دپارتمان";
+                    document.getElementById('stat_groups_container').classList.add('hidden');
+                    document.getElementById('filterGroup').classList.add('hidden');
+                }
+
+                renderStats();
+                renderList();
+            } catch(e) { 
+                console.error(e); 
+                alert("خطا در بارگذاری اطلاعات از سرور.");
+            }
+        }
+
+        function switchTab(tab) {
+            document.getElementById('view_stats').classList.add('hidden');
+            document.getElementById('view_list').classList.add('hidden');
+            
+            document.getElementById('tab_stats').className = "flex-1 py-2.5 text-xs font-bold rounded-xl bg-slate-100 text-slate-500 transition-all";
+            document.getElementById('tab_list').className = "flex-1 py-2.5 text-xs font-bold rounded-xl bg-slate-100 text-slate-500 transition-all";
+            
+            document.getElementById(`view_${tab}`).classList.remove('hidden');
+            if(tab === 'stats') {
+                document.getElementById('tab_stats').className = "flex-1 py-2.5 text-xs font-bold rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-200 transition-all";
+            } else {
+                document.getElementById('tab_list').className = "flex-1 py-2.5 text-xs font-bold rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-200 transition-all";
+            }
+        }
+
+        function renderStats() {
+            document.getElementById('stat_total').innerText = db_members.length;
+
+            if (!isLocal) {
+                const grpCounts = {};
+                db_groups.forEach(g => grpCounts[g] = 0);
+                db_members.forEach(m => { if(grpCounts[m[2]] !== undefined) grpCounts[m[2]]++; });
+                
+                let maxGrp = Math.max(...Object.values(grpCounts), 1);
+                let grpHtml = '';
+                const sortedGrps = Object.entries(grpCounts).sort((a,b) => b[1] - a[1]);
+                
+                sortedGrps.forEach(([g, count]) => {
+                    const percent = (count / maxGrp) * 100;
+                    grpHtml += `
+                        <div>
+                            <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                                <span>${g}</span>
+                                <span>${count} نفر</span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-2">
+                                <div class="bg-indigo-500 h-2 rounded-full" style="width: ${percent}%"></div>
+                            </div>
+                        </div>
+                    `;
+                });
+                document.getElementById('stat_groups').innerHTML = grpHtml;
+            }
+
+            const yrCounts = {'سال ۱':0, 'سال ۲':0, 'سال ۳':0, 'سال ۴':0, 'سال ۵':0};
+            db_members.forEach(m => { 
+                let y = String(m[3]).replace(/1/g, '۱').replace(/2/g, '۲').replace(/3/g, '۳').replace(/4/g, '۴').replace(/5/g, '۵');
+                if(yrCounts[y] !== undefined) yrCounts[y]++; 
+            });
+            
+            let maxYr = Math.max(...Object.values(yrCounts), 1);
+            let yrHtml = '';
+            
+            Object.entries(yrCounts).forEach(([y, count]) => {
+                const percent = (count / maxYr) * 100;
+                yrHtml += `
+                    <div>
+                        <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                            <span>${y}</span>
+                            <span>${count} نفر</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2">
+                            <div class="bg-purple-500 h-2 rounded-full" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('stat_years').innerHTML = yrHtml;
+        }
+
+        function renderList() {
+            const filterText = document.getElementById('searchInput').value.toLowerCase();
+            const filterGrp = document.getElementById('filterGroup').value;
+            const filterYr = document.getElementById('filterYear').value;
+            
+            const container = document.getElementById('membersList');
+            container.innerHTML = '';
+            
+            let count = 0;
+            db_members.forEach(m => {
+                if (filterGrp !== 'all' && m[2] !== filterGrp) return;
+                let y = String(m[3]).replace(/1/g, '۱').replace(/2/g, '۲').replace(/3/g, '۳').replace(/4/g, '۴').replace(/5/g, '۵');
+                if (filterYr !== 'all' && y !== filterYr) return;
+                if (filterText && !m[1].toLowerCase().includes(filterText)) return;
+                
+                count++;
+                
+                let editBtn = '';
+                if (isAdmin === 1) {
+                    editBtn = `<button onclick="openEditModal(${m[0]})" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs hover:bg-indigo-100 hover:text-indigo-600 transition-colors">✏️</button>`;
+                }
+                
+                container.innerHTML += `
+                    <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between gap-3 slide-up">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-lg">👤</div>
+                            <div>
+                                <p class="text-sm font-extrabold text-slate-700">${m[1]}</p>
+                                <p class="text-[10px] font-bold text-slate-400 mt-0.5">📚 ${m[2]} | 🎓 ${y}</p>
+                            </div>
+                        </div>
+                        ${editBtn}
+                    </div>
+                `;
+            });
+            
+            if(count === 0) {
+                container.innerHTML = `<div class="text-center p-5 text-sm font-bold text-slate-400">هیچ دستیاری یافت نشد.</div>`;
+            }
+        }
+
+        function openEditModal(id) {
+            const member = db_members.find(m => m[0] === id);
+            if (!member) return;
+            
+            document.getElementById('m_id').value = id;
+            document.getElementById('m_name').value = member[1];
+            document.getElementById('m_group').value = member[2];
+            
+            let y = String(member[3]).replace(/1/g, '۱').replace(/2/g, '۲').replace(/3/g, '۳').replace(/4/g, '۴').replace(/5/g, '۵');
+            document.getElementById('m_year').value = y;
+            
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').classList.add('hidden');
+        }
+
+        function submitEdit() {
+            const id = document.getElementById('m_id').value;
+            const name = document.getElementById('m_name').value.trim();
+            const group = document.getElementById('m_group').value;
+            const year = document.getElementById('m_year').value;
+            
+            if (!name) { alert("نام نمی‌تواند خالی باشد."); return; }
+
+            const btn = document.getElementById('saveBtn');
+            btn.innerHTML = '⏳ در حال ذخیره...';
+            btn.classList.add('opacity-90', 'cursor-wait');
+
+            try {
+                window.Bale.WebApp.sendData(JSON.stringify({ 
+                    action: "submit_roster_edit", 
+                    m_id: id,
+                    name: name,
+                    group: group,
+                    year: year
+                }));
+                setTimeout(() => window.Bale.WebApp.close(), 150);
+            } catch (error) {
+                alert("خطا در ارتباط با سرور.");
+                btn.innerHTML = '💾 ذخیره و اعمال';
+                btn.classList.remove('opacity-90', 'cursor-wait');
+            }
+        }
+
+        window.Bale.WebApp.ready();
+
+        function closeApp() {
+            try { window.Bale.WebApp.close(); } catch (e) { console.log(e); }
+        }
+
+        init();
+    </script>
+</body>
+</html>
