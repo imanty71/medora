@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>استودیوی ویرایش فرم</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.0.0/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <script src="https://tapi.bale.ai/miniapp.js?3"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; -webkit-font-smoothing: antialiased; background-color: #f8fafc; }
+        .slide-up { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        .glass-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+        .glass-bottom { background: linear-gradient(to top, rgba(255,255,255,1) 60%, rgba(255,255,255,0.8)); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        
+        /* Modern Toggle Switch */
+        .toggle-checkbox { right: 0; transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1); }
+        .toggle-checkbox:checked { transform: translateX(-1.25rem); border-color: #4f46e5; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #4f46e5; }
+        .toggle-checkbox:disabled + .toggle-label { background-color: #e2e8f0; cursor: not-allowed; }
+    </style>
+</head>
+<body class="flex flex-col h-screen selection:bg-indigo-100 overflow-hidden">
+
+    <div class="sticky top-0 z-30 glass-header border-b border-slate-200/50 px-5 py-4 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)]">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-[1.25rem] bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xl shadow-lg shadow-indigo-200/50">
+                🛠
+            </div>
+            <div>
+                <h1 class="text-base font-black text-slate-800 tracking-tight">استودیوی جامع ویرایش</h1>
+                <p class="text-[11px] font-bold text-slate-500 mt-0.5" id="headerSubtitle">در حال بارگذاری اطلاعات فرم...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex-grow overflow-y-auto px-5 pt-5 pb-32 space-y-6 fade-in">
+        
+        <!-- SECTION 1: Basic Info -->
+        <div class="bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100 space-y-5 slide-up">
+            <h2 class="text-xs font-black text-indigo-600 uppercase tracking-wider flex items-center gap-2">
+                <span class="w-6 h-6 rounded-lg bg-indigo-50 flex items-center justify-center text-sm">📝</span> اطلاعات پایه فرم
+            </h2>
+            
+            <div>
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5 ml-1">عنوان فرم <span class="text-rose-500">*</span></label>
+                <input type="text" id="inpTitle" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-black text-slate-800 focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all outline-none">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5 ml-1">توضیحات فرم</label>
+                <textarea id="inpDesc" rows="2" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all outline-none resize-none"></textarea>
+            </div>
+
+            <div class="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-3 ml-1">گروه‌های هدف</label>
+                <div id="groupsContainer" class="max-h-40 overflow-y-auto space-y-2 pr-1"></div>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5 ml-1">تغییر مهلت عمومی</label>
+                <select id="inpDeadline" onchange="toggleCustomDeadline()" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-black text-indigo-700 focus:ring-2 focus:ring-indigo-400 outline-none appearance-none cursor-pointer">
+                    <option value="-1">بدون تغییر (حفظ مهلت فعلی)</option>
+                    <option value="0">حذف مهلت (بدون محدودیت)</option>
+                    <option value="1">تنظیم مهلت جدید: ۱ روز</option>
+                    <option value="3">تنظیم مهلت جدید: ۳ روز</option>
+                    <option value="7">تنظیم مهلت جدید: ۷ روز</option>
+                    <option value="custom">تنظیم مهلت جدید: عدد دلخواه (روز)</option>
+                </select>
+                <input type="number" id="inpCustomDeadline" class="hidden mt-3 w-full p-3.5 bg-white border border-indigo-200 rounded-2xl text-sm font-black text-indigo-800 focus:ring-2 focus:ring-indigo-400 outline-none shadow-sm" placeholder="تعداد روز را وارد کنید (مثلاً 14)">
+            </div>
+        </div>
+
+        <!-- SECTION 2: Advanced Settings -->
+        <div class="bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100 space-y-4 slide-up" style="animation-delay: 0.1s;">
+            <h2 class="text-xs font-black text-purple-600 uppercase tracking-wider flex items-center gap-2 mb-2">
+                <span class="w-6 h-6 rounded-lg bg-purple-50 flex items-center justify-center text-sm">⚙️</span> تنظیمات پیشرفته
+            </h2>
+
+            <div class="flex items-center justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <div>
+                    <p class="text-sm font-black text-slate-800">بروزرسانی آرشیو دستیاران</p>
+                    <p class="text-[10px] font-bold text-slate-400 mt-1">اعمال تغییرات در دیتابیس اصلی دانشگاه</p>
+                    <p id="rosterWarn" class="text-[9px] font-black text-rose-500 mt-1.5 hidden bg-rose-50 px-2 py-1 rounded-lg inline-block">نیازمند سوال "چک‌لیست اعضا"</p>
+                </div>
+                <div class="relative inline-block w-11 h-6 align-middle select-none flex-shrink-0">
+                    <input type="checkbox" id="tglRoster" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-slate-200 appearance-none cursor-pointer z-10 top-0 m-0 p-0 shadow-sm"/>
+                    <label for="tglRoster" class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer transition-colors duration-300 ease-in-out"></label>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <div>
+                    <p class="text-sm font-black text-slate-800">ذخیره به عنوان الگو</p>
+                    <p class="text-[10px] font-bold text-slate-400 mt-1">اضافه شدن به بانک الگوهای آماده</p>
+                </div>
+                <div class="relative inline-block w-11 h-6 align-middle select-none flex-shrink-0">
+                    <input type="checkbox" id="tglTemplate" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-slate-200 appearance-none cursor-pointer z-10 top-0 m-0 p-0 shadow-sm"/>
+                    <label for="tglTemplate" class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer transition-colors duration-300 ease-in-out"></label>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 3: Questions -->
+        <div class="slide-up" style="animation-delay: 0.2s;">
+            <div class="flex justify-between items-center mb-4 px-1">
+                <h2 class="text-xs font-black text-teal-600 uppercase tracking-wider flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-lg bg-teal-50 flex items-center justify-center text-sm">❓</span> ویرایش سوالات
+                </h2>
+                <span id="lockBadge" class="hidden bg-amber-100 text-amber-600 text-[10px] font-black px-2.5 py-1 rounded-lg border border-amber-200/50">🔒 دارای پاسخ</span>
+            </div>
+
+            <div id="questionsContainer" class="space-y-4"></div>
+
+            <button onclick="addNewQuestion()" class="mt-6 w-full bg-teal-50/50 border-2 border-dashed border-teal-200 text-teal-600 hover:bg-teal-50 font-black p-4 rounded-2xl text-sm transition-all flex justify-center items-center gap-2 active:scale-95">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                افزودن سوال جدید به انتهای فرم
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Bottom Action Bar -->
+    <div class="absolute bottom-0 left-0 right-0 glass-bottom px-5 py-4 pb-6 z-40 border-t border-slate-100">
+        <button onclick="submitFormEdit()" id="submitBtn" class="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black p-4 rounded-2xl text-sm shadow-xl shadow-teal-200/50 transition-all duration-200 active:scale-[0.98] flex justify-center items-center gap-2">
+            💾 اعمال تغییرات و بروزرسانی فرم
+        </button>
+    </div>
+
+    <script>
+        let f_id = "";
+        let resp_count = 0;
+        let questions = []; 
+        let newQCounter = 1;
+
+        function init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const rawData = urlParams.get('data');
+            
+            if (!rawData) { alert("خطا: اطلاعات فرم دریافت نشد."); return; }
+
+            try {
+                const data = JSON.parse(decodeURIComponent(rawData));
+                
+                f_id = data.f_id;
+                resp_count = parseInt(data.rc) || 0;
+                
+                document.getElementById('headerSubtitle').innerText = `کد رهگیری: ${f_id.replace('frm_', '')}`;
+                document.getElementById('inpTitle').value = data.t || "";
+                document.getElementById('inpDesc').value = data.d || "";
+                document.getElementById('tglRoster').checked = data.ru === 1;
+
+                let allGroups = data.all_groups || [];
+                let selectedGroups = (data.g || "").split(",").map(s => s.trim());
+                
+                let groupsHtml = `
+                    <label class="flex items-center gap-3 p-2.5 hover:bg-white rounded-xl cursor-pointer transition-colors border border-transparent hover:border-slate-200">
+                        <input type="checkbox" value="🌐 عمومی (همه کاربران مجاز)" class="grp-checkbox w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500" ${selectedGroups.includes("🌐 عمومی (همه کاربران مجاز)") ? 'checked' : ''}> 
+                        <span class="text-xs font-black text-indigo-700">🌐 عمومی (همه کاربران مجاز)</span>
+                    </label>
+                `;
+                
+                allGroups.forEach(g => {
+                    let isChecked = selectedGroups.includes(g) ? 'checked' : '';
+                    groupsHtml += `
+                        <label class="flex items-center gap-3 p-2.5 hover:bg-white rounded-xl cursor-pointer transition-colors border border-transparent hover:border-slate-200">
+                            <input type="checkbox" value="${g}" class="grp-checkbox w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500" ${isChecked}> 
+                            <span class="text-xs font-bold text-slate-700">${g}</span>
+                        </label>
+                    `;
+                });
+                document.getElementById('groupsContainer').innerHTML = groupsHtml;
+
+                if (resp_count > 0) document.getElementById('lockBadge').classList.remove('hidden');
+
+                const qList = data.q || [];
+                qList.forEach(qItem => {
+                    let qText = qItem[2];
+                    let schemaStr = null;
+
+                    if (qItem[1] === 'multi_record' && qItem[2].includes('{')) {
+                        try {
+                            let parsed = JSON.parse(qItem[2]);
+                            qText = parsed.q;
+                            schemaStr = JSON.stringify(parsed.schema);
+                        } catch(e) {}
+                    }
+
+                    questions.push({ id: qItem[0], type: qItem[1], q: qText, schema: schemaStr, is_new: false, is_deleted: false });
+                });
+
+                renderQuestions();
+                checkRosterToggle();
+
+            } catch (error) { alert("خطا در پردازش اطلاعات فرم."); }
+        }
+
+        function toggleCustomDeadline() {
+            let val = document.getElementById('inpDeadline').value;
+            if(val === 'custom') document.getElementById('inpCustomDeadline').classList.remove('hidden');
+            else document.getElementById('inpCustomDeadline').classList.add('hidden');
+        }
+
+        function checkRosterToggle() {
+            let hasChecklist = questions.some(q => !q.is_deleted && q.type === 'member_checklist');
+            let tgl = document.getElementById('tglRoster');
+            if(!hasChecklist) {
+                tgl.checked = false;
+                tgl.disabled = true;
+                document.getElementById('rosterWarn').classList.remove('hidden');
+            } else {
+                tgl.disabled = false;
+                document.getElementById('rosterWarn').classList.add('hidden');
+            }
+        }
+
+        function renderQuestions() {
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = '';
+
+            let visibleIndex = 1;
+
+            questions.forEach((q, arrayIndex) => {
+                if (q.is_deleted) return;
+
+                const isTypeLocked = !q.is_new;
+                const lockIcon = isTypeLocked ? '<span class="text-amber-500">🔒</span>' : '⚙️';
+
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-[1.5rem] shadow-sm border border-slate-100 flex flex-col gap-3 relative slide-up hover:shadow-md transition-all";
+                
+                const deleteBtn = `
+                    <button onclick="deleteQuestion(${arrayIndex})" class="absolute top-4 left-4 text-rose-400 hover:text-rose-600 bg-rose-50 p-2 rounded-xl transition-colors active:scale-95">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                `;
+
+                card.innerHTML = `
+                    ${deleteBtn}
+                    <div class="pr-2 pl-10">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">سوال ${visibleIndex}</label>
+                        <textarea rows="2" onchange="updateQText(${arrayIndex}, this.value)" class="w-full bg-transparent border-b-2 border-slate-100 focus:border-teal-400 text-sm font-black text-slate-800 pb-1.5 focus:outline-none transition-colors resize-none placeholder-slate-300" placeholder="متن سوال را بنویسید...">${q.q}</textarea>
+                    </div>
+
+                    <div class="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100 mt-2">
+                        <div class="flex items-center gap-3 w-full">
+                            <div class="w-8 h-8 rounded-lg ${isTypeLocked ? 'bg-amber-50' : 'bg-slate-200'} flex items-center justify-center text-sm flex-shrink-0">${lockIcon}</div>
+                            <div class="flex flex-col w-full">
+                                <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5">نوع پاسخ</span>
+                                <select onchange="updateQType(${arrayIndex}, this.value)" ${isTypeLocked ? 'disabled' : ''} class="bg-transparent text-xs font-black text-teal-700 focus:outline-none cursor-pointer appearance-none w-full ${isTypeLocked ? 'opacity-70' : ''}">
+                                    <option value="text" ${q.type === 'text' ? 'selected' : ''}>🔠 متن ساده</option>
+                                    <option value="number" ${q.type === 'number' ? 'selected' : ''}>🔢 عدد صحیح</option>
+                                    <option value="mixed" ${q.type === 'mixed' ? 'selected' : ''}>📧 ترکیبی (متن و عدد)</option>
+                                    <option value="member_checklist" ${q.type === 'member_checklist' ? 'selected' : ''}>👥 چک‌لیست اعضای گروه</option>
+                                    <option value="multi_record" ${q.type === 'multi_record' ? 'selected' : ''}>📋 فرم داینامیک چندگانه</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+                visibleIndex++;
+            });
+            
+            checkRosterToggle();
+        }
+
+        function updateQText(index, val) { questions[index].q = val; }
+
+        function updateQType(index, val) {
+            if (val !== 'multi_record') questions[index].schema = null;
+            else if (val === 'multi_record' && !questions[index].schema) {
+                questions[index].schema = JSON.stringify([{ id: "f_def1", label: "نام و نام خانوادگی", type: "text", req: true }]);
+            }
+            questions[index].type = val;
+            checkRosterToggle();
+        }
+
+        function deleteQuestion(index) {
+            if (resp_count > 0 && !questions[index].is_new) {
+                if (!confirm("⚠️ هشدار خطرناک: این فرم دارای پاسخ ثبت شده است. حذف این سوال باعث می‌شود دیتای پاسخ‌های قبلی مربوط به این سوال برای همیشه از بین برود! آیا مطمئن هستید؟")) return;
+            }
+            questions[index].is_deleted = true;
+            renderQuestions();
+        }
+
+        function addNewQuestion() {
+            questions.push({ id: `new_${newQCounter++}`, type: 'text', q: '', schema: null, is_new: true, is_deleted: false });
+            renderQuestions();
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        window.Bale.WebApp.ready();
+
+        function submitFormEdit() {
+            const title = document.getElementById('inpTitle').value.trim();
+            if (!title) { alert("لطفاً عنوان فرم را وارد کنید."); return; }
+            
+            const checkboxes = document.querySelectorAll('.grp-checkbox:checked');
+            let selectedGroups = Array.from(checkboxes).map(cb => cb.value);
+            if (selectedGroups.length === 0) { alert("حداقل یک گروه هدف باید انتخاب شود."); return; }
+
+            const activeQuestions = questions.filter(q => !q.is_deleted);
+            if (activeQuestions.length === 0) { alert("فرم باید حداقل دارای یک سوال باشد."); return; }
+
+            let hasEmptyQ = false;
+            activeQuestions.forEach(q => { if (!q.q.trim()) hasEmptyQ = true; });
+            if (hasEmptyQ) { alert("متن هیچ سوالی نمی‌تواند خالی باشد."); return; }
+            
+            let deadlineVal = document.getElementById('inpDeadline').value;
+            let deadlineDays = parseInt(deadlineVal);
+            if (deadlineVal === 'custom') {
+                let customVal = document.getElementById('inpCustomDeadline').value;
+                if (!customVal || isNaN(customVal) || parseInt(customVal) <= 0) {
+                    alert("لطفاً یک عدد معتبر برای مهلت روزانه وارد کنید."); return;
+                }
+                deadlineDays = parseInt(customVal);
+            }
+
+            const btn = document.getElementById('submitBtn');
+            btn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> در حال ذخیره‌سازی...';
+            btn.classList.add('opacity-90', 'cursor-wait');
+
+            const finalQuestions = questions.map(q => {
+                let finalQText = q.q;
+                if (q.type === 'multi_record' && q.schema) {
+                    try { finalQText = JSON.stringify({ q: q.q, schema: JSON.parse(q.schema) }); } catch(e) {}
+                }
+                return { id: q.id, is_deleted: q.is_deleted, is_new: q.is_new, q: finalQText, type: q.type };
+            });
+
+            const payload = {
+                action: "submit_form_edit",
+                f_id: f_id, title: title, desc: document.getElementById('inpDesc').value.trim(),
+                groups: selectedGroups, deadline_days: deadlineDays,
+                is_roster: document.getElementById('tglRoster').checked ? 1 : 0,
+                save_template: document.getElementById('tglTemplate').checked,
+                questions: finalQuestions
+            };
+
+            try {
+                window.Bale.WebApp.sendData(JSON.stringify(payload));
+                setTimeout(() => window.Bale.WebApp.close(), 150);
+            } catch (error) {
+                alert("خطا در ارتباط با سرور.");
+                btn.innerHTML = '💾 اعمال تغییرات و بروزرسانی فرم';
+                btn.classList.remove('opacity-90', 'cursor-wait');
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

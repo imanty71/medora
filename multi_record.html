@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>فرم ثبت مشخصات</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.0.0/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <script src="https://tapi.bale.ai/miniapp.js?3"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; -webkit-font-smoothing: antialiased; background-color: #f8fafc; }
+        .slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        .glass-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+        .glass-bottom { background: linear-gradient(to top, rgba(255,255,255,1) 60%, rgba(255,255,255,0.8)); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    </style>
+</head>
+<body class="flex flex-col h-screen selection:bg-indigo-100 overflow-hidden">
+
+    <!-- VIEW 1: Main Entry -->
+    <div id="mainView" class="flex flex-col h-full fade-in relative">
+        <div class="sticky top-0 z-30 glass-header border-b border-slate-200/50 px-5 py-4 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)]">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-[1.25rem] bg-gradient-to-br from-indigo-500 to-sky-500 flex items-center justify-center text-white text-xl shadow-lg shadow-indigo-200/50">
+                    📋
+                </div>
+                <div class="overflow-hidden">
+                    <h1 class="text-sm font-black text-slate-800 tracking-tight truncate" id="formQuestionTitle">در حال بارگذاری سوال...</h1>
+                    <p class="text-[11px] font-bold text-slate-500 mt-0.5">ثبت مشخصات چندگانه</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-grow overflow-y-auto px-5 pt-5 pb-32 space-y-6">
+            
+            <!-- Added Records -->
+            <div id="addedListContainer" class="hidden space-y-3 slide-up">
+                <h3 class="text-xs font-black text-slate-400 uppercase tracking-wider ml-1 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span> موارد ثبت شده
+                </h3>
+                <div id="recordsList" class="space-y-3"></div>
+            </div>
+
+            <!-- Entry Form -->
+            <div id="formScrollTarget" class="bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100 relative transition-all duration-300 slide-up" style="animation-delay: 0.1s;">
+                <h3 id="formBoxTitle" class="text-xs font-black text-indigo-600 mb-4 flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-lg bg-indigo-50 flex items-center justify-center">➕</span> ورود اطلاعات جدید
+                </h3>
+                
+                <div id="dynamicFormContainer" class="space-y-4"></div>
+
+                <div class="mt-6 space-y-3">
+                    <button id="addRecordBtn" onclick="addRecord()" class="w-full bg-indigo-50/50 border-2 border-dashed border-indigo-200 text-indigo-600 hover:bg-indigo-50 font-black p-4 rounded-2xl text-sm transition-all flex justify-center items-center gap-2 active:scale-95">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        <span>افزودن این مورد به لیست</span>
+                    </button>
+                    
+                    <button id="cancelEditBtn" onclick="cancelEdit()" class="hidden w-full bg-slate-100 text-slate-500 hover:bg-slate-200 font-black p-4 rounded-2xl text-sm transition-all flex justify-center items-center gap-2 active:scale-95">
+                        ❌ انصراف از ویرایش
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Action Bar -->
+        <div class="absolute bottom-0 left-0 right-0 glass-bottom px-5 py-4 pb-6 z-20 border-t border-slate-100">
+            <button id="reviewBtn" onclick="showPreview()" class="w-full bg-gradient-to-r from-indigo-500 to-sky-500 hover:from-indigo-600 hover:to-sky-600 text-white font-black p-4 rounded-2xl text-sm shadow-xl shadow-indigo-200/60 transition-all active:scale-[0.98] flex justify-center gap-2 items-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                <span id="btnCounter" class="bg-white text-indigo-600 text-xs py-0.5 px-2.5 rounded-lg font-black hidden shadow-sm">0</span>
+                👁️ مرور و پیش‌نمایش لیست نهایی
+            </button>
+        </div>
+    </div>
+
+    <!-- VIEW 2: Preview -->
+    <div id="previewView" class="hidden flex flex-col h-full bg-slate-50 fade-in relative">
+        <div class="sticky top-0 z-20 glass-header border-b border-slate-200/50 p-5 text-center shadow-sm">
+            <div class="w-14 h-14 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-3 shadow-lg shadow-emerald-200/50">✅</div>
+            <h2 class="text-lg font-black text-slate-800 tracking-tight">پیش‌نمایش اطلاعات</h2>
+            <p class="text-xs font-bold text-slate-500 mt-1">لطفاً قبل از ارسال بررسی کنید</p>
+        </div>
+
+        <div class="flex-grow overflow-y-auto p-5 space-y-4 pb-32">
+            <div id="previewContent" class="space-y-4"></div>
+        </div>
+
+        <div class="absolute bottom-0 left-0 right-0 glass-bottom px-5 py-4 pb-6 z-20 border-t border-slate-100 flex gap-3">
+            <button onclick="hidePreview()" class="w-1/3 bg-white border-2 border-slate-200 text-slate-600 font-black p-4 rounded-2xl text-sm active:scale-[0.98] transition-all hover:bg-slate-50">بازگشت</button>
+            <button id="submitBtn" onclick="submitToBot()" class="w-2/3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black p-4 rounded-2xl text-sm shadow-xl shadow-teal-200/50 active:scale-[0.98] transition-all flex justify-center items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                تایید و ارسال به ربات
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const r_id = urlParams.get('r_id');
+        const f_id = urlParams.get('f_id');
+        const idx = urlParams.get('idx');
+        
+        const rawQuestion = urlParams.get('q') || 'مشخصات را وارد کنید:';
+        document.getElementById('formQuestionTitle').innerText = decodeURIComponent(rawQuestion);
+
+        let schema = [];
+        try { schema = JSON.parse(decodeURIComponent(urlParams.get('s') || '[]')); } 
+        catch(e) { console.error(e); }
+
+        let records = [];
+        let editingIndex = -1; 
+
+        try { 
+            const rawAns = urlParams.get('ans');
+            if (rawAns && rawAns !== '-') records = JSON.parse(decodeURIComponent(rawAns)); 
+        } catch(e) {}
+
+        function renderDynamicForm() {
+            const container = document.getElementById('dynamicFormContainer');
+            container.innerHTML = '';
+            
+            schema.forEach(field => {
+                const wrapper = document.createElement('div');
+                const isRequired = field.req ? '<span class="text-rose-500 mr-1">*</span>' : '<span class="text-slate-400 text-[9px] mr-1 bg-slate-100 px-1.5 py-0.5 rounded-md">اختیاری</span>';
+                const inputType = (field.type === 'number' || field.type === 'phone' || field.type === 'nid') ? 'tel' : 'text';
+                const placeholder = field.type === 'nid' ? '۱۰ رقم' : (field.type === 'phone' ? '09...' : '');
+
+                wrapper.innerHTML = `
+                    <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">${field.label} ${isRequired}</label>
+                    <input type="${inputType}" id="${field.id}" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white font-bold text-slate-800 transition-all placeholder-slate-300" placeholder="${placeholder}">
+                `;
+                container.appendChild(wrapper);
+            });
+        }
+
+        function editRecord(index) {
+            if (!document.getElementById('previewView').classList.contains('hidden')) hidePreview();
+
+            const record = records[index];
+            editingIndex = index;
+
+            schema.forEach(field => { document.getElementById(field.id).value = record[field.id] || ''; });
+
+            document.getElementById('formBoxTitle').innerHTML = `<span class="w-6 h-6 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">✏️</span> <span class="text-amber-600">ویرایش اطلاعات مورد ${index + 1}</span>`;
+            
+            const btn = document.getElementById('addRecordBtn');
+            btn.className = "w-full bg-amber-500 hover:bg-amber-600 text-white font-black p-4 rounded-2xl text-sm transition-all flex justify-center items-center gap-2 active:scale-95 shadow-md shadow-amber-200/50";
+            btn.innerHTML = `<span>💾 ثبت تغییرات این مورد</span>`;
+            
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+            document.getElementById('formScrollTarget').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function cancelEdit() {
+            editingIndex = -1;
+            schema.forEach(field => document.getElementById(field.id).value = '');
+
+            document.getElementById('formBoxTitle').innerHTML = `<span class="w-6 h-6 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">➕</span> <span class="text-indigo-600">ورود اطلاعات جدید</span>`;
+            
+            const btn = document.getElementById('addRecordBtn');
+            btn.className = "w-full bg-indigo-50/50 border-2 border-dashed border-indigo-200 text-indigo-600 hover:bg-indigo-50 font-black p-4 rounded-2xl text-sm transition-all flex justify-center items-center gap-2 active:scale-95";
+            btn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> <span>افزودن این مورد به لیست</span>`;
+            
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+        }
+
+        function addRecord() {
+            let recordData = {};
+            let hasError = false;
+
+            schema.forEach(field => {
+                const val = document.getElementById(field.id).value.trim();
+                if (field.req && !val) { alert(`پر کردن فیلد "${field.label}" الزامی است!`); hasError = true; return; }
+                if (val) {
+                    if (field.type === 'nid' && !/^\d{10}$/.test(val)) { alert(`فیلد "${field.label}" باید دقیقاً ۱۰ رقم باشد!`); hasError = true; return; }
+                    if (field.type === 'phone' && !/^\d{10,11}$/.test(val)) { alert(`فیلد "${field.label}" باید شماره موبایل معتبر باشد!`); hasError = true; return; }
+                    if (field.type === 'number' && isNaN(val)) { alert(`فیلد "${field.label}" فقط عدد قبول می‌کند!`); hasError = true; return; }
+                }
+                recordData[field.id] = val;
+            });
+
+            if (hasError) return;
+
+            if (editingIndex > -1) {
+                records[editingIndex] = recordData;
+                cancelEdit(); 
+            } else {
+                records.push(recordData);
+                schema.forEach(field => document.getElementById(field.id).value = '');
+            }
+            renderList();
+        }
+
+        function removeRecord(index) {
+            records.splice(index, 1);
+            if (editingIndex === index) cancelEdit();
+            else if (editingIndex > index) editingIndex--;
+            renderList();
+            if (records.length === 0) hidePreview();
+            else if (!document.getElementById('previewView').classList.contains('hidden')) renderPreviewList();
+        }
+
+        function renderList() {
+            const container = document.getElementById('addedListContainer');
+            const listObj = document.getElementById('recordsList');
+            const btn = document.getElementById('reviewBtn');
+            const counter = document.getElementById('btnCounter');
+
+            listObj.innerHTML = '';
+
+            if (records.length > 0) {
+                container.classList.remove('hidden');
+                btn.disabled = false;
+                counter.classList.remove('hidden');
+                counter.innerText = records.length;
+
+                records.forEach((r, i) => {
+                    const firstFieldVal = r[schema[0].id] || `مورد ${i+1}`;
+                    
+                    const card = document.createElement('div');
+                    card.className = "bg-white p-4 rounded-[1.25rem] shadow-sm border border-slate-100 flex justify-between items-center slide-up hover:shadow-md transition-all";
+                    card.innerHTML = `
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-slate-600 flex items-center justify-center text-sm font-black flex-shrink-0">${i+1}</div>
+                            <p class="font-black text-slate-800 truncate">${firstFieldVal}</p>
+                        </div>
+                        <div class="flex gap-2 flex-shrink-0">
+                            <button onclick="editRecord(${i})" class="w-9 h-9 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center text-sm hover:bg-indigo-50 hover:text-indigo-600 hover:scale-105 active:scale-95 transition-all">✏️</button>
+                            <button onclick="removeRecord(${i})" class="w-9 h-9 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center text-sm hover:bg-rose-100 hover:scale-105 active:scale-95 transition-all"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                        </div>
+                    `;
+                    listObj.appendChild(card);
+                });
+            } else {
+                container.classList.add('hidden');
+                btn.disabled = true;
+                counter.classList.add('hidden');
+            }
+        }
+
+        function showPreview() {
+            if (records.length === 0) return;
+            if (editingIndex > -1) {
+                if (!confirm("شما در حال ویرایش یک مورد هستید که ذخیره نشده. آیا مایلید بدون ذخیره آن به پیش‌نمایش بروید؟")) return;
+                cancelEdit();
+            }
+            document.getElementById('mainView').classList.add('hidden');
+            document.getElementById('previewView').classList.remove('hidden');
+            renderPreviewList();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function hidePreview() {
+            document.getElementById('previewView').classList.add('hidden');
+            document.getElementById('mainView').classList.remove('hidden');
+        }
+
+        function renderPreviewList() {
+            const container = document.getElementById('previewContent');
+            container.innerHTML = '';
+
+            records.forEach((r, i) => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100 slide-up";
+                
+                let fieldsHtml = '';
+                schema.forEach(field => {
+                    const val = r[field.id] || '-';
+                    fieldsHtml += `
+                        <div class="flex justify-between items-center border-b border-slate-100/50 last:border-0 py-2.5">
+                            <span class="text-[11px] font-black text-slate-400 uppercase">${field.label}</span>
+                            <span class="text-sm font-black text-slate-800">${val}</span>
+                        </div>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="bg-indigo-50 text-indigo-600 text-xs font-black px-3 py-1.5 rounded-lg">مورد ${i+1}</div>
+                        <div class="flex gap-2">
+                            <button onclick="editRecord(${i})" class="text-indigo-500 hover:text-indigo-700 text-xs font-black bg-indigo-50/50 px-3 py-1.5 rounded-lg transition-colors">✏️ ویرایش</button>
+                            <button onclick="removeRecord(${i})" class="text-rose-400 hover:text-rose-600 text-xs font-black bg-rose-50/50 px-3 py-1.5 rounded-lg transition-colors">🗑 حذف</button>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50/50 rounded-2xl p-4 border border-slate-100">
+                        ${fieldsHtml}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        renderDynamicForm();
+        renderList();
+        window.Bale.WebApp.ready();
+
+        function submitToBot() {
+            if (records.length === 0) return;
+            const btn = document.getElementById('submitBtn');
+            btn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> در حال ارسال...';
+            btn.classList.add('opacity-90', 'cursor-wait');
+
+            const payload = { action: "submit_multi_record", r_id: r_id, f_id: f_id, idx: idx, records: records };
+
+            try {
+                window.Bale.WebApp.sendData(JSON.stringify(payload));
+                setTimeout(() => window.Bale.WebApp.close(), 150);
+            } catch (error) {
+                btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> تایید و ارسال به ربات';
+                btn.classList.remove('opacity-90', 'cursor-wait');
+                alert("خطا در ارتباط با سرور.");
+            }
+        }
+    </script>
+</body>
+</html>

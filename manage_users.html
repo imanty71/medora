@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>مدیریت کاربران</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.0.0/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <script src="https://tapi.bale.ai/miniapp.js?3"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; -webkit-font-smoothing: antialiased; background-color: #f8fafc; }
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .slide-up { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        /* Modern Toggle Switch */
+        .toggle-checkbox:checked { right: 0; border-color: #10b981; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #10b981; }
+        .toggle-checkbox { right: 0; z-index: 1; border-color: #e2e8f0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .toggle-label { width: 3.25rem; height: 1.75rem; background-color: #f43f5e; border-radius: 9999px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .toggle-checkbox:checked { transform: translateX(-1.5rem); }
+        
+        /* Glassmorphism Utilities */
+        .glass-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+        .glass-bottom { background: linear-gradient(to top, rgba(255,255,255,1) 60%, rgba(255,255,255,0.8)); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    </style>
+</head>
+<body class="flex flex-col h-screen selection:bg-indigo-100 overflow-hidden">
+
+    <!-- VIEW 1: Main List -->
+    <div id="mainView" class="flex flex-col h-full fade-in relative">
+        <!-- Header -->
+        <div class="sticky top-0 z-30 glass-header border-b border-slate-200/50 px-5 py-4 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)]">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-[1.25rem] bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xl shadow-lg shadow-indigo-200/50">
+                        👥
+                    </div>
+                    <div>
+                        <h1 class="text-base font-black text-slate-800 tracking-tight">مدیریت کاربران</h1>
+                        <p class="text-[11px] font-bold text-slate-500 mt-0.5">پورتال جامع دسترسی‌ها</p>
+                    </div>
+                </div>
+                <button onclick="openUserModal(null)" class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl hover:bg-indigo-100 hover:scale-105 active:scale-95 transition-all shadow-sm">
+                    ➕
+                </button>
+            </div>
+            
+            <!-- Search Bar -->
+            <div class="relative group">
+                <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                    <svg class="w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+                <input type="text" id="searchInput" onkeyup="renderUsers()" class="w-full bg-slate-100/80 border-2 border-transparent rounded-2xl py-3.5 pr-11 pl-4 text-sm font-bold text-slate-700 focus:border-indigo-100 focus:bg-white focus:ring-4 focus:ring-indigo-50/50 transition-all outline-none placeholder-slate-400" placeholder="جستجو نام یا شماره...">
+            </div>
+        </div>
+
+        <!-- List Container -->
+        <div class="flex-grow overflow-y-auto px-5 pt-5 pb-32">
+            <div id="usersList" class="space-y-4"></div>
+        </div>
+
+        <!-- Bottom Action Bar -->
+        <div class="absolute bottom-0 left-0 right-0 glass-bottom px-5 py-4 pb-6 z-20 border-t border-slate-100">
+            <button onclick="showPreview()" class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-black p-4 rounded-2xl text-sm shadow-xl shadow-indigo-200/60 transition-all active:scale-[0.98] flex justify-between items-center group">
+                <span class="flex items-center gap-2">
+                    <svg class="w-5 h-5 opacity-80 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    پیش‌نمایش تغییرات
+                </span>
+                <span id="changesCount" class="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-xl text-xs border border-white/10">بدون تغییر</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- VIEW 2: Preview -->
+    <div id="previewView" class="hidden flex flex-col h-full bg-slate-50 fade-in relative">
+        <div class="sticky top-0 z-20 glass-header border-b border-slate-200/50 p-5 text-center shadow-sm">
+            <div class="w-14 h-14 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-3 shadow-lg shadow-emerald-200/50">📋</div>
+            <h2 class="text-lg font-black text-slate-800 tracking-tight">تایید نهایی تغییرات</h2>
+            <p class="text-xs font-bold text-slate-500 mt-1">لطفاً موارد زیر را پیش از اعمال بررسی کنید</p>
+        </div>
+
+        <div class="flex-grow overflow-y-auto p-5 space-y-4 pb-32">
+            <div id="previewList" class="space-y-3"></div>
+        </div>
+
+        <div class="absolute bottom-0 left-0 right-0 glass-bottom px-5 py-4 pb-6 z-20 border-t border-slate-100 flex gap-3">
+            <button onclick="hidePreview()" class="w-1/3 bg-white border-2 border-slate-200 text-slate-600 font-black p-4 rounded-2xl text-sm active:scale-[0.98] transition-all hover:bg-slate-50">بازگشت</button>
+            <button id="submitBtn" onclick="submitData()" class="w-2/3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black p-4 rounded-2xl text-sm shadow-xl shadow-teal-200/50 active:scale-[0.98] transition-all flex justify-center items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                اعمال در سرور
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL: Edit/Add User -->
+    <div id="userModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center fade-in">
+        <div class="bg-white w-full sm:max-w-md rounded-t-[2rem] sm:rounded-[2rem] p-6 shadow-2xl max-h-[90vh] overflow-y-auto slide-up">
+            <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6 sm:hidden"></div>
+            
+            <div class="flex items-center gap-3 mb-6">
+                <div id="modalIconBox" class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 text-lg">✏️</div>
+                <h3 id="modalTitleText" class="text-base font-black text-slate-800">ویرایش کاربر</h3>
+            </div>
+            
+            <input type="hidden" id="m_original_id">
+            
+            <div class="space-y-5">
+                <div class="flex gap-3">
+                    <div class="w-1/3">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5 ml-1">پیشوند</label>
+                        <select id="m_prefix" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-indigo-700 focus:ring-2 focus:ring-indigo-400 outline-none appearance-none cursor-pointer">
+                            <option value="آقای">آقای</option>
+                            <option value="خانم">خانم</option>
+                            <option value="آقای دکتر">آقای دکتر</option>
+                            <option value="خانم دکتر">خانم دکتر</option>
+                            <option value="استاد">استاد</option>
+                            <option value="جناب آقای / سرکار خانم">عمومی</option>
+                        </select>
+                    </div>
+                    <div class="w-2/3">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5 ml-1">نام و نام خانوادگی</label>
+                        <input type="text" id="m_name" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-colors outline-none">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5 ml-1">شماره موبایل (آیدی بله)</label>
+                    <input type="tel" id="m_phone" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-colors outline-none dir-ltr" placeholder="09...">
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5 ml-1">سمت سازمانی</label>
+                    <select id="m_role" onchange="toggleGroupsView()" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-indigo-700 focus:ring-2 focus:ring-indigo-400 outline-none appearance-none cursor-pointer">
+                        <option value="کارشناس گروه">کارشناس گروه</option>
+                        <option value="مدیر آموزش">مدیر آموزش</option>
+                        <option value="معاون آموزش دانشکده">معاون آموزش دانشکده</option>
+                        <option value="ریاست دانشکده">ریاست دانشکده</option>
+                        <option value="مدیر ارشد سامانه">مدیر ارشد سامانه</option>
+                    </select>
+                </div>
+
+                <div id="groupsWrapper" class="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-3">گروه‌های تحت پوشش</label>
+                    <div id="m_groups" class="max-h-40 overflow-y-auto space-y-2 pr-1">
+                        <!-- چک‌باکس گروه‌ها -->
+                    </div>
+                </div>
+
+                <div id="statusWrapper" class="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <div>
+                        <p class="text-sm font-black text-slate-800">وضعیت اکانت</p>
+                        <p class="text-[10px] font-bold text-slate-400 mt-0.5" id="statusLabel">فعال / مسدود</p>
+                    </div>
+                    <div class="relative inline-block w-[3.25rem] h-7 align-middle select-none">
+                        <input type="checkbox" id="m_status" class="toggle-checkbox absolute block w-7 h-7 rounded-full bg-white border-[3px] appearance-none cursor-pointer m-0 p-0 shadow-sm"/>
+                        <label for="m_status" class="toggle-label block overflow-hidden h-7 rounded-full cursor-pointer border border-slate-200/50"></label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-8 flex gap-3">
+                <button onclick="closeModal()" class="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black p-4 rounded-2xl text-sm active:scale-95 transition-all">انصراف</button>
+                <button onclick="saveModal()" class="w-2/3 bg-indigo-600 hover:bg-indigo-700 text-white font-black p-4 rounded-2xl text-sm shadow-lg shadow-indigo-200/50 active:scale-95 transition-all">💾 ذخیره موقت</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Handover / Delete -->
+    <div id="deleteModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4 fade-in">
+        <div class="bg-white rounded-[2rem] w-full max-w-sm p-6 shadow-2xl slide-up">
+            <div class="w-14 h-14 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">🗑</div>
+            <h3 class="text-base font-black text-slate-800 text-center mb-1">عزل و انتقال پست</h3>
+            <p class="text-xs font-bold text-slate-500 text-center mb-6">اقدام مورد نظر برای <span id="delUserName" class="text-indigo-600"></span> را انتخاب کنید:</p>
+            
+            <input type="hidden" id="delUserId">
+
+            <div class="space-y-3">
+                <button onclick="confirmArchive()" class="w-full text-right bg-amber-50 border-2 border-amber-100 p-4 rounded-2xl hover:bg-amber-100 hover:border-amber-200 transition-all active:scale-[0.98] group">
+                    <p class="text-sm font-black text-amber-700 flex items-center gap-2"><span class="text-lg group-hover:scale-110 transition-transform">📦</span> عزل و بایگانی (استاندارد)</p>
+                    <p class="text-[10px] font-bold text-amber-600/80 mt-1.5 leading-relaxed">شماره موبایل آزاد می‌شود اما سوابق و تاریخچه کارها در سیستم حفظ می‌گردد.</p>
+                </button>
+
+                <button onclick="confirmHardDelete()" class="w-full text-right bg-rose-50 border-2 border-rose-100 p-4 rounded-2xl hover:bg-rose-100 hover:border-rose-200 transition-all active:scale-[0.98] group">
+                    <p class="text-sm font-black text-rose-700 flex items-center gap-2"><span class="text-lg group-hover:scale-110 transition-transform">💥</span> حذف فیزیکی (تستی)</p>
+                    <p class="text-[10px] font-bold text-rose-600/80 mt-1.5 leading-relaxed">تمام ردپای شخص از دیتابیس پاک می‌شود. (فقط برای اکانت‌های اشتباه)</p>
+                </button>
+            </div>
+
+            <div class="mt-6">
+                <button onclick="closeDeleteModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-black p-4 rounded-2xl text-sm active:scale-95 transition-all">انصراف</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let db_users = []; 
+        let db_groups = [];
+        let new_users = []; 
+        let edited_users = {}; 
+        let archived_users = []; 
+        let hard_deleted_users = []; 
+
+        function showAlert(msg, type = 'error') {
+            const existing = document.getElementById('customAlert');
+            if(existing) existing.remove();
+            const bgClass = type === 'error' ? 'bg-rose-500' : 'bg-emerald-500';
+            const alertBox = document.createElement('div');
+            alertBox.id = 'customAlert';
+            alertBox.className = `fixed top-6 left-1/2 -translate-x-1/2 ${bgClass} text-white px-6 py-3.5 rounded-2xl shadow-xl shadow-${type === 'error' ? 'rose' : 'emerald'}-200/50 z-[100] text-sm font-black text-center w-11/12 max-w-sm slide-up flex items-center justify-center gap-2`;
+            alertBox.innerHTML = `<span>${type === 'error' ? '⚠️' : '✅'}</span> <span>${msg}</span>`;
+            document.body.appendChild(alertBox);
+            setTimeout(() => { if(document.getElementById('customAlert')) document.getElementById('customAlert').remove(); }, 3500);
+        }
+
+        function init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            try {
+                const compressedData = urlParams.get('d');
+                if (compressedData) {
+                    const binaryString = window.atob(compressedData.replace(/-/g, '+').replace(/_/g, '/'));
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+                    const decompressed = pako.inflate(bytes, { to: 'string' });
+                    const data = JSON.parse(decompressed);
+                    db_users = data.u || [];
+                    db_groups = data.g || [];
+                }
+                renderUsers();
+            } catch(e) { 
+                console.error(e); 
+                showAlert("خطا در بارگذاری اطلاعات از سرور.");
+            }
+        }
+
+        function getUserDisplayData(u_id, is_new=false) {
+            if (is_new) return new_users.find(x => x.id === u_id);
+            if (edited_users[u_id]) return edited_users[u_id];
+            const raw = db_users.find(x => String(x[0]) === String(u_id));
+            if (raw) return { id: raw[0], phone: raw[1], name: raw[2], role: raw[3], groups: raw[4], status: raw[5], prefix: raw[6] || 'جناب آقای / سرکار خانم' };
+            return null;
+        }
+
+        function renderUsers() {
+            try {
+                const filter = document.getElementById('searchInput').value.toLowerCase();
+                const container = document.getElementById('usersList');
+                container.innerHTML = '';
+                
+                new_users.forEach(u => {
+                    if (filter && !u.name.toLowerCase().includes(filter) && !u.phone.includes(filter)) return;
+                    container.innerHTML += createUserCard(u, true);
+                });
+
+                db_users.forEach(raw => {
+                    const u_id = String(raw[0]);
+                    if (archived_users.includes(u_id) || hard_deleted_users.includes(u_id)) return; 
+                    
+                    const u = edited_users[u_id] || { id: raw[0], phone: raw[1], name: raw[2], role: raw[3], groups: raw[4], status: raw[5], prefix: raw[6] || 'جناب آقای / سرکار خانم' };
+                    if (filter && !u.name.toLowerCase().includes(filter) && !String(u.phone).includes(filter)) return;
+                    container.innerHTML += createUserCard(u, false, !!edited_users[u_id]);
+                });
+
+                updateChangesCount();
+            } catch (e) {
+                showAlert("خطا در رندر لیست: " + e.message);
+            }
+        }
+
+        function createUserCard(u, isNew, isEdited) {
+            let badge = '';
+            let bgClass = 'bg-white border-slate-100';
+            let avatarBg = 'from-slate-100 to-slate-200 text-slate-500';
+            
+            if (isNew) { 
+                badge = '<span class="bg-emerald-100 text-emerald-600 text-[10px] font-black px-2 py-0.5 rounded-lg border border-emerald-200/50">جدید</span>'; 
+                bgClass = 'bg-emerald-50/30 border-emerald-100'; 
+                avatarBg = 'from-emerald-100 to-teal-100 text-emerald-600';
+            } else if (isEdited) { 
+                badge = '<span class="bg-amber-100 text-amber-600 text-[10px] font-black px-2 py-0.5 rounded-lg border border-amber-200/50">ویرایش شده</span>'; 
+                bgClass = 'bg-amber-50/30 border-amber-100'; 
+                avatarBg = 'from-amber-100 to-orange-100 text-amber-600';
+            } else if (u.status === 'suspended') {
+                avatarBg = 'from-rose-100 to-red-100 text-rose-500';
+                badge = '<span class="bg-rose-100 text-rose-600 text-[10px] font-black px-2 py-0.5 rounded-lg border border-rose-200/50">مسدود</span>';
+            }
+            
+            const statusDot = u.status === 'active' ? '<div class="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full"></div>' : '<div class="absolute -bottom-1 -right-1 w-4 h-4 bg-rose-500 border-2 border-white rounded-full"></div>';
+            const grpStr = u.groups || "نامشخص";
+            const groupTruncate = grpStr.length > 28 ? grpStr.substring(0,28) + '...' : grpStr;
+            const prefixStr = u.prefix === 'جناب آقای / سرکار خانم' ? '' : u.prefix + ' ';
+
+            let delBtn = '';
+            if (!isNew) {
+                delBtn = `<button onclick="openDeleteModal('${u.id}', '${u.name}')" class="w-9 h-9 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center text-sm hover:bg-rose-100 hover:scale-105 active:scale-95 transition-all"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>`;
+            } else {
+                delBtn = `<button onclick="cancelNewUser('${u.id}')" class="w-9 h-9 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center text-sm hover:bg-rose-100 hover:scale-105 active:scale-95 transition-all"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>`;
+            }
+
+            return `
+                <div class="${bgClass} p-4 rounded-[1.5rem] shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] border flex items-center justify-between gap-3 slide-up hover:shadow-md transition-all">
+                    <div class="flex items-center gap-4 overflow-hidden">
+                        <div class="relative flex-shrink-0">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br ${avatarBg} flex items-center justify-center text-xl font-black border-2 border-white shadow-sm">
+                                ${u.name.charAt(0)}
+                            </div>
+                            ${statusDot}
+                        </div>
+                        <div class="overflow-hidden">
+                            <p class="text-sm font-black text-slate-800 truncate flex items-center gap-2">${prefixStr}${u.name} ${badge}</p>
+                            <p class="text-[11px] font-bold text-slate-500 mt-1 truncate">📱 ${u.phone} <span class="text-slate-300 mx-1">•</span> <span class="text-indigo-600">${u.role}</span></p>
+                            <p class="text-[10px] font-bold text-slate-400 mt-0.5 truncate">📚 ${groupTruncate}</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2 flex-shrink-0">
+                        <button onclick="openUserModal('${u.id}', ${isNew})" class="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-sm hover:bg-indigo-50 hover:text-indigo-600 hover:scale-105 active:scale-95 transition-all"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
+                        ${delBtn}
+                    </div>
+                </div>
+            `;
+        }
+
+        function cancelNewUser(id) {
+            new_users = new_users.filter(u => u.id !== id);
+            renderUsers();
+            showAlert("کاربر جدید لغو شد.", "success");
+        }
+
+        function openDeleteModal(id, name) {
+            document.getElementById('delUserId').value = id;
+            document.getElementById('delUserName').innerText = name;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.add('hidden');
+        }
+
+        function confirmArchive() {
+            const id = document.getElementById('delUserId').value;
+            archived_users.push(id);
+            if (edited_users[id]) delete edited_users[id];
+            closeDeleteModal();
+            renderUsers();
+            showAlert("کاربر عزل و بایگانی شد.", "success");
+        }
+
+        function confirmHardDelete() {
+            const id = document.getElementById('delUserId').value;
+            hard_deleted_users.push(id);
+            if (edited_users[id]) delete edited_users[id];
+            closeDeleteModal();
+            renderUsers();
+            showAlert("کاربر به صورت فیزیکی حذف شد.", "success");
+        }
+
+        function toggleGroupsView() {
+            const role = document.getElementById('m_role').value;
+            const wrap = document.getElementById('groupsWrapper');
+            if (role === 'کارشناس گروه') wrap.classList.remove('hidden');
+            else wrap.classList.add('hidden');
+        }
+
+        function openUserModal(u_id, isNew=false) {
+            try {
+                const container = document.getElementById('m_groups');
+                container.innerHTML = '';
+                
+                let u = null;
+                if (u_id) u = getUserDisplayData(u_id, isNew);
+
+                let selectedGrps = u && u.groups ? String(u.groups).split(',').map(s=>s.trim()) : [];
+                db_groups.forEach(g => {
+                    let chk = selectedGrps.includes(g) ? 'checked' : '';
+                    container.innerHTML += `
+                        <label class="flex items-center gap-3 p-2.5 hover:bg-white rounded-xl cursor-pointer transition-colors border border-transparent hover:border-slate-200">
+                            <input type="checkbox" value="${g}" class="grp-check w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500" ${chk}>
+                            <span class="text-xs font-bold text-slate-700">${g}</span>
+                        </label>
+                    `;
+                });
+
+                if (u) {
+                    document.getElementById('modalTitleText').innerText = 'ویرایش کاربر';
+                    document.getElementById('modalIconBox').innerHTML = '✏️';
+                    document.getElementById('modalIconBox').className = 'w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 text-lg';
+                    document.getElementById('m_original_id').value = isNew ? `NEW_${u.id}` : u.id;
+                    document.getElementById('m_name').value = u.name || "";
+                    document.getElementById('m_phone').value = u.phone || "";
+                    document.getElementById('m_role').value = u.role || "کارشناس گروه";
+                    document.getElementById('m_prefix').value = u.prefix || "جناب آقای / سرکار خانم";
+                    document.getElementById('m_status').checked = (u.status === 'active');
+                    document.getElementById('statusWrapper').classList.remove('hidden');
+                } else {
+                    document.getElementById('modalTitleText').innerText = 'افزودن کاربر جدید';
+                    document.getElementById('modalIconBox').innerHTML = '➕';
+                    document.getElementById('modalIconBox').className = 'w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 text-lg';
+                    document.getElementById('m_original_id').value = 'NEW_';
+                    document.getElementById('m_name').value = '';
+                    document.getElementById('m_phone').value = '';
+                    document.getElementById('m_role').value = 'کارشناس گروه';
+                    document.getElementById('m_prefix').value = 'آقای';
+                    document.getElementById('m_status').checked = true;
+                    document.getElementById('statusWrapper').classList.add('hidden');
+                }
+
+                toggleGroupsView();
+                document.getElementById('userModal').classList.remove('hidden');
+            } catch (e) {
+                showAlert("خطا در باز کردن فرم ویرایش.");
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('userModal').classList.add('hidden');
+        }
+
+        function saveModal() {
+            try {
+                const rawId = document.getElementById('m_original_id').value;
+                const name = document.getElementById('m_name').value.trim();
+                const phone = document.getElementById('m_phone').value.trim();
+                const role = document.getElementById('m_role').value;
+                const prefix = document.getElementById('m_prefix').value;
+                const isActive = document.getElementById('m_status').checked;
+                const status = isActive ? 'active' : 'suspended';
+                
+                if (!name || !phone) { showAlert("نام و شماره الزامی است."); return; }
+                if (phone.length < 5) { showAlert("شماره/آیدی وارد شده نامعتبر است."); return; }
+
+                let groups = "همه گروه‌ها";
+                if (role === 'کارشناس گروه') {
+                    const checks = document.querySelectorAll('.grp-check:checked');
+                    const grps = Array.from(checks).map(c => c.value);
+                    if (grps.length === 0) { showAlert("حداقل باید یک گروه آموزشی برای کارشناس تیک بزنید."); return; }
+                    groups = grps.join(', ');
+                }
+
+                const userData = { id: phone, phone: phone, name: name, role: role, groups: groups, status: status, prefix: prefix };
+
+                if (rawId.startsWith('NEW_')) {
+                    let realId = rawId.replace('NEW_', '');
+                    if (realId) {
+                        const idx = new_users.findIndex(x => String(x.id) === String(realId));
+                        if (idx > -1) {
+                            userData.id = phone; 
+                            new_users[idx] = userData;
+                        }
+                    } else {
+                        if (db_users.find(x => String(x[1]) === phone)) { showAlert("این شماره قبلاً در دیتابیس سامانه ثبت شده است."); return; }
+                        if (new_users.find(x => String(x.phone) === phone)) { showAlert("این کاربر در لیست جدیدها موجود است."); return; }
+                        new_users.push(userData);
+                    }
+                } else {
+                    userData.id = rawId; 
+                    edited_users[rawId] = userData;
+                }
+
+                closeModal();
+                renderUsers();
+                showAlert("تغییرات موقتاً ذخیره شد.", "success");
+            } catch(e) {
+                showAlert("خطای سیستمی رخ داد.");
+            }
+        }
+
+        function updateChangesCount() {
+            const total = new_users.length + Object.keys(edited_users).length + archived_users.length + hard_deleted_users.length;
+            const badge = document.getElementById('changesCount');
+            if (total > 0) {
+                badge.innerText = `${total} تغییر`;
+                badge.className = "bg-white text-indigo-600 px-3 py-1 rounded-xl text-xs font-black shadow-sm";
+            } else {
+                badge.innerText = `بدون تغییر`;
+                badge.className = "bg-white/20 backdrop-blur-sm px-3 py-1 rounded-xl text-xs border border-white/10";
+            }
+        }
+
+        function showPreview() {
+            const total = new_users.length + Object.keys(edited_users).length + archived_users.length + hard_deleted_users.length;
+            if (total === 0) { showAlert("هیچ تغییری برای اعمال وجود ندارد."); return; }
+
+            document.getElementById('mainView').classList.add('hidden');
+            document.getElementById('previewView').classList.remove('hidden');
+
+            const container = document.getElementById('previewList');
+            container.innerHTML = '';
+
+            new_users.forEach(u => {
+                const prefixStr = u.prefix === 'جناب آقای / سرکار خانم' ? '' : u.prefix + ' ';
+                container.innerHTML += `
+                    <div class="bg-emerald-50 border-2 border-emerald-100 p-4 rounded-2xl slide-up flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg">➕</div>
+                        <div>
+                            <p class="text-xs font-black text-emerald-700 uppercase tracking-wider mb-0.5">افزوده می‌شود</p>
+                            <p class="text-sm font-black text-slate-800">${prefixStr}${u.name} <span class="text-[10px] text-slate-500 font-bold bg-white px-2 py-0.5 rounded-md ml-1">${u.role}</span></p>
+                        </div>
+                    </div>
+                `;
+            });
+
+            Object.values(edited_users).forEach(u => {
+                const isSuspended = u.status === 'suspended';
+                const prefixStr = u.prefix === 'جناب آقای / سرکار خانم' ? '' : u.prefix + ' ';
+                const stateColor = isSuspended ? 'rose' : 'amber';
+                const stateIcon = isSuspended ? '⛔️' : '✏️';
+                const stateText = isSuspended ? 'تعلیق می‌شود' : 'ویرایش می‌شود';
+                
+                container.innerHTML += `
+                    <div class="bg-${stateColor}-50 border-2 border-${stateColor}-100 p-4 rounded-2xl slide-up flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-${stateColor}-100 text-${stateColor}-600 flex items-center justify-center text-lg">${stateIcon}</div>
+                        <div>
+                            <p class="text-xs font-black text-${stateColor}-700 uppercase tracking-wider mb-0.5">${stateText}</p>
+                            <p class="text-sm font-black text-slate-800">${prefixStr}${u.name} <span class="text-[10px] text-slate-500 font-bold bg-white px-2 py-0.5 rounded-md ml-1">${u.role}</span></p>
+                        </div>
+                    </div>
+                `;
+            });
+
+            archived_users.forEach(id => {
+                const u = db_users.find(x => String(x[0]) === id);
+                if(u) {
+                    container.innerHTML += `
+                        <div class="bg-orange-50 border-2 border-orange-100 p-4 rounded-2xl slide-up flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-lg">📦</div>
+                            <div>
+                                <p class="text-xs font-black text-orange-700 uppercase tracking-wider mb-0.5">عزل و بایگانی</p>
+                                <p class="text-sm font-black text-slate-800">${u[2]}</p>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            hard_deleted_users.forEach(id => {
+                const u = db_users.find(x => String(x[0]) === id);
+                if(u) {
+                    container.innerHTML += `
+                        <div class="bg-rose-50 border-2 border-rose-100 p-4 rounded-2xl slide-up flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-lg">💥</div>
+                            <div>
+                                <p class="text-xs font-black text-rose-700 uppercase tracking-wider mb-0.5">حذف فیزیکی</p>
+                                <p class="text-sm font-black text-slate-800">${u[2]}</p>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        function hidePreview() {
+            document.getElementById('previewView').classList.add('hidden');
+            document.getElementById('mainView').classList.remove('hidden');
+        }
+
+        window.Bale.WebApp.ready();
+
+        function submitData() {
+            try {
+                const btn = document.getElementById('submitBtn');
+                btn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> در حال ارسال...';
+                btn.classList.add('opacity-90', 'cursor-wait');
+
+                const payload = {
+                    action: "submit_manage_users",
+                    new_users: new_users,
+                    edited_users: Object.values(edited_users),
+                    archived_users: archived_users,
+                    hard_deleted_users: hard_deleted_users
+                };
+
+                window.Bale.WebApp.sendData(JSON.stringify(payload));
+                setTimeout(() => window.Bale.WebApp.close(), 150);
+            } catch (error) {
+                showAlert("خطا در ارتباط با سرور بله.");
+                const btn = document.getElementById('submitBtn');
+                btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> اعمال در سرور';
+                btn.classList.remove('opacity-90', 'cursor-wait');
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

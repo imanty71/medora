@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>استودیوی طراحی فیلدها</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.0.0/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <script src="https://tapi.bale.ai/miniapp.js?3"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; -webkit-font-smoothing: antialiased; background-color: #f8fafc; }
+        .slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        .glass-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+        .glass-bottom { background: linear-gradient(to top, rgba(255,255,255,1) 60%, rgba(255,255,255,0.8)); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+
+        /* Modern Toggle Switch */
+        .toggle-checkbox { right: 0; transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1); }
+        .toggle-checkbox:checked { transform: translateX(-1.25rem); border-color: #10b981; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #10b981; }
+
+        /* Drag Handle & Ghost */
+        .drag-handle { cursor: grab; touch-action: none; }
+        .drag-handle:active { cursor: grabbing; }
+        .sortable-ghost { opacity: 0.3; background-color: #f1f5f9; border: 2px dashed #94a3b8; border-radius: 1.5rem; }
+        .sortable-drag { cursor: grabbing !important; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+    </style>
+</head>
+<body class="flex flex-col h-screen selection:bg-indigo-100 overflow-hidden">
+
+    <div class="sticky top-0 z-30 glass-header border-b border-slate-200/50 px-5 py-4 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)]">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-[1.25rem] bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center text-white text-xl shadow-lg shadow-slate-300/50">
+                🛠
+            </div>
+            <div>
+                <h1 class="text-base font-black text-slate-800 tracking-tight">استودیوی طراحی فیلدها</h1>
+                <p class="text-[11px] font-bold text-slate-500 mt-0.5">ستون‌های فرم را جابجا، ویرایش یا حذف کنید</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex-grow overflow-y-auto px-5 pt-5 pb-32 space-y-6">
+        <div id="fieldsContainer" class="space-y-4"></div>
+
+        <button onclick="addNewField()" class="w-full bg-indigo-50/50 border-2 border-dashed border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 font-black p-4 rounded-2xl text-sm transition-all flex justify-center items-center gap-2 active:scale-95">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            افزودن فیلد جدید به فرم
+        </button>
+    </div>
+
+    <div class="absolute bottom-0 left-0 right-0 glass-bottom px-5 py-4 pb-6 z-20 border-t border-slate-100">
+        <button onclick="submitSchema()" id="submitBtn" class="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black p-4 rounded-2xl text-sm shadow-xl shadow-teal-200/50 transition-all duration-200 active:scale-[0.98] flex justify-center items-center gap-2">
+            💾 ذخیره و اعمال نهایی در ربات
+        </button>
+    </div>
+
+    <script>
+        let schema = [
+            { id: generateId(), label: 'نام و نام خانوادگی', type: 'text', req: true },
+            { id: generateId(), label: 'کد ملی', type: 'nid', req: true },
+            { id: generateId(), label: 'شماره موبایل', type: 'phone', req: true },
+            { id: generateId(), label: 'ایمیل', type: 'mixed', req: false },
+            { id: generateId(), label: 'سابقه علمی', type: 'text', req: false }
+        ];
+
+        let sortableInstance = null;
+
+        function generateId() { return 'f_' + Math.random().toString(36).substr(2, 9); }
+
+        function renderFields() {
+            const container = document.getElementById('fieldsContainer');
+            container.innerHTML = '';
+
+            schema.forEach((field, index) => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-5 pr-12 rounded-[1.5rem] shadow-sm border border-slate-100 flex flex-col gap-5 relative slide-up group hover:shadow-md transition-shadow";
+                
+                const dragHandle = `
+                    <div class="absolute top-1/2 -translate-y-1/2 right-3 text-slate-300 hover:text-indigo-500 drag-handle p-2 transition-colors">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 16 16"><path d="M5 4a1 1 0 110-2 1 1 0 010 2zm6 0a1 1 0 110-2 1 1 0 010 2zm-6 5a1 1 0 110-2 1 1 0 010 2zm6 0a1 1 0 110-2 1 1 0 010 2zm-6 5a1 1 0 110-2 1 1 0 010 2zm6 0a1 1 0 110-2 1 1 0 010 2z"/></svg>
+                    </div>
+                `;
+
+                const deleteBtn = `
+                    <button onclick="removeField(${index})" class="absolute top-4 left-4 text-rose-400 hover:text-rose-600 bg-rose-50 p-2 rounded-xl transition-colors active:scale-95">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                `;
+
+                card.innerHTML = `
+                    ${dragHandle}
+                    ${deleteBtn}
+                    
+                    <div class="pl-10">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">عنوان فیلد</label>
+                        <input type="text" value="${field.label}" onchange="updateField(${index}, 'label', this.value)" class="w-full bg-transparent border-b-2 border-slate-100 focus:border-indigo-500 text-sm font-black text-slate-800 pb-1.5 focus:outline-none transition-colors placeholder-slate-300" placeholder="مثلاً: آدرس محل سکونت">
+                    </div>
+
+                    <div class="flex items-center justify-between bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center text-sm">⚙️</div>
+                            <div class="flex flex-col">
+                                <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5">نوع پاسخ</span>
+                                <select onchange="updateField(${index}, 'type', this.value)" class="bg-transparent text-xs font-black text-indigo-700 focus:outline-none cursor-pointer appearance-none">
+                                    <option value="text" ${field.type === 'text' ? 'selected' : ''}>🔠 فقط حروف</option>
+                                    <option value="number" ${field.type === 'number' ? 'selected' : ''}>🔢 فقط عدد</option>
+                                    <option value="nid" ${field.type === 'nid' ? 'selected' : ''}>🆔 کد ملی (۱۰ رقم)</option>
+                                    <option value="phone" ${field.type === 'phone' ? 'selected' : ''}>📱 موبایل (۱۱ رقم)</option>
+                                    <option value="mixed" ${field.type === 'mixed' ? 'selected' : ''}>📧 ترکیبی / ایمیل</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="w-px h-8 bg-slate-200 mx-2"></div>
+
+                        <div class="flex items-center gap-3">
+                            <span class="text-[9px] font-black text-slate-500 uppercase tracking-wider">الزامی</span>
+                            <div class="relative inline-block w-11 h-6 align-middle select-none">
+                                <input type="checkbox" id="toggle_${index}" onchange="updateField(${index}, 'req', this.checked)" ${field.req ? 'checked' : ''} class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-slate-200 appearance-none cursor-pointer z-10 top-0 m-0 p-0 shadow-sm"/>
+                                <label for="toggle_${index}" class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer transition-colors duration-300 ease-in-out"></label>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            initSortable();
+        }
+
+        function initSortable() {
+            const container = document.getElementById('fieldsContainer');
+            if (sortableInstance) sortableInstance.destroy();
+            sortableInstance = new Sortable(container, {
+                animation: 250,
+                easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+                handle: '.drag-handle',
+                ghostClass: 'sortable-ghost',
+                onEnd: function (evt) {
+                    const movedItem = schema.splice(evt.oldIndex, 1)[0];
+                    schema.splice(evt.newIndex, 0, movedItem);
+                    renderFields();
+                }
+            });
+        }
+
+        function updateField(index, key, value) { schema[index][key] = value; }
+        function removeField(index) { schema.splice(index, 1); renderFields(); }
+        function addNewField() {
+            schema.push({ id: generateId(), label: '', type: 'text', req: true });
+            renderFields();
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        window.Bale.WebApp.ready();
+
+        function submitSchema() {
+            let hasError = false;
+            schema.forEach((f, i) => {
+                if (!f.label.trim()) { alert(`لطفاً عنوان فیلد شماره ${i+1} را وارد کنید.`); hasError = true; }
+            });
+            if (hasError) return;
+            if (schema.length === 0) { alert("حداقل یک فیلد باید در فرم وجود داشته باشد."); return; }
+
+            const btn = document.getElementById('submitBtn');
+            btn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> در حال ذخیره‌سازی...';
+            btn.classList.add('opacity-90', 'cursor-wait');
+
+            const payload = { action: "submit_schema", schema: schema };
+
+            try {
+                window.Bale.WebApp.sendData(JSON.stringify(payload));
+                setTimeout(() => window.Bale.WebApp.close(), 150);
+            } catch (error) {
+                alert("خطا در ارتباط با سرور.");
+                btn.innerHTML = '💾 ذخیره و اعمال نهایی در ربات';
+                btn.classList.remove('opacity-90', 'cursor-wait');
+            }
+        }
+
+        renderFields();
+    </script>
+</body>
+</html>
