@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>داشبورد آماری کلان</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.0.0/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <script src="https://tapi.bale.ai/miniapp.js?3"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; -webkit-font-smoothing: antialiased; }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        .slide-up { animation: slideUp 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* انیمیشن پر شدن پراگرس بار */
+        .progress-fill { transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+    </style>
+</head>
+<body class="bg-slate-50 flex flex-col h-screen selection:bg-indigo-100">
+
+    <!-- هدر -->
+    <div class="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 shadow-sm">
+        <div class="p-5 text-center">
+            <h1 class="text-base font-black text-indigo-700 tracking-tight">📈 داشبورد آماری کلان</h1>
+            <p class="text-[11px] text-slate-500 font-medium mt-1">پایش عملکرد دپارتمان‌های دانشکده</p>
+        </div>
+    </div>
+
+    <div class="flex-grow overflow-y-auto p-5 pb-28 space-y-6">
+        
+        <!-- کارت‌های آمار کلی -->
+        <div class="grid grid-cols-3 gap-3 fade-in">
+            <div class="bg-blue-50 border border-blue-100 p-4 rounded-3xl text-center shadow-sm">
+                <div class="text-2xl mb-1">👥</div>
+                <div id="stat_users" class="text-xl font-black text-blue-700">0</div>
+                <div class="text-[9px] font-bold text-blue-500 mt-1">کاربران فعال</div>
+            </div>
+            <div class="bg-emerald-50 border border-emerald-100 p-4 rounded-3xl text-center shadow-sm">
+                <div class="text-2xl mb-1">📁</div>
+                <div id="stat_files" class="text-xl font-black text-emerald-700">0</div>
+                <div class="text-[9px] font-bold text-emerald-500 mt-1">اسناد سیستم</div>
+            </div>
+            <div class="bg-purple-50 border border-purple-100 p-4 rounded-3xl text-center shadow-sm">
+                <div class="text-2xl mb-1">📋</div>
+                <div id="stat_forms" class="text-xl font-black text-purple-700">0</div>
+                <div class="text-[9px] font-bold text-purple-500 mt-1">فرم‌های سیستم</div>
+            </div>
+        </div>
+
+        <!-- تب‌های انتخاب بازه زمانی -->
+        <div class="fade-in" style="animation-delay: 0.1s;">
+            <h2 class="text-xs font-black text-slate-700 mb-3 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-indigo-500"></span> بازه زمانی محاسبه عملکرد
+            </h2>
+            <div class="flex overflow-x-auto no-scrollbar gap-2 pb-2">
+                <button onclick="loadTimeframe('30')" id="tab_30" class="time-tab flex-shrink-0 px-4 py-2.5 text-xs font-bold rounded-xl transition-all bg-white text-slate-500 border border-slate-200">۳۰ روز اخیر</button>
+                <button onclick="loadTimeframe('180')" id="tab_180" class="time-tab flex-shrink-0 px-4 py-2.5 text-xs font-bold rounded-xl transition-all bg-white text-slate-500 border border-slate-200">۶ ماه اخیر</button>
+                <button onclick="loadTimeframe('365')" id="tab_365" class="time-tab flex-shrink-0 px-4 py-2.5 text-xs font-bold rounded-xl transition-all bg-white text-slate-500 border border-slate-200">یک سال اخیر</button>
+                <button onclick="loadTimeframe('0')" id="tab_0" class="time-tab flex-shrink-0 px-4 py-2.5 text-xs font-bold rounded-xl transition-all bg-indigo-600 text-white shadow-md shadow-indigo-200 border border-transparent">کل دوره (All-Time)</button>
+            </div>
+        </div>
+
+        <!-- لیست عملکرد گروه‌ها -->
+        <div class="slide-up" style="animation-delay: 0.2s;">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-xs font-black text-slate-700 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span> وضعیت مشارکت دپارتمان‌ها
+                </h2>
+            </div>
+            
+            <div id="groupsList" class="space-y-3">
+                <!-- کارت‌ها اینجا رندر می‌شوند -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- دکمه بازگشت -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg p-4 border-t border-slate-200/60 pb-safe z-40">
+        <div class="max-w-lg mx-auto">
+            <button onclick="closeApp()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold p-4 rounded-2xl text-sm transition-all duration-200 active:scale-[0.98] flex justify-center items-center gap-2">
+                🔙 بازگشت به منوی ربات
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let dashboardData = {};
+
+        function init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            try {
+                const compressedData = urlParams.get('d');
+                if (compressedData) {
+                    const binaryString = window.atob(compressedData.replace(/-/g, '+').replace(/_/g, '/'));
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+                    const decompressed = pako.inflate(bytes, { to: 'string' });
+                    dashboardData = JSON.parse(decompressed);
+                    
+                    // تنظیم آمار هدر
+                    document.getElementById('stat_users').innerText = dashboardData.u || 0;
+                    document.getElementById('stat_files').innerText = dashboardData.f || 0;
+                    document.getElementById('stat_forms').innerText = dashboardData.frm || 0;
+
+                    // لود پیش‌فرض (کل دوره)
+                    loadTimeframe('0');
+                } else {
+                    alert("داده‌ای دریافت نشد.");
+                }
+            } catch(e) { 
+                console.error(e); 
+                alert("خطا در بارگذاری اطلاعات داشبورد.");
+            }
+        }
+
+        function loadTimeframe(days) {
+            // آپدیت استایل تب‌ها
+            document.querySelectorAll('.time-tab').forEach(tab => {
+                tab.className = "time-tab flex-shrink-0 px-4 py-2.5 text-xs font-bold rounded-xl transition-all bg-white text-slate-500 border border-slate-200";
+            });
+            const activeTab = document.getElementById('tab_' + days);
+            activeTab.className = "time-tab flex-shrink-0 px-4 py-2.5 text-xs font-bold rounded-xl transition-all bg-indigo-600 text-white shadow-md shadow-indigo-200 border border-transparent";
+
+            // رندر لیست
+            const container = document.getElementById('groupsList');
+            container.innerHTML = '';
+            
+            const groups = dashboardData.t[days] || [];
+            
+            // سورت کردن گروه‌ها: اولویت با نرخ مشارکت بالاتر (و گروه‌های خنثی در انتها)
+            groups.sort((a, b) => b.r - a.r);
+
+            groups.forEach((g, index) => {
+                let statusColor, bgColor, icon, statusText;
+                let width = g.r;
+
+                if (g.r === -1) {
+                    statusColor = 'text-slate-400';
+                    bgColor = 'bg-slate-200';
+                    icon = '⚪️';
+                    statusText = 'وظیفه‌ای محول نشده';
+                    width = 0;
+                } else if (g.r >= 85) {
+                    statusColor = 'text-emerald-600';
+                    bgColor = 'bg-emerald-500';
+                    icon = '🟢';
+                    statusText = 'عملکرد عالی';
+                } else if (g.r >= 50) {
+                    statusColor = 'text-amber-500';
+                    bgColor = 'bg-amber-400';
+                    icon = '🟡';
+                    statusText = 'عملکرد متوسط';
+                } else {
+                    statusColor = 'text-rose-500';
+                    bgColor = 'bg-rose-500';
+                    icon = '🔴';
+                    statusText = 'نیازمند پیگیری';
+                }
+
+                const delay = index * 0.05; // انیمیشن آبشاری
+
+                const card = document.createElement('div');
+                card.className = `bg-white p-4 rounded-2xl shadow-sm border border-slate-100 slide-up`;
+                card.style.animationDelay = `${delay}s`;
+                
+                let detailsHtml = g.r === -1 
+                    ? `<span class="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">بدون تسک در این بازه</span>`
+                    : `<span class="text-[10px] font-bold text-slate-500">انجام <span class="text-slate-800">${g.p}</span> از <span class="text-slate-800">${g.e}</span></span>`;
+
+                let rateHtml = g.r === -1 
+                    ? `<span class="text-sm font-black text-slate-300">-</span>`
+                    : `<span class="text-lg font-black ${statusColor}">${g.r}%</span>`;
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-lg shadow-inner">
+                                ${icon}
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-extrabold text-slate-800">${g.n}</h3>
+                                <p class="text-[9px] font-bold ${statusColor} mt-0.5">${statusText}</p>
+                            </div>
+                        </div>
+                        <div class="text-left">
+                            ${rateHtml}
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between mb-1.5">
+                        ${detailsHtml}
+                    </div>
+                    
+                    <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden shadow-inner">
+                        <div class="h-2.5 rounded-full ${bgColor} progress-fill" style="width: 0%"></div>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+
+                // تریگر انیمیشن پر شدن پراگرس بار بعد از رندر
+                setTimeout(() => {
+                    card.querySelector('.progress-fill').style.width = `${width}%`;
+                }, 50);
+            });
+        }
+
+        window.Bale.WebApp.ready();
+
+        function closeApp() {
+            try { window.Bale.WebApp.close(); } catch (e) { console.log(e); }
+        }
+
+        init();
+    </script>
+</body>
+</html>
