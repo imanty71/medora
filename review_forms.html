@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>بررسی فرم‌های ارسالی</title>
+    
+    <!-- لود فونت استاندارد -->
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.0.0/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    
+    <script src="https://tapi.bale.ai/miniapp.js?3"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    
+    <style>
+        body { 
+            /* استک فونت‌های پریمیوم شرکت‌های بزرگ ایرانی */
+            font-family: 'IRANSansX', 'IRANSans', 'IRANYekan', 'Yekan Bakh', 'Vazirmatn', Tahoma, sans-serif; 
+            -webkit-font-smoothing: antialiased; 
+        }
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        .slide-up { animation: slideUp 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50 flex flex-col h-screen selection:bg-indigo-100">
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: لیست فرم‌های در انتظار بررسی -->
+    <!-- ========================================== -->
+    <div id="listView" class="flex flex-col h-full fade-in">
+        <div class="sticky top-0 z-20 bg-white/90 backdrop-blur-xl border-b border-slate-200/60 p-5 shadow-sm">
+            <h1 class="text-base font-black text-indigo-700 tracking-tight flex items-center gap-2">
+                <span class="text-xl">📥</span> کارتابل بررسی فرم‌ها
+            </h1>
+            <p class="text-[11px] text-slate-500 font-medium mt-1">فرم مورد نظر را برای مشاهده جزئیات انتخاب کنید</p>
+        </div>
+
+        <div class="flex-grow overflow-y-auto p-4 pb-24">
+            <div id="formsListContainer" class="space-y-3">
+                <!-- کارت‌ها اینجا رندر می‌شوند -->
+            </div>
+        </div>
+
+        <div class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg p-4 border-t border-slate-200/60 pb-safe z-40">
+            <button onclick="closeApp()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold p-4 rounded-2xl text-sm transition-all active:scale-[0.98]">
+                🔙 بازگشت به منوی اصلی
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: جزئیات فرم و پاسخ‌ها -->
+    <!-- ========================================== -->
+    <div id="detailView" class="hidden flex flex-col h-full bg-slate-50 fade-in">
+        <div class="sticky top-0 z-20 bg-white/90 backdrop-blur-xl border-b border-slate-200/60 p-4 shadow-sm flex items-center gap-3">
+            <button onclick="backToList()" class="w-10 h-10 bg-slate-100 text-slate-600 rounded-xl flex items-center justify-center hover:bg-slate-200 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+            <div class="flex-1 truncate">
+                <h2 id="detailTitle" class="text-sm font-black text-slate-800 truncate">عنوان فرم</h2>
+                <p id="detailSubtitle" class="text-[10px] text-slate-500 mt-0.5 truncate">توسط...</p>
+            </div>
+        </div>
+
+        <div class="flex-grow overflow-y-auto p-4 pb-32 space-y-5">
+            <!-- اطلاعات پایه -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 slide-up">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase">کد رهگیری</p>
+                        <p id="detailCode" class="text-xs font-black text-slate-700 mt-0.5 bg-slate-100 px-2 py-1 rounded inline-block">1234</p>
+                    </div>
+                    <div>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase">زمان ارسال</p>
+                        <p id="detailTime" class="text-xs font-bold text-slate-700 mt-0.5">-</p>
+                    </div>
+                    <div class="col-span-2">
+                        <p class="text-[9px] font-bold text-slate-400 uppercase">فاصله تا تکمیل</p>
+                        <p id="detailElapsed" class="text-xs font-bold text-indigo-600 mt-0.5">-</p>
+                    </div>
+                </div>
+                <div id="detailReasonBox" class="hidden mt-3 pt-3 border-t border-rose-100">
+                    <p class="text-[9px] font-bold text-rose-400 uppercase">سابقه ارجاع قبلی</p>
+                    <p id="detailReason" class="text-xs font-bold text-rose-600 mt-0.5"></p>
+                </div>
+            </div>
+
+            <!-- پاسخ‌ها -->
+            <div class="slide-up" style="animation-delay: 0.1s;">
+                <h3 class="text-xs font-black text-slate-700 mb-3 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-indigo-500"></span> پاسخ‌های ثبت شده
+                </h3>
+                <div id="answersContainer" class="space-y-4">
+                    <!-- پاسخ‌ها اینجا رندر می‌شوند -->
+                </div>
+            </div>
+        </div>
+
+        <!-- دکمه‌های عملیاتی -->
+        <div class="fixed bottom-0 left-0 right-0 bg-white p-4 border-t border-slate-200 shadow-[0_-10px_20px_rgba(0,0,0,0.03)] flex gap-2 pb-safe z-40">
+            <button onclick="openReturnModal()" class="flex-1 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold p-3.5 rounded-2xl text-sm transition-all active:scale-[0.98]">
+                🔄 ارجاع
+            </button>
+            <button id="btnApprove" onclick="submitAction('approve')" class="flex-[2] bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 text-white font-bold p-3.5 rounded-2xl text-sm shadow-lg shadow-teal-200/50 transition-all active:scale-[0.98]">
+                ✅ تایید نهایی
+            </button>
+            <button id="btnSyncApprove" onclick="submitAction('sync_and_approve')" class="hidden flex-[2] bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 text-white font-bold p-3.5 rounded-2xl text-sm shadow-lg shadow-indigo-200/50 transition-all active:scale-[0.98]">
+                📂 همگام‌سازی و تایید
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL: دلیل ارجاع -->
+    <!-- ========================================== -->
+    <div id="returnModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 fade-in">
+        <div class="bg-white rounded-3xl w-full max-w-sm p-5 shadow-2xl slide-up">
+            <h3 class="text-sm font-extrabold text-rose-600 mb-2 flex items-center gap-2">🔄 ارجاع فرم به کارشناس</h3>
+            <p class="text-xs text-slate-500 mb-4">لطفاً دلیل ارجاع و نیاز به اصلاح را بنویسید:</p>
+            
+            <textarea id="returnReasonInput" rows="3" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-rose-400 outline-none resize-none" placeholder="مثلاً: فایل پیوست ناقص است..."></textarea>
+            
+            <div class="mt-5 flex gap-3">
+                <button onclick="closeReturnModal()" class="w-1/3 bg-slate-100 text-slate-600 font-bold p-3 rounded-xl text-sm active:scale-95">انصراف</button>
+                <button onclick="submitAction('return')" class="w-2/3 bg-rose-500 text-white font-bold p-3 rounded-xl text-sm shadow-md shadow-rose-200 active:scale-95">ارسال ارجاع</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let formsData = [];
+        let currentFormId = null;
+
+        function init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            try {
+                const compressedData = urlParams.get('d');
+                if (compressedData) {
+                    const binaryString = window.atob(compressedData.replace(/-/g, '+').replace(/_/g, '/'));
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+                    const decompressed = pako.inflate(bytes, { to: 'string' });
+                    formsData = JSON.parse(decompressed);
+                    renderList();
+                } else {
+                    alert("داده‌ای دریافت نشد.");
+                }
+            } catch(e) { 
+                console.error(e); 
+                alert("خطا در بارگذاری اطلاعات.");
+            }
+        }
+
+        function renderList() {
+            const container = document.getElementById('formsListContainer');
+            container.innerHTML = '';
+
+            if (formsData.length === 0) {
+                container.innerHTML = `<div class="text-center p-8 text-slate-400 font-bold text-sm">کارتابل شما خالی است.</div>`;
+                return;
+            }
+
+            formsData.forEach((form, index) => {
+                const delay = index * 0.05;
+                const rosterBadge = form.is_roster === 1 ? '<span class="bg-indigo-100 text-indigo-600 text-[9px] px-2 py-0.5 rounded-md ml-2">نیاز به همگام‌سازی</span>' : '';
+                const reasonBadge = form.reason ? '<span class="bg-rose-100 text-rose-600 text-[9px] px-2 py-0.5 rounded-md ml-2">سابقه ارجاع</span>' : '';
+
+                const card = document.createElement('div');
+                card.className = `bg-white p-4.5 rounded-3xl shadow-sm border border-slate-100 slide-up cursor-pointer hover:border-indigo-300 hover:shadow-md transition-all`;
+                card.style.animationDelay = `${delay}s`;
+                card.onclick = () => openDetail(index);
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2.5">
+                        <h3 class="text-sm font-extrabold text-slate-800 line-clamp-1 flex-1 pl-2 leading-relaxed">${form.title}</h3>
+                        <span class="text-[10px] font-black text-slate-500 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200">${form.t_code}</span>
+                    </div>
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px]">👤</div>
+                        <p class="text-xs font-bold text-slate-600">${form.u_name} <span class="text-[10px] text-slate-400 font-medium">(${form.u_group})</span></p>
+                    </div>
+                    <div class="flex justify-between items-end mt-4 pt-3 border-t border-slate-50">
+                        <p class="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            ${form.sub_at}
+                        </p>
+                        <div class="flex">${rosterBadge}${reasonBadge}</div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function openDetail(index) {
+            const form = formsData[index];
+            currentFormId = form.r_id;
+
+            document.getElementById('detailTitle').innerText = form.title;
+            document.getElementById('detailSubtitle').innerText = `ارسال شده توسط: ${form.u_name} (${form.u_group})`;
+            document.getElementById('detailCode').innerText = form.t_code;
+            document.getElementById('detailTime').innerText = form.sub_at;
+            document.getElementById('detailElapsed').innerText = form.elapsed;
+
+            if (form.reason) {
+                document.getElementById('detailReasonBox').classList.remove('hidden');
+                document.getElementById('detailReason').innerText = form.reason;
+            } else {
+                document.getElementById('detailReasonBox').classList.add('hidden');
+            }
+
+            // مدیریت دکمه‌های تایید
+            if (form.is_roster === 1) {
+                document.getElementById('btnApprove').classList.add('hidden');
+                document.getElementById('btnSyncApprove').classList.remove('hidden');
+            } else {
+                document.getElementById('btnApprove').classList.remove('hidden');
+                document.getElementById('btnSyncApprove').classList.add('hidden');
+            }
+
+            // رندر پاسخ‌ها
+            const ansContainer = document.getElementById('answersContainer');
+            ansContainer.innerHTML = '';
+
+            form.answers.forEach((ans, i) => {
+                let ansHtml = '';
+                
+                if (ans.t === 'member_checklist' && Array.isArray(ans.a)) {
+                    let listHtml = '';
+                    ans.a.forEach((item, j) => {
+                        listHtml += `<div class="text-sm font-bold text-slate-700 py-1.5 border-b border-slate-100 last:border-0"><span class="text-indigo-400 mr-2">${j+1}.</span> ${item.n} <span class="text-[10px] text-slate-400 font-normal mr-1">(${item.y})</span></div>`;
+                    });
+                    ansHtml = `<div class="bg-slate-50 rounded-xl p-3 border border-slate-100 mt-2">${listHtml || '<span class="text-xs text-slate-400">خالی</span>'}</div>`;
+                } 
+                else if (ans.t === 'multi_record' && typeof ans.a === 'object' && ans.a.recs) {
+                    let recsHtml = '';
+                    ans.a.recs.forEach((rec, j) => {
+                        let fieldsHtml = '';
+                        ans.a.schema.forEach(sch => {
+                            fieldsHtml += `<div class="flex justify-between py-1 border-b border-slate-50 last:border-0"><span class="text-[10px] text-slate-400">${sch.label}</span><span class="text-xs font-bold text-slate-700">${rec[sch.id] || '-'}</span></div>`;
+                        });
+                        recsHtml += `<div class="bg-white border border-slate-200 rounded-xl p-3 mb-2 last:mb-0"><div class="text-[10px] font-black text-indigo-500 mb-2">مورد ${j+1}</div>${fieldsHtml}</div>`;
+                    });
+                    ansHtml = `<div class="bg-slate-50 rounded-xl p-2 border border-slate-100 mt-2">${recsHtml || '<span class="text-xs text-slate-400 p-2">خالی</span>'}</div>`;
+                }
+                else {
+                    ansHtml = `<p class="text-sm font-extrabold text-slate-800 mt-1.5 whitespace-pre-wrap">${ans.a}</p>`;
+                }
+
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-2xl shadow-sm border border-slate-100";
+                card.innerHTML = `
+                    <h4 class="text-[11px] font-bold text-slate-400 uppercase leading-relaxed">${ans.q}</h4>
+                    ${ansHtml}
+                `;
+                ansContainer.appendChild(card);
+            });
+
+            document.getElementById('listView').classList.add('hidden');
+            document.getElementById('detailView').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function backToList() {
+            document.getElementById('detailView').classList.add('hidden');
+            document.getElementById('listView').classList.remove('hidden');
+            currentFormId = null;
+        }
+
+        function openReturnModal() {
+            document.getElementById('returnReasonInput').value = '';
+            document.getElementById('returnModal').classList.remove('hidden');
+        }
+
+        function closeReturnModal() {
+            document.getElementById('returnModal').classList.add('hidden');
+        }
+
+        window.Bale.WebApp.ready();
+
+        function submitAction(actionType) {
+            let reason = "";
+            if (actionType === 'return') {
+                reason = document.getElementById('returnReasonInput').value.trim();
+                if (!reason) reason = "نیاز به بررسی و اصلاح مجدد";
+                closeReturnModal();
+            }
+
+            // حذف دستورات confirm که باعث فریز شدن بله می‌شدند
+            
+            // تغییر دکمه‌ها به حالت لودینگ
+            const btns = document.querySelectorAll('#detailView button');
+            btns.forEach(b => { b.classList.add('opacity-50', 'pointer-events-none'); });
+
+            if (actionType === 'approve') {
+                document.getElementById('btnApprove').innerHTML = '⏳ در حال تایید...';
+            } else if (actionType === 'sync_and_approve') {
+                document.getElementById('btnSyncApprove').innerHTML = '⏳ در حال همگام‌سازی...';
+            }
+
+            const payload = {
+                action: "submit_review_form",
+                sub_action: actionType,
+                r_id: currentFormId,
+                reason: reason
+            };
+
+            try {
+                window.Bale.WebApp.sendData(JSON.stringify(payload));
+                setTimeout(() => window.Bale.WebApp.close(), 150);
+            } catch (error) {
+                btns.forEach(b => { b.classList.remove('opacity-50', 'pointer-events-none'); });
+                if (actionType === 'approve') {
+                    document.getElementById('btnApprove').innerHTML = '✅ تایید نهایی';
+                } else if (actionType === 'sync_and_approve') {
+                    document.getElementById('btnSyncApprove').innerHTML = '📂 همگام‌سازی و تایید';
+                }
+            }
+        }
+
+        function closeApp() {
+            try { window.Bale.WebApp.close(); } catch (e) { console.log(e); }
+        }
+
+        init();
+    </script>
+</body>
+</html>
