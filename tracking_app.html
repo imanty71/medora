@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>رهگیری و مانیتورینگ جامع</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.0.0/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <script src="https://tapi.bale.ai/miniapp.js?3"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; -webkit-font-smoothing: antialiased; }
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        .slide-up { animation: slideUp 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50 flex flex-col h-screen selection:bg-indigo-100">
+
+    <!-- VIEW 1: جستجو (Input) -->
+    <div id="inputView" class="hidden flex flex-col h-full p-6 justify-center items-center space-y-8 fade-in">
+        <div class="text-center">
+            <div class="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 shadow-inner">🔍</div>
+            <h1 class="text-xl font-black text-slate-800 tracking-tight">استخراج گزارش جامع</h1>
+            <p class="text-xs text-slate-500 mt-2 font-medium">کد رهگیری ۴ رقمی سند یا فرم را وارد کنید</p>
+        </div>
+        
+        <input type="tel" id="codeInput" class="w-full max-w-xs p-4 text-center text-3xl font-black tracking-widest text-indigo-700 bg-white border-2 border-indigo-100 rounded-2xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition-all placeholder-slate-300" placeholder="----" maxlength="4">
+        
+        <button id="fetchBtn" onclick="fetchReport()" class="w-full max-w-xs bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-200/50 active:scale-95 transition-all text-sm">
+            استخراج گزارش شیشه‌ای
+        </button>
+    </div>
+
+    <!-- VIEW 2: گزارش (Report) -->
+    <div id="reportView" class="hidden flex flex-col h-full fade-in">
+        <div class="sticky top-0 z-20 bg-white/90 backdrop-blur-xl border-b border-slate-200/60 p-5 shadow-sm">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h1 class="text-sm font-black text-indigo-700 leading-relaxed pr-2" id="rTitle">عنوان</h1>
+                    <p class="text-[11px] text-slate-500 font-bold mt-1" id="rSubtitle">کد رهگیری: 0000</p>
+                </div>
+                <div id="rBadge" class="bg-indigo-50 text-indigo-600 text-[10px] font-black px-2.5 py-1 rounded-lg border border-indigo-100">فرم</div>
+            </div>
+            
+            <div class="flex mt-4 gap-2">
+                <button onclick="filterTabs('all')" id="tab_all" class="flex-1 py-2 text-[10px] font-bold rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-200 transition-all">همه دپارتمان‌ها</button>
+                <button onclick="filterTabs('done')" id="tab_done" class="flex-1 py-2 text-[10px] font-bold rounded-xl bg-slate-100 text-slate-500 transition-all">✅ تکمیل شده</button>
+                <button onclick="filterTabs('pending')" id="tab_pending" class="flex-1 py-2 text-[10px] font-bold rounded-xl bg-slate-100 text-slate-500 transition-all">⚠️ معوقه</button>
+            </div>
+        </div>
+        
+        <div class="flex-grow overflow-y-auto p-4 pb-32 space-y-3" id="groupsList"></div>
+        
+        <div class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg p-4 border-t border-slate-200/60 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)] flex gap-2 overflow-x-auto no-scrollbar pb-safe" id="actionButtons"></div>
+    </div>
+
+    <script>
+        let reportData = {};
+
+        function init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            try {
+                const compressedData = urlParams.get('d');
+                if (compressedData) {
+                    const binaryString = window.atob(compressedData.replace(/-/g, '+').replace(/_/g, '/'));
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+                    const decompressed = pako.inflate(bytes, { to: 'string' });
+                    reportData = JSON.parse(decompressed);
+                    
+                    document.getElementById('inputView').classList.add('hidden');
+                    document.getElementById('reportView').classList.remove('hidden');
+                    renderReport('all');
+                } else {
+                    document.getElementById('inputView').classList.remove('hidden');
+                    document.getElementById('reportView').classList.add('hidden');
+                }
+            } catch(e) {
+                alert("خطا در بارگذاری اطلاعات گزارش.");
+            }
+        }
+        
+        function fetchReport() {
+            const code = document.getElementById('codeInput').value.trim();
+            if(!code || code.length < 4 || isNaN(code)) { alert("لطفاً یک کد ۴ رقمی معتبر وارد کنید."); return; }
+            
+            const btn = document.getElementById('fetchBtn');
+            btn.innerHTML = '<span class="animate-spin inline-block">⏳</span> در حال استخراج...';
+            btn.classList.add('opacity-80', 'cursor-wait');
+            
+            window.Bale.WebApp.sendData(JSON.stringify({action: 'fetch_report', code: code}));
+            setTimeout(() => window.Bale.WebApp.close(), 150);
+        }
+        
+        function filterTabs(filter) {
+            ['all', 'done', 'pending'].forEach(t => {
+                document.getElementById('tab_'+t).className = "flex-1 py-2 text-[10px] font-bold rounded-xl bg-slate-100 text-slate-500 transition-all";
+            });
+            document.getElementById('tab_'+filter).className = "flex-1 py-2 text-[10px] font-bold rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-200 transition-all";
+            renderReport(filter);
+        }
+        
+        function renderReport(filter) {
+            document.getElementById('rTitle').innerText = reportData.ti;
+            document.getElementById('rSubtitle').innerText = `کد رهگیری: ${reportData.c}`;
+            document.getElementById('rBadge').innerText = reportData.ty === 'frm' ? 'فرم ارزیابی' : 'سند اداری';
+            
+            const container = document.getElementById('groupsList');
+            container.innerHTML = '';
+            
+            let filtered = reportData.dt;
+            if(filter === 'done') filtered = reportData.dt.filter(g => g.s === 1);
+            if(filter === 'pending') filtered = reportData.dt.filter(g => g.s <= 0);
+            
+            filtered.forEach((g, idx) => {
+                let icon = g.s === 1 ? '✅' : (g.s === 0 ? '⏳' : '❌');
+                let bg = g.s === 1 ? 'bg-emerald-50/50 border-emerald-100' : (g.s === 0 ? 'bg-amber-50/50 border-amber-100' : 'bg-rose-50/50 border-rose-100');
+                let textCol = g.s === 1 ? 'text-emerald-700' : (g.s === 0 ? 'text-amber-700' : 'text-rose-700');
+                
+                let viewBtn = '';
+                if(reportData.ty === 'frm' && g.s === 1) {
+                    viewBtn = `<button onclick="sendAction('view_group', '${g.g}')" class="mt-2.5 text-[10px] bg-white border border-slate-200 px-3 py-1.5 rounded-lg font-bold text-indigo-600 hover:bg-indigo-50 active:scale-95 transition-all flex items-center gap-1"><span>👁</span> مشاهده پاسخ کارشناس</button>`;
+                }
+                
+                const delay = idx * 0.05;
+                
+                container.innerHTML += `
+                    <div class="${bg} p-4 rounded-2xl shadow-[0_2px_10px_rgb(0,0,0,0.02)] border slide-up" style="animation-delay: ${delay}s">
+                        <div class="flex gap-3">
+                            <div class="text-xl mt-0.5">${icon}</div>
+                            <div>
+                                <h3 class="text-xs font-black text-slate-800">${g.g}</h3>
+                                <p class="text-[10px] font-bold ${textCol} mt-1.5 leading-relaxed">${g.t}</p>
+                                ${viewBtn}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            if(filtered.length === 0) {
+                container.innerHTML = `<div class="text-center p-8 text-slate-400 font-bold text-xs bg-white rounded-2xl border border-slate-100 mt-4">هیچ دپارتمانی در این وضعیت یافت نشد.</div>`;
+            }
+            
+            // دکمه‌های عملیاتی پایین صفحه
+            const btnContainer = document.getElementById('actionButtons');
+            btnContainer.innerHTML = '';
+            
+            if(reportData.ty === 'frm') {
+                btnContainer.innerHTML += `<button onclick="sendAction('excel')" class="flex-1 min-w-[120px] bg-emerald-100 text-emerald-700 px-4 py-3.5 rounded-xl text-[11px] font-black active:scale-95 transition-all flex justify-center items-center gap-1.5"><span>📊</span> خروجی اکسل</button>`;
+                btnContainer.innerHTML += `<button onclick="sendAction('view_all')" class="flex-1 min-w-[120px] bg-indigo-100 text-indigo-700 px-4 py-3.5 rounded-xl text-[11px] font-black active:scale-95 transition-all flex justify-center items-center gap-1.5"><span>📋</span> پاسخ کل کاربران</button>`;
+            }
+            
+            if(reportData.pc > 0 && reportData.had) {
+                btnContainer.innerHTML += `<button onclick="sendAction('remind')" class="flex-1 min-w-[120px] bg-amber-100 text-amber-700 px-4 py-3.5 rounded-xl text-[11px] font-black active:scale-95 transition-all flex justify-center items-center gap-1.5"><span>🔔</span> ارسال اخطار دستی</button>`;
+            }
+            
+            if(reportData.admin === 1) {
+                btnContainer.innerHTML += `<button onclick="sendAction('remove')" class="flex-1 min-w-[120px] bg-rose-100 text-rose-700 px-4 py-3.5 rounded-xl text-[11px] font-black active:scale-95 transition-all flex justify-center items-center gap-1.5"><span>❌</span> خروج از پایش</button>`;
+            }
+        }
+        
+        window.Bale.WebApp.ready();
+        
+        function sendAction(sub, grp='') {
+            window.Bale.WebApp.sendData(JSON.stringify({action: 'report_action', sub: sub, id: reportData.id, grp: grp}));
+            setTimeout(() => window.Bale.WebApp.close(), 150);
+        }
+
+        init();
+    </script>
+</body>
+</html>
