@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>تالار رخدادهای زنده دانشکده</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.0.0/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <script src="https://tapi.bale.ai/miniapp.js?3"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; -webkit-font-smoothing: antialiased; }
+        .fade-in { animation: fadeIn 0.25s ease-out forwards; }
+        .slide-up { animation: slideUp 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50 flex flex-col h-screen selection:bg-indigo-100">
+
+    <!-- HEADER & FILTERS -->
+    <div class="sticky top-0 z-20 bg-white/95 backdrop-blur-xl border-b border-slate-200/80 p-4 shadow-sm space-y-3">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg font-black border border-indigo-100 shadow-inner">⏱</div>
+                <div>
+                    <h1 class="text-xs font-black text-slate-800">تالار رخدادهای زنده دانشکده</h1>
+                    <p class="text-[9px] text-slate-400 font-bold mt-0.5">پایش اقدامات و جابه‌جایی اسناد در ۴۸ ساعت گذشته</p>
+                </div>
+            </div>
+            <span class="text-[10px] font-black text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-xl border border-indigo-100" id="eventsCountBadge">0 رویداد</span>
+        </div>
+
+        <!-- نوار جستجو و فیلتر دپارتمان -->
+        <div class="grid grid-cols-5 gap-2">
+            <div class="col-span-3 relative">
+                <span class="absolute inset-y-0 right-3 flex items-center text-slate-400 text-xs">🔍</span>
+                <input type="text" id="feedSearchInput" onkeyup="filterFeed()" class="w-full bg-slate-100 border-none rounded-xl py-2 pr-8 pl-2.5 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-indigo-400 focus:bg-white outline-none transition-all placeholder-slate-400" placeholder="جستجوی اقدام یا کارشناس...">
+            </div>
+            <div class="col-span-2">
+                <select id="groupFilterSelect" onchange="filterFeed()" class="w-full bg-slate-100 border-none rounded-xl py-2 px-2 text-[11px] font-bold text-slate-700 focus:ring-2 focus:ring-indigo-400 focus:bg-white outline-none cursor-pointer appearance-none truncate">
+                    <option value="all">🌐 همه دپارتمان‌ها</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- فیلترهای سریع موضوعی -->
+        <div class="flex overflow-x-auto no-scrollbar gap-1.5 pt-0.5">
+            <button onclick="setCategoryFilter('all', this)" class="cat-chip flex-shrink-0 px-3 py-1 text-[10px] font-black rounded-lg bg-indigo-600 text-white shadow-sm transition-all">همه</button>
+            <button onclick="setCategoryFilter('download', this)" class="cat-chip flex-shrink-0 px-3 py-1 text-[10px] font-bold rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition-all">📥 دریافت و رویت</button>
+            <button onclick="setCategoryFilter('form', this)" class="cat-chip flex-shrink-0 px-3 py-1 text-[10px] font-bold rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition-all">📋 فرم‌ها</button>
+            <button onclick="setCategoryFilter('deadline', this)" class="cat-chip flex-shrink-0 px-3 py-1 text-[10px] font-bold rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition-all">⏳ مهلت و تمدید</button>
+        </div>
+    </div>
+
+    <!-- FEED CONTAINER -->
+    <div class="flex-grow overflow-y-auto p-4 pb-28 space-y-2.5" id="feedContainer">
+        <!-- کارت‌های رخداد -->
+    </div>
+
+    <!-- FOOTER -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md p-3.5 border-t border-slate-200/80 shadow-lg z-20">
+        <button onclick="closeApp()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-black p-3 rounded-2xl text-xs transition-all active:scale-[0.98] border border-slate-200 flex justify-center items-center gap-2">
+            🔙 بستن تالار و بازگشت
+        </button>
+    </div>
+
+    <script>
+        let feedData = { feed: [], groups: [] };
+        let activeCategory = 'all';
+
+        function init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            try {
+                const compressedData = urlParams.get('d');
+                if (compressedData) {
+                    const binaryString = window.atob(compressedData.replace(/-/g, '+').replace(/_/g, '/'));
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+                    const decompressed = pako.inflate(bytes, { to: 'string' });
+                    feedData = JSON.parse(decompressed);
+
+                    // لود گروه‌ها در سلکت‌باکس
+                    const groupSelect = document.getElementById('groupFilterSelect');
+                    (feedData.groups || []).forEach(g => {
+                        const opt = document.createElement('option');
+                        opt.value = g;
+                        opt.innerText = `📁 گروه ${g}`;
+                        groupSelect.appendChild(opt);
+                    });
+
+                    renderFeed();
+                } else {
+                    alert("خطا: اطلاعات تالار رخدادها دریافت نشد.");
+                }
+            } catch(e) {
+                console.error(e);
+                alert("خطا در بازخوانی اطلاعات تالار رخدادها.");
+            }
+        }
+
+        function setCategoryFilter(cat, btn) {
+            activeCategory = cat;
+            document.querySelectorAll('.cat-chip').forEach(c => {
+                c.className = "cat-chip flex-shrink-0 px-3 py-1 text-[10px] font-bold rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition-all";
+            });
+            btn.className = "cat-chip flex-shrink-0 px-3 py-1 text-[10px] font-black rounded-lg bg-indigo-600 text-white shadow-sm transition-all";
+            filterFeed();
+        }
+
+        function filterFeed() {
+            const query = document.getElementById('feedSearchInput').value.trim().toLowerCase();
+            const group = document.getElementById('groupFilterSelect').value;
+            renderFeed(query, group);
+        }
+
+        function renderFeed(search = "", groupFilter = "all") {
+            const container = document.getElementById('feedContainer');
+            container.innerHTML = '';
+            
+            const list = feedData.feed || [];
+            let filtered = list.filter(item => {
+                const matchesSearch = !search || item.action.toLowerCase().includes(search) || item.user.toLowerCase().includes(search);
+                const matchesGroup = groupFilter === 'all' || item.group.includes(groupFilter);
+                
+                let matchesCategory = true;
+                if (activeCategory === 'download') {
+                    matchesCategory = item.action.includes('دریافت') || item.action.includes('مشاهده') || item.action.includes('دانلود');
+                } else if (activeCategory === 'form') {
+                    matchesCategory = item.action.includes('فرم') || item.action.includes('تکمیل');
+                } else if (activeCategory === 'deadline') {
+                    matchesCategory = item.action.includes('مهلت') || item.action.includes('تمدید') || item.action.includes('انقضا');
+                }
+
+                return matchesSearch && matchesGroup && matchesCategory;
+            });
+
+            document.getElementById('eventsCountBadge').innerText = `${filtered.length} رویداد`;
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 px-4 bg-white rounded-3xl border border-slate-200/80 shadow-sm mt-2">
+                        <div class="text-3xl mb-2">📭</div>
+                        <p class="text-xs font-bold text-slate-500">در این بازه یا فیلتر انتخابی، رخدادی ثبت نشده است.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filtered.forEach((item, idx) => {
+                // تعیین آیکون و رنگ نشانگر بر اساس جنس رویداد
+                let icon = '🔹';
+                let tagColor = 'bg-slate-100 text-slate-600 border-slate-200';
+                
+                if (item.action.includes('تکمیل') || item.action.includes('ثبت شد')) {
+                    icon = '✅'; tagColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                } else if (item.action.includes('دریافت') || item.action.includes('مشاهده')) {
+                    icon = '📥'; tagColor = 'bg-blue-50 text-blue-700 border-blue-200';
+                } else if (item.action.includes('مهلت') || item.action.includes('انقضا')) {
+                    icon = '⏳'; tagColor = 'bg-rose-50 text-rose-700 border-rose-200';
+                } else if (item.action.includes('تمدید')) {
+                    icon = '🔄'; tagColor = 'bg-amber-50 text-amber-700 border-amber-200';
+                } else if (item.action.includes('کانال') || item.action.includes('سند')) {
+                    icon = '📢'; tagColor = 'bg-purple-50 text-purple-700 border-purple-200';
+                }
+
+                const delay = Math.min(idx * 0.03, 0.5);
+                const card = document.createElement('div');
+                card.className = "bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-sm space-y-2 slide-up";
+                card.style.animationDelay = `${delay}s`;
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="text-sm">${icon}</span>
+                            <p class="text-xs font-black text-slate-800 truncate">${item.user}</p>
+                            <span class="text-[9px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100 truncate">${item.group}</span>
+                        </div>
+                        <span class="text-[9px] font-bold text-indigo-600 whitespace-nowrap">${item.rel}</span>
+                    </div>
+
+                    <p class="text-xs font-bold text-slate-700 leading-relaxed pr-6">${item.action}</p>
+
+                    <div class="flex justify-end pt-1 border-t border-slate-50 text-[9px] font-bold text-slate-400">
+                        <span>تاریخ: ${item.time}</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function closeApp() {
+            try { window.Bale.WebApp.close(); } catch(e) {}
+        }
+
+        window.Bale.WebApp.ready();
+        init();
+    </script>
+</body>
+</html>
