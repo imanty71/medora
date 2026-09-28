@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>مدیریت گروه‌ها</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.0.0/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <script src="https://tapi.bale.ai/miniapp.js?3"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; -webkit-font-smoothing: antialiased; }
+        .fade-in { animation: fadeIn 0.2s ease-out forwards; }
+        .slide-up { animation: slideUp 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 flex flex-col h-screen selection:bg-indigo-100">
+
+    <!-- VIEW 1: Main List -->
+    <div id="mainView" class="flex flex-col h-full fade-in">
+        <div class="sticky top-0 z-20 bg-white/90 backdrop-blur-xl border-b border-slate-200/60 p-4 shadow-sm space-y-3">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-sm font-extrabold text-indigo-700">📚 پورتال مدیریت گروه‌ها</h1>
+                    <p class="text-[10px] text-slate-500 mt-0.5">افزودن، ویرایش و حذف دپارتمان‌ها</p>
+                </div>
+                <button onclick="openGroupModal(null)" class="bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-2 rounded-xl active:scale-95 transition-transform flex items-center gap-1">
+                    ➕ گروه جدید
+                </button>
+            </div>
+            
+            <div class="relative">
+                <span class="absolute inset-y-0 right-3 flex items-center text-slate-400">🔍</span>
+                <input type="text" id="searchInput" onkeyup="renderGroups()" class="w-full bg-slate-100 border-none rounded-xl py-2 pr-9 pl-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all placeholder-slate-400" placeholder="جستجوی نام گروه...">
+            </div>
+        </div>
+
+        <div class="flex-grow overflow-y-auto p-4 pb-32">
+            <div id="groupsList" class="space-y-3"></div>
+        </div>
+
+        <div class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg p-4 border-t border-slate-200/60 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)]">
+            <button onclick="showPreview()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-4 rounded-2xl text-sm shadow-lg shadow-indigo-200/50 transition-all active:scale-[0.98] flex justify-between items-center">
+                <span>👁️ پیش‌نمایش تغییرات</span>
+                <span id="changesCount" class="bg-white/20 px-2.5 py-0.5 rounded-lg text-xs">بدون تغییر</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- VIEW 2: Preview -->
+    <div id="previewView" class="hidden flex flex-col h-full bg-slate-100 fade-in">
+        <div class="flex-grow overflow-y-auto p-5 space-y-4 pb-32">
+            <div class="text-center mb-6 mt-4">
+                <div class="w-16 h-16 bg-indigo-100 text-indigo-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-3">📋</div>
+                <h2 class="text-lg font-extrabold text-slate-800">تایید نهایی تغییرات</h2>
+            </div>
+            <div id="previewList" class="space-y-3"></div>
+        </div>
+
+        <div class="fixed bottom-0 left-0 right-0 bg-white p-4 border-t border-slate-200 shadow-lg flex gap-3">
+            <button onclick="hidePreview()" class="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold p-4 rounded-2xl text-sm active:scale-[0.98]">بازگشت</button>
+            <button id="submitBtn" onclick="submitData()" class="w-2/3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold p-4 rounded-2xl text-sm shadow-lg shadow-teal-200/50 active:scale-[0.98]">📤 اعمال در سرور</button>
+        </div>
+    </div>
+
+    <!-- MODAL -->
+    <div id="groupModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 fade-in">
+        <div class="bg-white rounded-3xl w-full max-w-sm p-5 shadow-2xl">
+            <h3 id="modalTitle" class="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2"><span id="modalIcon">✏️</span> <span id="modalTitleText">ویرایش گروه</span></h3>
+            
+            <input type="hidden" id="m_original_name">
+            <input type="hidden" id="m_is_new">
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1 ml-1">نام گروه آموزشی</label>
+                    <input type="text" id="m_name" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-indigo-400 outline-none" placeholder="مثلاً: جراحی عمومی">
+                </div>
+            </div>
+            
+            <div class="mt-6 flex gap-3">
+                <button onclick="closeModal()" class="w-1/3 bg-slate-100 text-slate-600 font-bold p-3 rounded-xl text-sm active:scale-95">انصراف</button>
+                <button onclick="saveModal()" class="w-2/3 bg-indigo-600 text-white font-bold p-3 rounded-xl text-sm active:scale-95">💾 ذخیره موقت</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let db_groups = []; // گروه‌های اصلی از سرور
+        let new_groups = []; // استرینگ نام‌های جدید
+        let edited_groups = {}; // key: old_name, value: new_name
+        let deleted_groups = []; // استرینگ نام‌های حذف شده
+
+        function showAlert(msg, type = 'error') {
+            const existing = document.getElementById('customAlert');
+            if(existing) existing.remove();
+            const bgClass = type === 'error' ? 'bg-rose-600' : 'bg-emerald-600';
+            const alertBox = document.createElement('div');
+            alertBox.id = 'customAlert';
+            alertBox.className = `fixed top-6 left-1/2 -translate-x-1/2 ${bgClass} text-white px-5 py-3 rounded-2xl shadow-2xl z-[100] text-sm font-bold text-center w-11/12 max-w-sm slide-up`;
+            alertBox.innerText = msg;
+            document.body.appendChild(alertBox);
+            setTimeout(() => { if(document.getElementById('customAlert')) document.getElementById('customAlert').remove(); }, 3000);
+        }
+
+        function init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            try {
+                const compressedData = urlParams.get('d');
+                if (compressedData) {
+                    const binaryString = window.atob(compressedData.replace(/-/g, '+').replace(/_/g, '/'));
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+                    const decompressed = pako.inflate(bytes, { to: 'string' });
+                    const data = JSON.parse(decompressed);
+                    db_groups = data.g || [];
+                }
+                renderGroups();
+            } catch(e) { showAlert("خطا در بارگذاری اطلاعات از سرور."); }
+        }
+
+        function renderGroups() {
+            const filter = document.getElementById('searchInput').value.toLowerCase();
+            const container = document.getElementById('groupsList');
+            container.innerHTML = '';
+            
+            // رندر گروه‌های جدید
+            new_groups.forEach(g => {
+                if (filter && !g.toLowerCase().includes(filter)) return;
+                container.innerHTML += createCard(g, g, 'new');
+            });
+
+            // رندر گروه‌های دیتابیس
+            db_groups.forEach(old_g => {
+                if (deleted_groups.includes(old_g)) return; // اگر حذف شده نشان نده
+                
+                const currentName = edited_groups[old_g] || old_g;
+                if (filter && !currentName.toLowerCase().includes(filter)) return;
+                
+                const state = edited_groups[old_g] ? 'edited' : 'normal';
+                container.innerHTML += createCard(old_g, currentName, state);
+            });
+
+            updateChangesCount();
+        }
+
+        function createCard(originalName, currentName, state) {
+            let badge = '';
+            let bg = 'bg-white';
+            if (state === 'new') { badge = '<span class="bg-emerald-100 text-emerald-600 text-[9px] px-2 py-0.5 rounded-md">جدید</span>'; bg = 'bg-emerald-50/30 border-emerald-100'; }
+            else if (state === 'edited') { badge = '<span class="bg-amber-100 text-amber-600 text-[9px] px-2 py-0.5 rounded-md">ویرایش شده</span>'; bg = 'bg-amber-50/30 border-amber-100'; }
+
+            return `
+                <div class="${bg} p-3.5 rounded-2xl shadow-sm border border-slate-100 slide-up flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center text-lg">📁</div>
+                        <div>
+                            <p class="text-sm font-extrabold text-slate-800">${currentName} ${badge}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="openGroupModal('${originalName}', '${state === 'new'}')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs hover:bg-slate-200">✏️</button>
+                        <button onclick="deleteGroup('${originalName}', '${state === 'new'}')" class="w-8 h-8 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center text-xs hover:bg-rose-100">🗑</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function openGroupModal(originalName, isNew) {
+            isNew = isNew === 'true';
+            document.getElementById('m_original_name').value = originalName || '';
+            document.getElementById('m_is_new').value = isNew;
+            
+            if (originalName) {
+                document.getElementById('modalTitleText').innerText = 'ویرایش گروه';
+                document.getElementById('modalIcon').innerText = '✏️';
+                document.getElementById('m_name').value = isNew ? originalName : (edited_groups[originalName] || originalName);
+            } else {
+                document.getElementById('modalTitleText').innerText = 'افزودن گروه جدید';
+                document.getElementById('modalIcon').innerText = '➕';
+                document.getElementById('m_name').value = '';
+            }
+
+            document.getElementById('groupModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('groupModal').classList.add('hidden');
+        }
+
+        function saveModal() {
+            const originalName = document.getElementById('m_original_name').value;
+            const isNew = document.getElementById('m_is_new').value === 'true';
+            const newName = document.getElementById('m_name').value.trim();
+            
+            if (!newName) { showAlert("نام گروه الزامی است."); return; }
+
+            // بررسی تکراری بودن نام در همه جا
+            if (db_groups.includes(newName) && newName !== originalName) { showAlert("این گروه قبلاً در سیستم ثبت شده است."); return; }
+            if (new_groups.includes(newName) && newName !== originalName) { showAlert("این گروه در لیست جدیدها موجود است."); return; }
+            if (Object.values(edited_groups).includes(newName) && newName !== originalName) { showAlert("این نام برای گروه دیگری رزرو شده است."); return; }
+
+            if (!originalName) {
+                // ساخت جدید
+                new_groups.push(newName);
+            } else if (isNew) {
+                // ویرایش گروهی که تازه ساخته شده
+                const idx = new_groups.indexOf(originalName);
+                if (idx > -1) new_groups[idx] = newName;
+            } else {
+                // ویرایش گروه قدیمی دیتابیس
+                if (newName === originalName) {
+                    delete edited_groups[originalName]; // اگر به نام اولش برگشت، از ادیت حذفش کن
+                } else {
+                    edited_groups[originalName] = newName;
+                }
+            }
+
+            closeModal();
+            renderGroups();
+            showAlert("✅ تغییرات موقتاً ذخیره شد.", "success");
+        }
+
+        function deleteGroup(originalName, isNew) {
+            isNew = isNew === 'true';
+            if (confirm(`آیا از حذف گروه «${originalName}» مطمئن هستید؟ (تمام دستیاران این گروه نیز حذف خواهند شد)`)) {
+                if (isNew) {
+                    new_groups = new_groups.filter(g => g !== originalName);
+                } else {
+                    deleted_groups.push(originalName);
+                    if (edited_groups[originalName]) delete edited_groups[originalName];
+                }
+                renderGroups();
+                showAlert("🗑 گروه حذف شد.", "success");
+            }
+        }
+
+        function updateChangesCount() {
+            const total = new_groups.length + Object.keys(edited_groups).length + deleted_groups.length;
+            const badge = document.getElementById('changesCount');
+            if (total > 0) {
+                badge.innerText = `${total} تغییر ذخیره نشده`;
+                badge.className = "bg-rose-500 text-white px-2.5 py-0.5 rounded-lg text-xs font-bold animate-pulse";
+            } else {
+                badge.innerText = `بدون تغییر`;
+                badge.className = "bg-white/20 px-2.5 py-0.5 rounded-lg text-xs";
+            }
+        }
+
+        function showPreview() {
+            const total = new_groups.length + Object.keys(edited_groups).length + deleted_groups.length;
+            if (total === 0) { showAlert("تغییری برای اعمال وجود ندارد."); return; }
+
+            document.getElementById('mainView').classList.add('hidden');
+            document.getElementById('previewView').classList.remove('hidden');
+
+            const container = document.getElementById('previewList');
+            container.innerHTML = '';
+
+            new_groups.forEach(g => {
+                container.innerHTML += `
+                    <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-xl slide-up">
+                        <p class="text-xs font-bold text-emerald-700">➕ افزوده می‌شود:</p>
+                        <p class="text-sm font-extrabold mt-1 text-slate-800">${g}</p>
+                    </div>
+                `;
+            });
+
+            Object.entries(edited_groups).forEach(([oldG, newG]) => {
+                container.innerHTML += `
+                    <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl slide-up">
+                        <p class="text-xs font-bold text-amber-700">✏️ تغییر نام می‌یابد:</p>
+                        <p class="text-sm font-extrabold mt-1 text-slate-800">${oldG} ➔ ${newG}</p>
+                    </div>
+                `;
+            });
+
+            deleted_groups.forEach(g => {
+                container.innerHTML += `
+                    <div class="bg-rose-50 border border-rose-200 p-3 rounded-xl slide-up">
+                        <p class="text-xs font-bold text-rose-700">🗑 حذف می‌شود (همراه با دستیاران):</p>
+                        <p class="text-sm font-extrabold mt-1 text-slate-800">${g}</p>
+                    </div>
+                `;
+            });
+        }
+
+        function hidePreview() {
+            document.getElementById('previewView').classList.add('hidden');
+            document.getElementById('mainView').classList.remove('hidden');
+        }
+
+        window.Bale.WebApp.ready();
+
+        function submitData() {
+            const btn = document.getElementById('submitBtn');
+            btn.innerHTML = '⏳ در حال ارسال...';
+            btn.classList.add('opacity-90', 'cursor-wait');
+
+            // تبدیل آبجکت ادیت شده‌ها به آرایه برای پایتون
+            const editedArr = Object.entries(edited_groups).map(([oldG, newG]) => ({ old: oldG, new: newG }));
+
+            const payload = {
+                action: "submit_manage_groups",
+                new_groups: new_groups,
+                edited_groups: editedArr,
+                deleted_groups: deleted_groups
+            };
+
+            try {
+                window.Bale.WebApp.sendData(JSON.stringify(payload));
+                setTimeout(() => window.Bale.WebApp.close(), 150);
+            } catch (error) {
+                showAlert("خطا در ارتباط با سرور.");
+                btn.innerHTML = '📤 اعمال در سرور';
+                btn.classList.remove('opacity-90', 'cursor-wait');
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
