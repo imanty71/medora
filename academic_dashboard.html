@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>پورتال پایش تحصیلی و نمرات دستیاران</title>
+    
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.0.0/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <script src="https://tapi.bale.ai/miniapp.js?3"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; -webkit-font-smoothing: antialiased; }
+        .fade-in { animation: fadeIn 0.25s ease-out forwards; }
+        .slide-up { animation: slideUp 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* افکت نئونی و نورانی نمودار تحصیلی */
+        .chart-glow {
+            filter: drop-shadow(0px 8px 16px rgba(79, 70, 229, 0.35));
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 flex flex-col h-screen selection:bg-indigo-500">
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: لیست دستیاران و فیلترها -->
+    <!-- ========================================== -->
+    <div id="listView" class="flex flex-col h-full fade-in">
+        <div class="sticky top-0 z-20 bg-slate-900/90 backdrop-blur-xl border-b border-slate-800 p-4 space-y-3 shadow-lg">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xl font-black border border-indigo-500/30 shadow-inner">🎓</div>
+                    <div>
+                        <h1 class="text-xs font-black text-slate-100" id="headerTitle">پایش تحصیلی و نمرات دستیاران</h1>
+                        <p class="text-[10px] text-slate-400 font-bold mt-0.5" id="headerSubtitle">آزمون‌های ارتقا، نمرات درون‌بخشی و تحلیل روند</p>
+                    </div>
+                </div>
+                <span class="text-[10px] font-black text-indigo-400 bg-indigo-950/80 px-2.5 py-1 rounded-xl border border-indigo-800" id="totalCountBadge">0 نفر</span>
+            </div>
+
+            <!-- نوار جستجو و فیلترهای دوگانه -->
+            <div class="space-y-2">
+                <div class="relative">
+                    <span class="absolute inset-y-0 right-3 flex items-center text-slate-500 text-xs">🔍</span>
+                    <input type="text" id="searchInput" onkeyup="renderResidentCards()" class="w-full bg-slate-800/80 border border-slate-700/80 rounded-xl py-2.5 pr-8 pl-3 text-xs font-bold text-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none placeholder-slate-500" placeholder="جستجوی نام دستیار...">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <select id="groupFilter" onchange="renderResidentCards()" class="bg-slate-800/80 border border-slate-700/80 rounded-xl p-2 text-[11px] font-bold text-indigo-300 outline-none cursor-pointer">
+                        <option value="all">🌐 تمام دپارتمان‌ها</option>
+                    </select>
+                    <select id="yearFilter" onchange="renderResidentCards()" class="bg-slate-800/80 border border-slate-700/80 rounded-xl p-2 text-[11px] font-bold text-indigo-300 outline-none cursor-pointer">
+                        <option value="all">🎓 همه سال‌ها (R1-R5)</option>
+                        <option value="سال ۱">سال ۱ (R1)</option>
+                        <option value="سال ۲">سال ۲ (R2)</option>
+                        <option value="سال ۳">سال ۳ (R3)</option>
+                        <option value="سال ۴">سال ۴ (R4)</option>
+                        <option value="سال ۵">سال ۵ (R5)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-grow overflow-y-auto p-4 pb-28 space-y-2.5" id="residentsContainer">
+            <!-- کارت‌های دستیاران -->
+        </div>
+
+        <div class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md p-3.5 border-t border-slate-800 shadow-2xl z-20">
+            <button onclick="closeApp()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-black p-3.5 rounded-2xl text-xs transition-all active:scale-[0.98] border border-slate-700 flex justify-center items-center gap-2">
+                🔙 بازگشت به ربات
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: کارنامه ۳۶۰ درجه و نمودار متحرک دستیار -->
+    <!-- ========================================== -->
+    <div id="detailView" class="hidden flex flex-col h-full bg-slate-900 fade-in">
+        <div class="sticky top-0 z-20 bg-slate-900/90 backdrop-blur-xl border-b border-slate-800 p-4 flex items-center justify-between shadow-lg">
+            <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center text-lg font-black shadow-md">👨‍⚕️</div>
+                <div>
+                    <h2 class="text-xs font-black text-slate-100" id="detName">دکتر ...</h2>
+                    <p class="text-[10px] font-bold text-indigo-400 mt-0.5" id="detDept">دپارتمان</p>
+                </div>
+            </div>
+            <button onclick="backToList()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-2 rounded-xl transition-all border border-slate-700 active:scale-95">
+                🔙 بازگشت
+            </button>
+        </div>
+
+        <div class="flex-grow overflow-y-auto p-4 pb-32 space-y-4">
+            <!-- کارت شاخص کلی و مدال وضعیت -->
+            <div class="bg-gradient-to-r from-slate-800 to-slate-800/80 p-4 rounded-3xl border border-slate-700/80 space-y-3 shadow-lg">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400">وضعیت تحصیلی جاری:</p>
+                        <p class="text-sm font-black text-emerald-400 mt-0.5 flex items-center gap-1.5" id="detStatus">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> در حال تحصیل (فعال)
+                        </p>
+                    </div>
+                    <div class="text-left">
+                        <span class="text-[10px] font-black text-purple-300 bg-purple-500/15 border border-purple-500/30 px-3 py-1.5 rounded-xl" id="detYear">سال ۱</span>
+                    </div>
+                </div>
+                
+                <div class="flex justify-between items-center pt-2.5 border-t border-slate-700/60 text-[10px] font-bold">
+                    <span class="text-slate-400">روند عملکردی:</span>
+                    <span id="detTrendBadge" class="text-emerald-400 font-black">🟢 صعودی (+۱۲ نمره)</span>
+                </div>
+            </div>
+
+            <!-- نمودار تحلیلی زنده با انیمیشن لوپ -->
+            <div class="bg-slate-800/70 p-4 rounded-3xl border border-slate-700/70 space-y-3 shadow-lg">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xs font-black text-slate-200 flex items-center gap-1.5">
+                        <span class="text-indigo-400">📈</span> نمودار رشد تحصیلی (چند ساله)
+                    </h3>
+                    <div class="flex items-center gap-1 text-[9px] text-slate-400">
+                        <span class="w-2 h-2 rounded-full bg-indigo-500"></span> ارتقا
+                        <span class="w-2 h-2 rounded-full bg-purple-400 mr-2"></span> درون‌بخشی
+                    </div>
+                </div>
+
+                <div class="relative h-48 w-full chart-glow">
+                    <canvas id="trendChart"></canvas>
+                </div>
+                
+                <p class="text-[9px] text-slate-400 text-center font-bold">
+                    ✨ نمودار دارای انیمیشن پویا و پیوسته است و روند تغییرات نمرات را شبیه‌سازی می‌کند.
+                </p>
+            </div>
+
+            <!-- کارنامه ریزنمرات سالانه -->
+            <div class="space-y-2.5">
+                <div class="flex justify-between items-center px-1">
+                    <h3 class="text-xs font-black text-slate-300 flex items-center gap-1.5">
+                        <span>📑</span> ریزنمرات سالانه و آزمون‌های ارتقا
+                    </h3>
+                    <button onclick="openGradeModal()" class="text-[10px] font-black bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-xl transition-all active:scale-95 shadow-md shadow-indigo-600/20 flex items-center gap-1">
+                        ➕ ثبت / ویرایش نمره
+                    </button>
+                </div>
+
+                <div id="gradesTableContainer" class="space-y-2">
+                    <!-- کارت‌های نمرات دوره‌ای -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL: ثبت نمره ارتقا و درون‌بخشی دستیار -->
+    <!-- ========================================== -->
+    <div id="gradeModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 fade-in">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-sm p-5 shadow-2xl slide-up space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-xs font-black text-indigo-400 flex items-center gap-1.5">
+                    <span>✏️</span> ثبت نمره و ارزیابی دستیار
+                </h3>
+                <button onclick="closeGradeModal()" class="text-slate-400 hover:text-white text-sm">✕</button>
+            </div>
+
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">دوره تحصیلی (سال آزمون):</label>
+                    <select id="modalYear" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-200 outline-none">
+                        <option value="سال ۱">سال ۱ (R1)</option>
+                        <option value="سال ۲">سال ۲ (R2)</option>
+                        <option value="سال ۳">سال ۳ (R3)</option>
+                        <option value="سال ۴">سال ۴ (R4)</option>
+                        <option value="سال ۵">سال ۵ (R5)</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 mb-1">نمره درون‌بخشی (از ۱۵۰):</label>
+                        <input type="number" id="modalInternal" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs font-black text-slate-100 outline-none focus:border-indigo-500" placeholder="مثلاً: 135">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 mb-1">آزمون ارتقا (از ۱۵۰):</label>
+                        <input type="number" id="modalPromotion" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs font-black text-slate-100 outline-none focus:border-indigo-500" placeholder="مثلاً: 120">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">نتیجه ارتقا:</label>
+                    <select id="modalResult" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-200 outline-none">
+                        <option value="قبول">✅ قبول قطعی</option>
+                        <option value="مشروط">🟡 مشروط</option>
+                        <option value="مردود">🔴 مردود / تجدید دوره</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">وضعیت کلی دستیار:</label>
+                    <select id="modalAcademicStatus" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-200 outline-none">
+                        <option value="فعال">🟢 فعال و شاغل به تحصیل</option>
+                        <option value="مرخصی">🟡 مرخصی تحصیلی</option>
+                        <option value="فارغ‌التحصیل">🎓 فارغ‌التحصیل شده</option>
+                        <option value="انصرافی">⚪️ انصراف / انتقال</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex gap-2 pt-2">
+                <button onclick="closeGradeModal()" class="w-1/3 bg-slate-800 text-slate-400 py-2.5 rounded-xl text-xs font-bold active:scale-95">انصراف</button>
+                <button onclick="saveGradeLocally()" class="w-2/3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-2.5 rounded-xl text-xs font-black active:scale-95 shadow-lg shadow-indigo-600/30">💾 ذخیره و ثبت نهایی</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let dashboardPayload = { residents: [], groups: [], is_admin: 1, local_group: "" };
+        let activeResidentIndex = null;
+        let chartInstance = null;
+        let animationTimer = null;
+
+        function init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            try {
+                const compressedData = urlParams.get('d');
+                if (compressedData) {
+                    const binaryString = window.atob(compressedData.replace(/-/g, '+').replace(/_/g, '/'));
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+                    const decompressed = pako.inflate(bytes, { to: 'string' });
+                    dashboardPayload = JSON.parse(decompressed);
+
+                    // مقداردهی اولیه سلکتور گروه‌ها
+                    const grpSelect = document.getElementById('groupFilter');
+                    (dashboardPayload.groups || []).forEach(g => {
+                        const opt = document.createElement('option');
+                        opt.value = g;
+                        opt.innerText = `📁 گروه ${g}`;
+                        grpSelect.appendChild(opt);
+                    });
+
+                    // اگر کارشناس گروه بود، قفل کردن به دپارتمان خود شخص
+                    if (dashboardPayload.local_group) {
+                        grpSelect.value = dashboardPayload.local_group;
+                        grpSelect.disabled = true;
+                        document.getElementById('headerSubtitle').innerText = `پایش تحصیلی اختصاصی دپارتمان ${dashboardPayload.local_group}`;
+                    }
+
+                    renderResidentCards();
+                } else {
+                    alert("خطا: دیتای کارنامه تحصیلی دریافت نشد.");
+                }
+            } catch(e) {
+                console.error(e);
+                alert("خطا در پردازش اطلاعات تحصیلی.");
+            }
+        }
+
+        function calculateTrend(grades) {
+            if (!grades || grades.length === 0) return { label: "⚪️ بدون آزمون ثبت‌شده", diff: 0, color: "text-slate-400" };
+            if (grades.length === 1) return { label: "⚪️ سال پایه (اولین دوره)", diff: 0, color: "text-slate-300" };
+            
+            // مقایسه دو سال آخر
+            const last = grades[grades.length - 1];
+            const prev = grades[grades.length - 2];
+            
+            const totalLast = (last.internal || 0) + (last.promotion || 0);
+            const totalPrev = (prev.internal || 0) + (prev.promotion || 0);
+            const diff = totalLast - totalPrev;
+            
+            if (diff > 0) return { label: `🟢 صعودی (+${diff} نمره)`, diff: diff, color: "text-emerald-400" };
+            if (diff < 0) return { label: `🔴 نزولی (${diff} نمره)`, diff: diff, color: "text-rose-400" };
+            return { label: "⚪️ عملکرد یکنواخت", diff: 0, color: "text-slate-300" };
+        }
+
+        function renderResidentCards() {
+            const container = document.getElementById('residentsContainer');
+            container.innerHTML = '';
+
+            const searchTxt = document.getElementById('searchInput').value.trim().toLowerCase();
+            const groupVal = document.getElementById('groupFilter').value;
+            const yearVal = document.getElementById('yearFilter').value;
+
+            const list = dashboardPayload.residents || [];
+            let count = 0;
+
+            list.forEach((r, idx) => {
+                if (searchTxt && !r.name.toLowerCase().includes(searchTxt)) return;
+                if (groupVal !== 'all' && r.group !== groupVal) return;
+                if (yearVal !== 'all' && r.year !== yearVal) return;
+
+                count++;
+                const trend = calculateTrend(r.grades);
+                const delay = Math.min(idx * 0.03, 0.4);
+
+                const statusColor = r.status === 'مرخصی' ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 
+                                   (r.status === 'فارغ‌التحصیل' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/25');
+
+                const card = document.createElement('div');
+                card.className = "bg-slate-800/60 border border-slate-700/60 hover:border-indigo-500/50 p-3.5 rounded-2xl cursor-pointer transition-all active:scale-[0.99] space-y-2 slide-up";
+                card.style.animationDelay = `${delay}s`;
+                card.onclick = () => openResidentDetail(idx);
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start gap-2">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-xl bg-slate-700/60 text-slate-300 flex items-center justify-center text-sm font-black">👨‍⚕️</div>
+                            <div>
+                                <p class="text-xs font-black text-slate-100">${r.name}</p>
+                                <p class="text-[10px] font-bold text-slate-400 mt-0.5">📚 ${r.group} | 🎓 ${r.year}</p>
+                            </div>
+                        </div>
+                        <span class="text-[9px] font-bold px-2 py-0.5 rounded-lg border ${statusColor}">${r.status || 'فعال'}</span>
+                    </div>
+
+                    <div class="flex justify-between items-center pt-1 border-t border-slate-700/40 text-[10px] font-bold">
+                        <span class="${trend.color}">${trend.label}</span>
+                        <span class="text-indigo-400 flex items-center gap-1">مشاهده کارنامه ➔</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            document.getElementById('totalCountBadge').innerText = `${count} نفر`;
+
+            if (count === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 bg-slate-800/30 rounded-3xl border border-slate-800">
+                        <div class="text-3xl mb-2">📭</div>
+                        <p class="text-xs font-bold text-slate-500">هیچ دستیاری با این فیلترها یافت نشد.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function openResidentDetail(idx) {
+            activeResidentIndex = idx;
+            const r = dashboardPayload.residents[idx];
+
+            document.getElementById('detName').innerText = r.name;
+            document.getElementById('detDept').innerText = `دپارتمان ${r.group}`;
+            document.getElementById('detYear').innerText = r.year;
+            document.getElementById('detStatus').innerText = r.status || 'فعال';
+
+            const trend = calculateTrend(r.grades);
+            const trendBadge = document.getElementById('detTrendBadge');
+            trendBadge.innerText = trend.label;
+            trendBadge.className = `${trend.color} font-black`;
+
+            renderGradesList(r.grades || []);
+            initAnimatedChart(r.grades || []);
+
+            document.getElementById('listView').classList.add('hidden');
+            document.getElementById('detailView').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function backToList() {
+            if (animationTimer) clearInterval(animationTimer);
+            if (chartInstance) chartInstance.destroy();
+            document.getElementById('detailView').classList.add('hidden');
+            document.getElementById('listView').classList.remove('hidden');
+        }
+
+        function renderGradesList(grades) {
+            const container = document.getElementById('gradesTableContainer');
+            container.innerHTML = '';
+
+            if (grades.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-6 bg-slate-800/40 rounded-2xl border border-slate-800 text-[10px] font-bold text-slate-500">
+                        نمره‌ای برای این دستیار ثبت نشده است. از دکمه «ثبت نمره» استفاده کنید.
+                    </div>
+                `;
+                return;
+            }
+
+            grades.forEach((g, i) => {
+                const total = (g.internal || 0) + (g.promotion || 0);
+                const passBadge = g.status === 'قبول' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-rose-500/15 text-rose-300 border-rose-500/30';
+
+                container.innerHTML += `
+                    <div class="bg-slate-800/70 border border-slate-700/70 p-3 rounded-2xl flex justify-between items-center slide-up">
+                        <div>
+                            <span class="text-[10px] font-black text-indigo-400 bg-indigo-950 px-2 py-0.5 rounded-md border border-indigo-800">${g.year}</span>
+                            <div class="flex gap-3 text-[10px] font-bold text-slate-300 mt-1.5">
+                                <span>ارتقا: <b class="text-white">${g.promotion || 0}</b></span>
+                                <span>درون‌بخشی: <b class="text-white">${g.internal || 0}</b></span>
+                                <span>مجموع: <b class="text-indigo-300">${total}/300</b></span>
+                            </div>
+                        </div>
+                        <span class="text-[9px] font-black px-2.5 py-1 rounded-xl border ${passBadge}">${g.status || 'قبول'}</span>
+                    </div>
+                `;
+            });
+        }
+
+        // ========================================================
+        // نمودار گرافیکی با انیمیشن تکرارشونده و جذاب (Live Trend Loop)
+        // ========================================================
+        function initAnimatedChart(grades) {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+            if (animationTimer) clearInterval(animationTimer);
+
+            const labels = (grades.length > 0) ? grades.map(g => g.year) : ['سال ۱', 'سال ۲', 'سال ۳'];
+            const promotionData = (grades.length > 0) ? grades.map(g => g.promotion || 0) : [100, 115, 125];
+            const internalData = (grades.length > 0) ? grades.map(g => g.internal || 0) : [110, 120, 130];
+
+            // گرادیانت خط ارتقا (نئونی نیلی)
+            const gradientProm = ctx.createLinearGradient(0, 0, 0, 180);
+            gradientProm.addColorStop(0, 'rgba(99, 102, 241, 0.4)');
+            gradientProm.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
+
+            // گرادیانت خط درون‌بخشی (بنفش ملایم)
+            const gradientInt = ctx.createLinearGradient(0, 0, 0, 180);
+            gradientInt.addColorStop(0, 'rgba(168, 85, 247, 0.35)');
+            gradientInt.addColorStop(1, 'rgba(168, 85, 247, 0.0)');
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'ارتقا (۱۵۰)',
+                            data: promotionData,
+                            borderColor: '#6366f1',
+                            borderWidth: 3,
+                            backgroundColor: gradientProm,
+                            fill: true,
+                            tension: 0.38,
+                            pointRadius: 5,
+                            pointBackgroundColor: '#818cf8',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2
+                        },
+                        {
+                            label: 'درون‌بخشی (۱۵۰)',
+                            data: internalData,
+                            borderColor: '#c084fc',
+                            borderWidth: 2.5,
+                            borderDash: [5, 4],
+                            backgroundColor: gradientInt,
+                            fill: true,
+                            tension: 0.38,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#c084fc',
+                            pointBorderColor: '#ffffff'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 1500,
+                        easing: 'easeOutQuart'
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            titleFont: { family: 'Vazirmatn' },
+                            bodyFont: { family: 'Vazirmatn' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: 50,
+                            max: 150,
+                            grid: { color: 'rgba(51, 65, 85, 0.4)' },
+                            ticks: { color: '#94a3b8', font: { size: 9, family: 'Vazirmatn' } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#cbd5e1', font: { size: 10, family: 'Vazirmatn', weight: 'bold' } }
+                        }
+                    }
+                }
+            });
+
+            // اجرای تکرارشونده و جذاب انیمیشن مثل گیف (هر ۴ ثانیه یک بار رسم متحرک تکرار می‌شود)
+            animationTimer = setInterval(() => {
+                if (chartInstance) {
+                    chartInstance.reset();
+                    chartInstance.update();
+                }
+            }, 4500);
+        }
+
+        // ==========================================
+        // ثبت نمره جدید
+        // ==========================================
+        function openGradeModal() {
+            document.getElementById('modalInternal').value = '';
+            document.getElementById('modalPromotion').value = '';
+            document.getElementById('gradeModal').classList.remove('hidden');
+        }
+
+        function closeGradeModal() {
+            document.getElementById('gradeModal').classList.add('hidden');
+        }
+
+        function saveGradeLocally() {
+            if (activeResidentIndex === null) return;
+            const r = dashboardPayload.residents[activeResidentIndex];
+
+            const year = document.getElementById('modalYear').value;
+            const internal = parseFloat(document.getElementById('modalInternal').value) || 0;
+            const promotion = parseFloat(document.getElementById('modalPromotion').value) || 0;
+            const res = document.getElementById('modalResult').value;
+            const acadStatus = document.getElementById('modalAcademicStatus').value;
+
+            if (internal > 150 || promotion > 150) {
+                alert("سقف نمره درون‌بخشی و ارتقا حداکثر ۱۵۰ است.");
+                return;
+            }
+
+            // ارسال مستقیم دیتای نمره به ربات
+            const payload = {
+                action: "save_academic_grades",
+                member_id: r.id,
+                year: year,
+                internal: internal,
+                promotion: promotion,
+                result: res,
+                academic_status: acadStatus
+            };
+
+            try {
+                window.Bale.WebApp.sendData(JSON.stringify(payload));
+                closeGradeModal();
+                alert("✅ نمره با موفقیت برای ثبت به سرور ارسال گردید.");
+                setTimeout(() => window.Bale.WebApp.close(), 150);
+            } catch(e) {
+                alert("خطا در ارسال داده به سرور.");
+            }
+        }
+
+        function closeApp() {
+            try { window.Bale.WebApp.close(); } catch(e) {}
+        }
+
+        window.Bale.WebApp.ready();
+        init();
+    </script>
+</body>
+</html>
