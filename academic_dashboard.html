@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>پورتال پایش تحصیلی و افتخارات دستیاران</title>
+    
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.0.0/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <script src="https://tapi.bale.ai/miniapp.js?3"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        body { 
+            font-family: 'Vazirmatn', sans-serif; 
+            -webkit-font-smoothing: antialiased; 
+            background-color: #030712;
+            color: #f8fafc;
+            user-select: none;
+            overflow-x: hidden;
+        }
+        .fade-in { animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+        .chart-glow { filter: drop-shadow(0px 8px 18px rgba(79, 70, 229, 0.4)); }
+    </style>
+</head>
+<body class="flex flex-col h-screen">
+
+    <!-- لایه‌های نوری امبینت -->
+    <div class="fixed top-[-10%] right-[-10%] w-[380px] h-[380px] rounded-full bg-gradient-to-br from-blue-600/30 via-indigo-600/20 to-transparent blur-[110px] pointer-events-none -z-10 animate-pulse" style="animation-duration: 8s;"></div>
+    <div class="fixed bottom-[-10%] left-[-15%] w-[420px] h-[420px] rounded-full bg-gradient-to-tr from-cyan-600/25 via-blue-600/15 to-transparent blur-[120px] pointer-events-none -z-10"></div>
+
+    <!-- VIEW 1: لیست دستیاران -->
+    <div id="listView" class="flex flex-col h-full fade-in">
+        <div class="sticky top-0 z-20 bg-[#030712]/80 backdrop-blur-2xl border-b border-white/[0.06] p-4 space-y-3 shadow-lg">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/10 border border-blue-400/30 text-blue-400 flex items-center justify-center text-xl font-black shadow-inner">🎓</div>
+                    <div>
+                        <h1 class="text-xs font-black text-white">پایش تحصیلی و تالار افتخارات</h1>
+                        <p class="text-[10px] text-blue-300/70 font-bold mt-0.5" id="headerSubtitle">آزمون‌های ارتقا، رتبه‌ها و نمرات درون‌بخشی</p>
+                    </div>
+                </div>
+                <span class="text-[10px] font-black text-indigo-400 bg-indigo-950/80 px-2.5 py-1 rounded-xl border border-indigo-800" id="totalCountBadge">0 نفر</span>
+            </div>
+
+            <div class="space-y-2">
+                <div class="relative">
+                    <span class="absolute inset-y-0 right-3 flex items-center text-slate-500 text-xs">🔍</span>
+                    <input type="text" id="searchInput" onkeyup="renderResidentCards()" class="w-full bg-slate-900/60 border border-white/[0.08] rounded-2xl py-2.5 pr-8 pl-3 text-xs font-bold text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none placeholder-slate-500" placeholder="جستجوی دستیار یا رتبه...">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <select id="groupFilter" onchange="renderResidentCards()" class="bg-slate-900/60 border border-white/[0.08] rounded-2xl p-2.5 text-[11px] font-bold text-indigo-300 outline-none cursor-pointer">
+                        <option value="all">🌐 تمام دپارتمان‌ها</option>
+                    </select>
+                    <select id="yearFilter" onchange="renderResidentCards()" class="bg-slate-900/60 border border-white/[0.08] rounded-2xl p-2.5 text-[11px] font-bold text-indigo-300 outline-none cursor-pointer">
+                        <option value="all">🎓 همه دوره‌ها</option>
+                        <option value="سال ۱">سال ۱</option>
+                        <option value="سال ۲">سال ۲</option>
+                        <option value="سال ۳">سال ۳</option>
+                        <option value="سال ۴">سال ۴</option>
+                        <option value="سال ۵">سال ۵</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-grow overflow-y-auto p-4 pb-28 space-y-2.5" id="residentsContainer"></div>
+
+        <div class="fixed bottom-0 left-0 right-0 bg-[#030712]/80 backdrop-blur-xl p-3.5 border-t border-white/[0.07] shadow-2xl z-20">
+            <button onclick="closeApp()" class="w-full bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 font-black p-3.5 rounded-full text-xs transition-all active:scale-[0.98] border border-white/[0.06] flex justify-center items-center gap-2">
+                🔙 بازگشت به ربات
+            </button>
+        </div>
+    </div>
+
+    <!-- VIEW 2: کارنامه، تالار افتخارات و نمودار زنده -->
+    <div id="detailView" class="hidden flex flex-col h-full bg-[#030712] fade-in">
+        <div class="sticky top-0 z-20 bg-[#030712]/80 backdrop-blur-2xl border-b border-white/[0.06] p-4 flex items-center justify-between shadow-lg">
+            <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center text-lg font-black shadow-md">👨‍⚕️</div>
+                <div>
+                    <h2 class="text-xs font-black text-white" id="detName">دکتر ...</h2>
+                    <p class="text-[10px] font-bold text-blue-400 mt-0.5" id="detDept">دپارتمان</p>
+                </div>
+            </div>
+            <button onclick="backToList()" class="bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 text-xs font-bold px-3 py-2 rounded-2xl transition-all border border-white/[0.08] active:scale-95">
+                🔙 بازگشت
+            </button>
+        </div>
+
+        <div class="flex-grow overflow-y-auto p-4 pb-32 space-y-4">
+            <!-- کارت کلی وضعیت -->
+            <div class="bg-slate-900/60 p-4 rounded-3xl border border-white/[0.08] space-y-3 shadow-lg">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400">وضعیت تحصیلی:</p>
+                        <p class="text-sm font-black text-emerald-400 mt-0.5 flex items-center gap-1.5" id="detStatus">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> فعال
+                        </p>
+                    </div>
+                    <span class="text-[10px] font-black text-purple-300 bg-purple-500/15 border border-purple-500/30 px-3 py-1.5 rounded-xl" id="detYear">سال ۱</span>
+                </div>
+                <div class="flex justify-between items-center pt-2.5 border-t border-white/[0.06] text-[10px] font-bold">
+                    <span class="text-slate-400">روند عملکردی:</span>
+                    <span id="detTrendBadge" class="text-emerald-400 font-black">-</span>
+                </div>
+            </div>
+
+            <!-- بخش جدید: 🏅 تالار افتخارات و رتبه‌های برتر -->
+            <div class="bg-gradient-to-br from-amber-500/10 via-slate-900/60 to-purple-500/10 p-4 rounded-3xl border border-amber-500/25 space-y-3 shadow-lg">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xs font-black text-amber-300 flex items-center gap-1.5">
+                        <span>🏅</span> تالار افتخارات و رتبه‌های برتر
+                    </h3>
+                    <button onclick="openHonorModal()" class="text-[9px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-1 rounded-xl transition-all active:scale-95">
+                        ➕ ثبت افتخار جدید
+                    </button>
+                </div>
+                <div id="honorsContainer" class="space-y-1.5"></div>
+            </div>
+
+            <!-- نمودار متحرک و تکرارشونده -->
+            <div class="bg-slate-900/60 p-4 rounded-3xl border border-white/[0.08] space-y-3 shadow-lg">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xs font-black text-slate-200 flex items-center gap-1.5">
+                        <span class="text-indigo-400">📈</span> نمودار رشد تحصیلی
+                    </h3>
+                    <div class="flex items-center gap-2 text-[9px] text-slate-400">
+                        <span class="w-2 h-2 rounded-full bg-indigo-500"></span> ارتقا
+                        <span class="w-2 h-2 rounded-full bg-purple-400"></span> درون‌بخشی
+                    </div>
+                </div>
+                <div class="relative h-48 w-full chart-glow">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- لیست نمرات بدون محدودیت تعداد دوره -->
+            <div class="space-y-2.5">
+                <div class="flex justify-between items-center px-1">
+                    <h3 class="text-xs font-black text-slate-300 flex items-center gap-1.5">
+                        <span>📑</span> کلیه سوابق آزمون‌های ثبت‌شده
+                    </h3>
+                    <button onclick="openGradeModal()" class="text-[10px] font-black bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3 py-1.5 rounded-full transition-all active:scale-95 shadow-md shadow-indigo-600/30 flex items-center gap-1">
+                        ➕ ثبت آزمون جدید
+                    </button>
+                </div>
+                <div id="gradesTableContainer" class="space-y-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 1: ثبت آزمون جدید (بدون محدودیت دوره‌ها) -->
+    <div id="gradeModal" class="fixed inset-0 bg-[#030712]/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 fade-in">
+        <div class="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-sm p-5 shadow-2xl space-y-4">
+            <h3 class="text-xs font-black text-indigo-400 flex items-center gap-1.5">
+                <span>✏️</span> ثبت نمره آزمون جدید
+            </h3>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">دوره تحصیلی (آزاد):</label>
+                    <input type="text" id="modalYearInput" class="w-full bg-slate-800 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-100 outline-none" placeholder="مثلاً: سال ۱، سال ۵، تکرار دوره و...">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 mb-1">درون‌بخشی (از ۱۵۰):</label>
+                        <input type="number" id="modalInternal" class="w-full bg-slate-800 border border-white/10 rounded-xl p-2.5 text-xs font-black text-slate-100 outline-none" placeholder="135">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 mb-1">ارتقا (از ۱۵۰):</label>
+                        <input type="number" id="modalPromotion" class="w-full bg-slate-800 border border-white/10 rounded-xl p-2.5 text-xs font-black text-slate-100 outline-none" placeholder="125">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">نتیجه آزمون:</label>
+                    <select id="modalResult" class="w-full bg-slate-800 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-200 outline-none">
+                        <option value="قبول">✅ قبول قطعی</option>
+                        <option value="مشروط">🟡 مشروط</option>
+                        <option value="مردود">🔴 تجدید دوره / مردود</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">وضعیت تحصیلی دستیار:</label>
+                    <select id="modalAcademicStatus" class="w-full bg-slate-800 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-200 outline-none">
+                        <option value="فعال">🟢 فعال و شاغل به تحصیل</option>
+                        <option value="مرخصی">🟡 مرخصی تحصیلی</option>
+                        <option value="فارغ‌التحصیل">🎓 فارغ‌التحصیل</option>
+                        <option value="تمدید دوره">⏳ تمدید دوره</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button onclick="closeGradeModal()" class="w-1/3 bg-slate-800 text-slate-400 py-2.5 rounded-full text-xs font-bold">انصراف</button>
+                <button onclick="saveGradeLocally()" class="w-2/3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2.5 rounded-full text-xs font-black">💾 ذخیره آزمون</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: ثبت افتخار و رتبه برتر -->
+    <div id="honorModal" class="fixed inset-0 bg-[#030712]/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 fade-in">
+        <div class="bg-slate-900 border border-amber-500/30 rounded-3xl w-full max-w-sm p-5 shadow-2xl space-y-4">
+            <h3 class="text-xs font-black text-amber-300 flex items-center gap-1.5">
+                <span>🏅</span> ثبت رتبه برتر یا افتخار آموزشی
+            </h3>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">عنوان افتخار یا رتبه:</label>
+                    <input type="text" id="modalHonorTitle" class="w-full bg-slate-800 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-100 outline-none" placeholder="مثلاً: رتبه ۱ آزمون ارتقا کل دانشکده">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">دوره تحصیلی:</label>
+                    <input type="text" id="modalHonorYear" class="w-full bg-slate-800 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-100 outline-none" placeholder="مثلاً: سال ۳ (۱۴۰۴)">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">نمره یا توضیحات تکمیلی:</label>
+                    <input type="text" id="modalHonorRank" class="w-full bg-slate-800 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-100 outline-none" placeholder="مثلاً: نمره ۱۴۶ از ۱۵۰">
+                </div>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button onclick="closeHonorModal()" class="w-1/3 bg-slate-800 text-slate-400 py-2.5 rounded-full text-xs font-bold">انصراف</button>
+                <button onclick="saveHonorLocally()" class="w-2/3 bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 py-2.5 rounded-full text-xs font-black">🏅 ثبت در تالار افتخارات</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let dashboardPayload = { residents: [], groups: [], is_admin: 1, local_group: "" };
+        let activeResidentIndex = null;
+        let chartInstance = null;
+        let animationTimer = null;
+
+        function init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            try {
+                const compressedData = urlParams.get('d');
+                if (compressedData) {
+                    const binaryString = window.atob(compressedData.replace(/-/g, '+').replace(/_/g, '/'));
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+                    const decompressed = pako.inflate(bytes, { to: 'string' });
+                    dashboardPayload = JSON.parse(decompressed);
+
+                    const grpSelect = document.getElementById('groupFilter');
+                    (dashboardPayload.groups || []).forEach(g => {
+                        const opt = document.createElement('option');
+                        opt.value = g;
+                        opt.innerText = `📁 گروه ${g}`;
+                        grpSelect.appendChild(opt);
+                    });
+
+                    if (dashboardPayload.local_group) {
+                        grpSelect.value = dashboardPayload.local_group;
+                        grpSelect.disabled = true;
+                    }
+
+                    renderResidentCards();
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function calculateTrend(grades) {
+            if (!grades || grades.length === 0) return { label: "⚪️ بدون آزمون ثبت‌شده", color: "text-slate-400" };
+            if (grades.length === 1) return { label: "⚪️ سال اول (پایه)", color: "text-slate-300" };
+            const last = grades[grades.length - 1];
+            const prev = grades[grades.length - 2];
+            const diff = ((last.internal || 0) + (last.promotion || 0)) - ((prev.internal || 0) + (prev.promotion || 0));
+            if (diff > 0) return { label: `🟢 صعودی (+${diff} نمره)`, color: "text-emerald-400" };
+            if (diff < 0) return { label: `🔴 نزولی (${diff} نمره)`, color: "text-rose-400" };
+            return { label: "⚪️ عملکرد یکنواخت", color: "text-slate-300" };
+        }
+
+        function renderResidentCards() {
+            const container = document.getElementById('residentsContainer');
+            container.innerHTML = '';
+            const searchTxt = document.getElementById('searchInput').value.trim().toLowerCase();
+            const groupVal = document.getElementById('groupFilter').value;
+            const yearVal = document.getElementById('yearFilter').value;
+
+            const list = dashboardPayload.residents || [];
+            let count = 0;
+
+            list.forEach((r, idx) => {
+                if (searchTxt && !r.name.toLowerCase().includes(searchTxt) && !(r.honors || []).some(h => h.title.includes(searchTxt))) return;
+                if (groupVal !== 'all' && r.group !== groupVal) return;
+                if (yearVal !== 'all' && r.year !== yearVal) return;
+
+                count++;
+                const trend = calculateTrend(r.grades);
+                const honorBadge = (r.honors && r.honors.length > 0) ? `<span class="text-[9px] font-black text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">🏅 ${r.honors[0].title.slice(0, 18)}...</span>` : '';
+
+                const card = document.createElement('div');
+                card.className = "bg-slate-900/60 border border-white/[0.08] hover:border-blue-500/50 p-3.5 rounded-3xl cursor-pointer transition-all active:scale-[0.99] space-y-2 slide-up";
+                card.onclick = () => openResidentDetail(idx);
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start gap-2">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-2xl bg-white/[0.05] text-slate-300 flex items-center justify-center text-sm font-black">👨‍⚕️</div>
+                            <div>
+                                <p class="text-xs font-black text-slate-100">${r.name}</p>
+                                <p class="text-[10px] font-bold text-slate-400 mt-0.5">📚 ${r.group} | 🎓 ${r.year}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5">${honorBadge}</div>
+                    </div>
+                    <div class="flex justify-between items-center pt-1 border-t border-white/[0.04] text-[10px] font-bold">
+                        <span class="${trend.color}">${trend.label}</span>
+                        <span class="text-blue-400">کارنامه و افتخارات ➔</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            document.getElementById('totalCountBadge').innerText = `${count} نفر`;
+        }
+
+        function openResidentDetail(idx) {
+            activeResidentIndex = idx;
+            const r = dashboardPayload.residents[idx];
+
+            document.getElementById('detName').innerText = r.name;
+            document.getElementById('detDept').innerText = `دپارتمان ${r.group}`;
+            document.getElementById('detYear').innerText = r.year;
+            document.getElementById('detStatus').innerText = r.status || 'فعال';
+
+            const trend = calculateTrend(r.grades);
+            const trendBadge = document.getElementById('detTrendBadge');
+            trendBadge.innerText = trend.label;
+            trendBadge.className = `${trend.color} font-black`;
+
+            renderHonorsList(r.honors || []);
+            renderGradesList(r.grades || []);
+            initAnimatedChart(r.grades || []);
+
+            document.getElementById('listView').classList.add('hidden');
+            document.getElementById('detailView').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function backToList() {
+            if (animationTimer) clearInterval(animationTimer);
+            if (chartInstance) chartInstance.destroy();
+            document.getElementById('detailView').classList.add('hidden');
+            document.getElementById('listView').classList.remove('hidden');
+        }
+
+        function renderHonorsList(honors) {
+            const container = document.getElementById('honorsContainer');
+            container.innerHTML = '';
+            if (honors.length === 0) {
+                container.innerHTML = `<div class="text-[10px] text-slate-400 font-bold py-1">افتخار یا رتبه برتری ثبت نشده است.</div>`;
+                return;
+            }
+            honors.forEach(h => {
+                container.innerHTML += `
+                    <div class="bg-slate-900/80 border border-amber-500/20 p-2.5 rounded-2xl flex justify-between items-center text-xs">
+                        <div>
+                            <p class="font-extrabold text-amber-200">🎖 ${h.title}</p>
+                            <p class="text-[9px] text-slate-400 mt-0.5">${h.year} | ${h.rank || ''}</p>
+                        </div>
+                        <span class="text-[10px] text-amber-400 font-black">★ رتبه برتر</span>
+                    </div>
+                `;
+            });
+        }
+
+        function renderGradesList(grades) {
+            const container = document.getElementById('gradesTableContainer');
+            container.innerHTML = '';
+            if (grades.length === 0) {
+                container.innerHTML = `<div class="text-center py-6 text-[10px] font-bold text-slate-500">سابقه‌ای ثبت نشده است.</div>`;
+                return;
+            }
+            grades.forEach((g, i) => {
+                const total = (g.internal || 0) + (g.promotion || 0);
+                const passBadge = g.status === 'قبول' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-rose-500/15 text-rose-300 border-rose-500/30';
+                container.innerHTML += `
+                    <div class="bg-slate-900/60 border border-white/[0.08] p-3 rounded-2xl flex justify-between items-center slide-up">
+                        <div>
+                            <span class="text-[10px] font-black text-indigo-400 bg-indigo-950 px-2 py-0.5 rounded-md border border-indigo-800">${g.year}</span>
+                            <div class="flex gap-3 text-[10px] font-bold text-slate-300 mt-1.5">
+                                <span>ارتقا: <b class="text-white">${g.promotion || 0}</b></span>
+                                <span>درون‌بخشی: <b class="text-white">${g.internal || 0}</b></span>
+                                <span>مجموع: <b class="text-blue-300">${total}/300</b></span>
+                            </div>
+                        </div>
+                        <span class="text-[9px] font-black px-2.5 py-1 rounded-xl border ${passBadge}">${g.status || 'قبول'}</span>
+                    </div>
+                `;
+            });
+        }
+
+        function initAnimatedChart(grades) {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+            if (animationTimer) clearInterval(animationTimer);
+
+            const labels = (grades.length > 0) ? grades.map(g => g.year) : ['سال ۱', 'سال ۲', 'سال ۳'];
+            const promotionData = (grades.length > 0) ? grades.map(g => g.promotion || 0) : [100, 115, 125];
+            const internalData = (grades.length > 0) ? grades.map(g => g.internal || 0) : [110, 120, 130];
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'ارتقا (۱۵۰)', data: promotionData, borderColor: '#6366f1', borderWidth: 3, fill: false, tension: 0.38, pointRadius: 5, pointBackgroundColor: '#818cf8' },
+                        { label: 'درون‌بخشی (۱۵۰)', data: internalData, borderColor: '#c084fc', borderWidth: 2.5, borderDash: [5, 4], fill: false, tension: 0.38, pointRadius: 4, pointBackgroundColor: '#c084fc' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 1500, easing: 'easeOutQuart' },
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { min: 40, max: 150, grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8', font: { size: 9, family: 'Vazirmatn' } } },
+                        x: { grid: { display: false }, ticks: { color: '#cbd5e1', font: { size: 10, family: 'Vazirmatn', weight: 'bold' } } }
+                    }
+                }
+            });
+
+            animationTimer = setInterval(() => {
+                if (chartInstance) { chartInstance.reset(); chartInstance.update(); }
+            }, 4500);
+        }
+
+        function openGradeModal() {
+            document.getElementById('modalYearInput').value = '';
+            document.getElementById('modalInternal').value = '';
+            document.getElementById('modalPromotion').value = '';
+            document.getElementById('gradeModal').classList.remove('hidden');
+        }
+        function closeGradeModal() { document.getElementById('gradeModal').classList.add('hidden'); }
+
+        function openHonorModal() {
+            document.getElementById('modalHonorTitle').value = '';
+            document.getElementById('modalHonorYear').value = '';
+            document.getElementById('modalHonorRank').value = '';
+            document.getElementById('honorModal').classList.remove('hidden');
+        }
+        function closeHonorModal() { document.getElementById('honorModal').classList.add('hidden'); }
+
+        function saveGradeLocally() {
+            if (activeResidentIndex === null) return;
+            const r = dashboardPayload.residents[activeResidentIndex];
+            const year = document.getElementById('modalYearInput').value.trim() || 'سال ۱';
+            const internal = parseFloat(document.getElementById('modalInternal').value) || 0;
+            const promotion = parseFloat(document.getElementById('modalPromotion').value) || 0;
+            const res = document.getElementById('modalResult').value;
+            const acadStatus = document.getElementById('modalAcademicStatus').value;
+
+            window.Bale.WebApp.sendData(JSON.stringify({
+                action: "save_academic_grades",
+                member_id: r.id,
+                year: year,
+                internal: internal,
+                promotion: promotion,
+                result: res,
+                academic_status: acadStatus
+            }));
+            closeGradeModal();
+            setTimeout(() => window.Bale.WebApp.close(), 150);
+        }
+
+        function saveHonorLocally() {
+            if (activeResidentIndex === null) return;
+            const r = dashboardPayload.residents[activeResidentIndex];
+            const title = document.getElementById('modalHonorTitle').value.trim();
+            const year = document.getElementById('modalHonorYear').value.trim() || 'عمومی';
+            const rank = document.getElementById('modalHonorRank').value.trim();
+            if (!title) return;
+
+            window.Bale.WebApp.sendData(JSON.stringify({
+                action: "save_resident_honor",
+                member_id: r.id,
+                title: title,
+                year: year,
+                rank: rank
+            }));
+            closeHonorModal();
+            setTimeout(() => window.Bale.WebApp.close(), 150);
+        }
+
+        function closeApp() { try { window.Bale.WebApp.close(); } catch(e) {} }
+        window.Bale.WebApp.ready();
+        init();
+    </script>
+</body>
+</html>
