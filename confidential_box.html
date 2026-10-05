@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>صندوق مکاتبات محرمانه دانشکده پزشکی</title>
+    
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.0.0/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <script src="https://tapi.bale.ai/miniapp.js?3"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    
+    <style>
+        body { 
+            font-family: 'Vazirmatn', sans-serif; 
+            -webkit-font-smoothing: antialiased;
+            background-color: #030712;
+            color: #f8fafc;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            overflow-x: hidden;
+        }
+
+        .fade-in { animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .sheet-up { animation: sheetUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* لایه ضد اسکرین‌شات و تاری خودکار هنگام ترک فوکوس */
+        .window-blurred {
+            filter: blur(35px) grayscale(90%) !important;
+            pointer-events: none !important;
+        }
+
+        .aurora-card {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.65) 0%, rgba(8, 14, 28, 0.8) 100%);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .aurora-input {
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.25s ease;
+        }
+        .aurora-input:focus {
+            border-color: rgba(59, 130, 246, 0.6) !important;
+            box-shadow: 0 0 20px rgba(37, 99, 235, 0.25);
+        }
+
+        .btn-aurora-glow {
+            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #4f46e5 100%);
+            box-shadow: 0 8px 30px -4px rgba(37, 99, 235, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .btn-aurora-glow:active { transform: scale(0.98); }
+
+        .forensic-watermark {
+            background-image: repeating-linear-gradient(
+                -45deg,
+                rgba(59, 130, 246, 0.015),
+                rgba(59, 130, 246, 0.015) 120px,
+                transparent 120px,
+                transparent 240px
+            );
+        }
+    </style>
+</head>
+<body class="forensic-watermark flex flex-col h-screen" id="appBody">
+
+    <!-- لایه‌های نوری امبینت شفق قطبی -->
+    <div class="fixed top-[-10%] right-[-10%] w-[380px] h-[380px] rounded-full bg-gradient-to-br from-blue-600/30 via-indigo-600/20 to-transparent blur-[110px] pointer-events-none -z-10 animate-pulse" style="animation-duration: 8s;"></div>
+    <div class="fixed bottom-[-10%] left-[-15%] w-[420px] h-[420px] rounded-full bg-gradient-to-tr from-cyan-600/25 via-blue-600/15 to-transparent blur-[120px] pointer-events-none -z-10"></div>
+
+    <!-- هدر شناور -->
+    <div class="sticky top-0 z-30 bg-[#030712]/75 backdrop-blur-2xl border-b border-white/[0.06] px-4 py-3 shadow-2xl">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/10 border border-blue-400/30 text-blue-400 flex items-center justify-center text-lg font-black shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+                    🛡️
+                </div>
+                <div>
+                    <h1 class="text-xs font-black text-white tracking-wide" id="appHeaderTitle">صندوق مکاتبات محرمانه دانشکده</h1>
+                    <p class="text-[10px] text-blue-300/70 font-bold mt-0.5" id="appHeaderSub">پروتکل امنیتی ارتباط بدون ردپا</p>
+                </div>
+            </div>
+            <div id="roleBadge" class="text-[9px] font-black px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-400/20 backdrop-blur-md">
+                🔒 امانت‌داری کامل
+            </div>
+        </div>
+
+        <!-- تب‌های سوئیچ کپسولی تفکیک‌شده بر اساس نقش -->
+        <div class="flex mt-3 bg-white/[0.04] p-1 rounded-full border border-white/[0.07] backdrop-blur-xl gap-1" id="navTabs">
+            <!-- تب‌های ویژه دستیار -->
+            <button onclick="switchTab('new')" id="tab_btn_new" class="flex-1 py-2 text-[11px] font-black rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all flex justify-center items-center gap-1.5">
+                <span>✍️</span> ثبت مکاتبه
+            </button>
+            <button onclick="switchTab('track')" id="tab_btn_track" class="flex-1 py-2 text-[11px] font-semibold rounded-full text-slate-400 hover:text-slate-200 transition-all flex justify-center items-center gap-1.5">
+                <span>🔍</span> پیگیری با کد
+            </button>
+            <!-- تب ویژه کارتابل مسئولین -->
+            <button onclick="switchTab('inbox')" id="tab_btn_inbox" class="hidden flex-1 py-2 text-[11px] font-semibold rounded-full text-slate-400 hover:text-slate-200 transition-all flex justify-center items-center gap-1.5">
+                <span>📥</span> کارتابل بررسی
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: ثبت مکاتبه محرمانه جدید (دستیار) -->
+    <!-- ========================================== -->
+    <div id="view_new" class="flex-grow overflow-y-auto p-4 pb-28 space-y-4 fade-in">
+        <div class="aurora-card p-4 rounded-3xl space-y-1.5 border border-blue-500/20 shadow-lg">
+            <div class="flex items-center gap-2 text-blue-300 text-xs font-black">
+                <span class="text-base">💡</span> راهنمای امنیت روانی فرستنده
+            </div>
+            <p class="text-[10px] text-slate-300/80 leading-relaxed font-semibold">
+                اگر در دپارتمان کم‌جمعیتی فعالیت می‌کنید، از قید تاریخ دقیق کشیک، نام بیمار یا اتاق عمل خودداری فرمایید؛ کافی است رویه و موضوع کلی مورد نقد را شرح دهید.
+            </p>
+        </div>
+
+        <!-- انتخاب دپارتمان با منوی شیشه‌ای -->
+        <div class="aurora-card p-4 rounded-3xl space-y-2">
+            <label class="block text-[11px] font-black text-slate-200">
+                📚 حوزه / دپارتمان مربوطه:
+            </label>
+            <div onclick="openCustomPicker('dept')" class="aurora-input p-3.5 rounded-2xl flex justify-between items-center cursor-pointer hover:border-blue-400/40 transition-all">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <span class="text-blue-400 text-sm">📁</span>
+                    <span id="selectedDeptDisplay" class="text-xs font-bold text-slate-100 truncate">🌐 عمومی / محیط بیمارستان / عدم تمایل به ذکر رشته</span>
+                </div>
+                <span class="text-slate-400 text-xs mr-2">▼</span>
+            </div>
+            <input type="hidden" id="inpDept" value="عمومی">
+            <p class="text-[9px] text-slate-400 font-medium">می‌توانید رشته خاصی را انتخاب نکنید تا محدوده شناسایی شما کاملاً ناشناس بماند.</p>
+        </div>
+
+        <!-- دسته‌بندی موضوع -->
+        <div class="aurora-card p-4 rounded-3xl space-y-2">
+            <label class="block text-[11px] font-black text-slate-200">
+                🏷 دسته‌بندی موضوع:
+            </label>
+            <div onclick="openCustomPicker('cat')" class="aurora-input p-3.5 rounded-2xl flex justify-between items-center cursor-pointer hover:border-blue-400/40 transition-all">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <span class="text-indigo-400 text-sm">🔖</span>
+                    <span id="selectedCatDisplay" class="text-xs font-bold text-slate-100 truncate">📖 مسائل آموزشی، اساتید و کوریکولوم</span>
+                </div>
+                <span class="text-slate-400 text-xs mr-2">▼</span>
+            </div>
+            <input type="hidden" id="inpCategory" value="آموزشی">
+        </div>
+
+        <!-- ماتریس انتخاب مخاطب و حدود ارجاع -->
+        <div class="aurora-card p-4 rounded-3xl space-y-3">
+            <div>
+                <label class="block text-[11px] font-black text-slate-100">
+                    🎯 مراجع مجاز جهت رویت و ارجاع نامه:
+                </label>
+                <p class="text-[10px] text-slate-400 mt-1 leading-relaxed font-medium">
+                    به طور پیش‌فرض، این پیام برای کارشناس تحصیلات تکمیلی ارسال می‌شود. شما می‌توانید مشخص کنید که ایشان اجازه دارد نامه را به چه کسانی ارجاع دهد یا تیک کارشناس را بردارید تا مستقیماً و منحصراً برای مقام مدنظرتان ارسال شود.
+                </p>
+            </div>
+
+            <div class="space-y-2 pt-1" id="recipientsBox">
+                <label class="flex items-center justify-between p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] cursor-pointer hover:border-blue-500/30 transition-all">
+                    <span class="text-xs font-bold text-slate-200 flex items-center gap-2.5">
+                        <span class="text-sm">👤</span> کارشناس تحصیلات تکمیلی بالینی (پیگیری اولیه)
+                    </span>
+                    <input type="checkbox" id="chk_coordinator" checked onchange="checkRecipientLogic()" class="w-4 h-4 text-blue-500 rounded-lg border-white/20 bg-slate-800 focus:ring-0">
+                </label>
+
+                <label class="flex items-center justify-between p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] cursor-pointer hover:border-blue-500/30 transition-all">
+                    <span class="text-xs font-bold text-slate-200 flex items-center gap-2.5">
+                        <span class="text-sm">👔</span> مدیر آموزش دانشکده پزشکی
+                    </span>
+                    <input type="checkbox" id="chk_edu_manager" onchange="checkRecipientLogic()" class="w-4 h-4 text-blue-500 rounded-lg border-white/20 bg-slate-800 focus:ring-0">
+                </label>
+
+                <label class="flex items-center justify-between p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] cursor-pointer hover:border-blue-500/30 transition-all">
+                    <span class="text-xs font-bold text-slate-200 flex items-center gap-2.5">
+                        <span class="text-sm">🩺</span> معاونت آموزش دانشکده پزشکی
+                    </span>
+                    <input type="checkbox" id="chk_vice_dean" onchange="checkRecipientLogic()" class="w-4 h-4 text-blue-500 rounded-lg border-white/20 bg-slate-800 focus:ring-0">
+                </label>
+
+                <label class="flex items-center justify-between p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] cursor-pointer hover:border-blue-500/30 transition-all">
+                    <span class="text-xs font-bold text-slate-200 flex items-center gap-2.5">
+                        <span class="text-sm">🏛</span> ریاست محترم دانشکده پزشکی
+                    </span>
+                    <input type="checkbox" id="chk_dean" onchange="checkRecipientLogic()" class="w-4 h-4 text-blue-500 rounded-lg border-white/20 bg-slate-800 focus:ring-0">
+                </label>
+            </div>
+
+            <div id="exclusiveNotice" class="hidden bg-blue-500/10 border border-blue-400/30 p-3 rounded-2xl text-[10px] text-blue-300 font-semibold leading-relaxed backdrop-blur-md">
+                🔒 **حالت انحصاری فعال شد:** شما کارشناس تحصیلات تکمیلی را از لیست مطلعین حذف کردید. این پیام منحصراً برای مقام تیک‌خورده ارسال شده و هرگونه گزینه ارجاع برای آن مسدود خواهد بود.
+            </div>
+        </div>
+
+        <div class="aurora-card p-4 rounded-3xl space-y-2">
+            <label class="block text-[11px] font-black text-slate-200">
+                ✍️ شرح موضوع و گزارش:
+            </label>
+            <textarea id="inpMessage" rows="5" class="aurora-input w-full rounded-2xl p-3.5 text-xs font-bold text-slate-100 outline-none leading-relaxed resize-none placeholder-slate-500" placeholder="موضوع مورد نظر خود را با آرامش و به صورت موردی بنویسید..."></textarea>
+        </div>
+
+        <button onclick="submitSecretFeedback()" id="btnSubmit" class="btn-aurora-glow w-full text-white font-black p-4 rounded-full text-xs flex justify-center items-center gap-2">
+            <span>🔒</span> ارسال محرمانه و دریافت کد رهگیری
+        </button>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: پیگیری مکاتبه و چت دوطرفه ناشناس -->
+    <!-- ========================================== -->
+    <div id="view_track" class="hidden flex-grow overflow-y-auto p-4 pb-28 space-y-4 fade-in">
+        <div class="aurora-card p-4 rounded-3xl space-y-3">
+            <label class="block text-[11px] font-black text-slate-200">
+                📟 کد رهگیری ۶ رقمی محرمانه را وارد کنید:
+            </label>
+            <div class="flex gap-2">
+                <input type="number" id="inpTrackingCode" class="aurora-input flex-1 rounded-full p-3 text-center text-sm font-black text-blue-400 outline-none dir-ltr tracking-widest" placeholder="مثال: 789124">
+                <button onclick="trackSecretFeedback()" class="btn-aurora-glow text-white px-6 rounded-full text-xs font-black">
+                    استعلام
+                </button>
+            </div>
+        </div>
+
+        <div id="trackResultContainer" class="hidden space-y-4">
+            <div class="aurora-card p-4 rounded-3xl space-y-3">
+                <div class="flex justify-between items-center pb-2.5 border-b border-white/[0.06]">
+                    <div>
+                        <span class="text-[10px] text-slate-400 font-semibold">کد پیگیری:</span>
+                        <span class="text-xs font-black text-blue-400 mr-1" id="tr_code">789124</span>
+                    </div>
+                    <span id="tr_status" class="text-[9px] font-black px-3 py-1 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30">خوانده نشده</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-300">
+                    <div>📚 دپارتمان: <span class="text-blue-300" id="tr_dept">-</span></div>
+                    <div>🏷 موضوع: <span class="text-slate-100" id="tr_cat">-</span></div>
+                </div>
+
+                <!-- کنترل دسترسی دینامیک: ویرایش ارجاع فقط برای دستیار ظاهر می‌شود -->
+                <div class="pt-3 border-t border-white/[0.06] space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-black text-slate-200">🔓 مراجع مجاز ارجاع صادرشده:</span>
+                        <button id="btnConsentEditTrigger" onclick="toggleConsentEditor()" class="text-[9px] text-blue-400 hover:text-blue-300 font-bold transition-colors">
+                            ✏️ ویرایش یا افزودن شخص جدید
+                        </button>
+                    </div>
+                    <div id="tr_allowed_list" class="text-[10px] font-bold text-slate-300 bg-white/[0.02] p-2.5 rounded-xl border border-white/[0.06]">
+                        -
+                    </div>
+
+                    <!-- کادر تعاملی افزودن دسترسی بعد از قانع شدن دستیار -->
+                    <div id="consentEditorBox" class="hidden p-3.5 bg-slate-900/80 rounded-2xl border border-blue-500/30 space-y-2.5 mt-2">
+                        <p class="text-[10px] text-blue-300 font-semibold">
+                            اگر مسئول مربوطه شما را قانع کرده که نامه را با فرد دیگری به اشتراک بگذارد، تیک آن شخص را اضافه کرده و تایید نمایید:
+                        </p>
+                        <div class="space-y-2 text-xs font-bold text-slate-200">
+                            <label class="flex items-center gap-2"><input type="checkbox" id="edit_coord" class="rounded text-blue-600 bg-slate-800"> کارشناس تحصیلات تکمیلی</label>
+                            <label class="flex items-center gap-2"><input type="checkbox" id="edit_edu_mgr" class="rounded text-blue-600 bg-slate-800"> مدیر آموزش دانشکده</label>
+                            <label class="flex items-center gap-2"><input type="checkbox" id="edit_vice" class="rounded text-blue-600 bg-slate-800"> معاونت آموزش دانشکده</label>
+                            <label class="flex items-center gap-2"><input type="checkbox" id="edit_dean" class="rounded text-blue-600 bg-slate-800"> ریاست دانشکده</label>
+                        </div>
+                        <button onclick="saveUpdatedConsent()" class="btn-aurora-glow w-full text-white py-2 rounded-full text-xs font-black">
+                            ✅ تایید و اعمال دسترسی‌های جدید
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-2.5" id="chatThreadContainer"></div>
+
+            <!-- کادر پاسخ تکمیلی (فقط برای دستیار) -->
+            <div id="residentReplyBox" class="aurora-card p-4 rounded-3xl space-y-2.5">
+                <label class="block text-[10px] font-black text-slate-200">
+                    💬 ارسال پاسخ تکمیلی به مسئول مربوطه (کاملاً ناشناس):
+                </label>
+                <textarea id="inpThreadReply" rows="3" class="aurora-input w-full rounded-2xl p-3 text-xs font-bold text-slate-100 outline-none resize-none placeholder-slate-500" placeholder="پاسخ یا توضیح خود را تایپ فرمایید..."></textarea>
+                <button onclick="sendThreadReply('resident')" class="w-full bg-white/[0.04] hover:bg-white/[0.08] text-blue-300 border border-blue-400/30 font-black py-2.5 rounded-full text-xs active:scale-95 transition-all">
+                    ارسال پاسخ در این گفتگو
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW 3: کارتابل هوشمند مسئولین (Smart Triage Inbox) -->
+    <!-- ========================================== -->
+    <div id="view_inbox" class="hidden flex-grow overflow-y-auto p-4 pb-28 space-y-3.5 fade-in">
+        
+        <!-- ۱. نوار استعلام سریع با کد در بالای کارتابل مسئولین -->
+        <div class="aurora-card p-3 rounded-2xl flex gap-2 items-center">
+            <span class="text-blue-400 text-xs pr-1">🔍</span>
+            <input type="number" id="inpQuickInboxSearch" onkeyup="filterInboxByQuickCode()" class="bg-transparent flex-1 text-xs font-bold text-white outline-none placeholder-slate-500 tracking-wider" placeholder="جستجوی سریع کد ۶ رقمی در کارتابل...">
+            <button onclick="filterInboxByQuickCode()" class="text-[10px] font-black bg-blue-600/30 text-blue-300 border border-blue-400/30 px-3 py-1.5 rounded-xl active:scale-95">
+                پیدا کن
+            </button>
+        </div>
+
+        <!-- ۲. فیلترهای سه‌گانه کپسولی کارتابل (Inbox Zero) -->
+        <div class="flex gap-1.5 overflow-x-auto no-scrollbar py-0.5" id="inboxFilterPills">
+            <button onclick="setInboxFilter('unread', this)" class="inbox-filter-pill flex-1 py-1.5 px-2.5 text-[10px] font-black rounded-full bg-blue-600 text-white shadow-md transition-all text-center">
+                🔴 جدید / اقدام‌نشده (<span id="cnt_unread">0</span>)
+            </button>
+            <button onclick="setInboxFilter('in_progress', this)" class="inbox-filter-pill flex-1 py-1.5 px-2.5 text-[10px] font-bold rounded-full bg-white/[0.04] text-slate-400 hover:text-white transition-all text-center">
+                🟡 در حال بررسی (<span id="cnt_progress">0</span>)
+            </button>
+            <button onclick="setInboxFilter('answered', this)" class="inbox-filter-pill flex-1 py-1.5 px-2.5 text-[10px] font-bold rounded-full bg-white/[0.04] text-slate-400 hover:text-white transition-all text-center">
+                🟢 پاسخ‌داده‌شده (<span id="cnt_answered">0</span>)
+            </button>
+        </div>
+
+        <!-- لیست کارت‌های هوشمند کارتابل -->
+        <div id="inboxCardsContainer" class="space-y-2.5"></div>
+    </div>
+
+    <!-- MODAL: بررسی دقیق نامه و پاسخ‌دهی مسئول -->
+    <div id="handlerModal" class="fixed inset-0 bg-[#030712]/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 fade-in">
+        <div class="aurora-card rounded-3xl w-full max-w-sm p-5 shadow-2xl slide-up space-y-4 max-h-[90vh] overflow-y-auto border border-white/10">
+            <div class="flex justify-between items-center border-b border-white/[0.06] pb-3">
+                <h3 class="text-xs font-black text-blue-300 flex items-center gap-1.5">
+                    <span>📨</span> بررسی و پاسخ به مکاتبه
+                </h3>
+                <button onclick="closeHandlerModal()" class="text-slate-400 hover:text-white text-sm">✕</button>
+            </div>
+
+            <div id="handlerWarningBanner" class="p-3 rounded-2xl text-[10px] font-bold leading-relaxed"></div>
+
+            <div class="bg-slate-900/60 p-3.5 rounded-2xl border border-white/[0.06] space-y-2">
+                <div class="flex justify-between text-[10px] text-slate-400">
+                    <span id="hm_code" class="text-blue-400 font-black">#789124</span>
+                    <span id="hm_dept">دپارتمان عمومی</span>
+                </div>
+                <p id="hm_text" class="text-xs font-bold text-slate-100 leading-relaxed whitespace-pre-wrap"></p>
+            </div>
+
+            <div id="hm_thread" class="space-y-2 max-h-40 overflow-y-auto pr-1"></div>
+
+            <div class="space-y-2">
+                <label class="block text-[10px] font-bold text-slate-300">✍️ پاسخ مستقیم شما به دستیار:</label>
+                <textarea id="hm_reply_input" rows="3" class="aurora-input w-full rounded-2xl p-3 text-xs font-bold text-slate-100 outline-none focus:border-blue-500/50 resize-none" placeholder="پاسخ رسمی خود را بنویسید..."></textarea>
+                <button onclick="submitHandlerReply()" class="btn-aurora-glow w-full text-white py-2.5 rounded-full text-xs font-black">
+                    ارسال پاسخ به دستیار
+                </button>
+            </div>
+
+            <div class="pt-3 border-t border-white/[0.06] space-y-2" id="referralActionSection">
+                <label class="block text-[10px] font-bold text-slate-300">🔄 ارجاع پرونده به سایر مراجع مجاز:</label>
+                <div id="referralButtonsContainer" class="flex flex-col gap-1.5"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM GLASS BOTTOM SHEET (جایگزین منوی زشت سیستم) -->
+    <div id="customPickerSheet" class="fixed inset-0 bg-[#030712]/80 backdrop-blur-md z-50 hidden flex flex-col justify-end fade-in">
+        <div class="aurora-card rounded-t-3xl w-full max-h-[75vh] flex flex-col shadow-2xl sheet-up border-t border-white/10">
+            <div class="p-4 border-b border-white/[0.06] flex justify-between items-center bg-white/[0.02]">
+                <h3 class="text-xs font-black text-blue-300 flex items-center gap-2" id="pickerSheetTitle">انتخاب گزینه</h3>
+                <button onclick="closeCustomPicker()" class="w-8 h-8 rounded-full bg-white/[0.05] text-slate-400 hover:text-white flex items-center justify-center font-bold">✕</button>
+            </div>
+            <div class="p-4 overflow-y-auto space-y-2" id="pickerOptionsContainer"></div>
+        </div>
+    </div>
+
+    <!-- CUSTOM GLASS TOAST (جایگزین آلرت خام مرورگر) -->
+    <div id="customToast" class="fixed top-6 left-1/2 -translate-x-1/2 z-[100] hidden w-11/12 max-w-sm fade-in">
+        <div id="toastBox" class="aurora-card p-3.5 rounded-2xl shadow-2xl flex items-center gap-3 border border-white/10 backdrop-blur-2xl">
+            <span class="text-xl" id="toastIcon">💡</span>
+            <div class="flex-1">
+                <p class="text-xs font-extrabold text-white" id="toastMessage">پیام سیستم</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="fixed bottom-0 left-0 right-0 bg-[#030712]/80 backdrop-blur-xl p-3.5 border-t border-white/[0.07] shadow-2xl z-20">
+        <button onclick="closeApp()" class="w-full bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 font-black p-3.5 rounded-full text-xs transition-all active:scale-[0.98] border border-white/[0.06] flex justify-center items-center gap-2">
+            🔙 بازگشت به ربات
+        </button>
+    </div>
+
+    <script>
+        let appConfig = { is_official: 0, viewer_role: "کارشناس تحصیلات تکمیلی", groups: [], feedbacks: [] };
+        let activeTrackingData = null;
+        let activeModalFeedback = null;
+        let activeInboxFilter = 'unread';
+        let toastTimeout = null;
+
+        const CATEGORIES_LIST = [
+            { id: "آموزشی", label: "📖 مسائل آموزشی، اساتید و کوریکولوم" },
+            { id: "کشیک", label: "⏳ ساعات کشیک و بار کاری بیمارستانی" },
+            { id: "پاویون", label: "🛏 امکانات رفاهی، پاویون و تغذیه" },
+            { id: "اخلاق", label: "⚖️ اخلاق حرفه‌ای و تعاملات بالینی" },
+            { id: "کلان", label: "🏛 پیشنهادات و مسائل کلان دانشکده" }
+        ];
+
+        function showGlassToast(msg, type = 'info') {
+            if (toastTimeout) clearTimeout(toastTimeout);
+            const toast = document.getElementById('customToast');
+            const box = document.getElementById('toastBox');
+            const icon = document.getElementById('toastIcon');
+            const text = document.getElementById('toastMessage');
+
+            text.innerText = msg;
+            if (type === 'error') {
+                icon.innerText = '🚫';
+                box.className = "aurora-card p-3.5 rounded-2xl shadow-2xl flex items-center gap-3 border border-rose-500/40 bg-rose-950/60";
+            } else if (type === 'warning') {
+                icon.innerText = '⚠️';
+                box.className = "aurora-card p-3.5 rounded-2xl shadow-2xl flex items-center gap-3 border border-amber-500/40 bg-amber-950/60";
+            } else if (type === 'success') {
+                icon.innerText = '✅';
+                box.className = "aurora-card p-3.5 rounded-2xl shadow-2xl flex items-center gap-3 border border-emerald-500/40 bg-emerald-950/60";
+            } else {
+                icon.innerText = '💡';
+                box.className = "aurora-card p-3.5 rounded-2xl shadow-2xl flex items-center gap-3 border border-blue-500/40 bg-blue-950/60";
+            }
+
+            toast.classList.remove('hidden');
+            toastTimeout = setTimeout(() => { toast.classList.add('hidden'); }, 3500);
+        }
+
+        function openCustomPicker(pickerType) {
+            const container = document.getElementById('pickerOptionsContainer');
+            const title = document.getElementById('pickerSheetTitle');
+            container.innerHTML = '';
+
+            if (pickerType === 'dept') {
+                title.innerHTML = `<span>📁</span> انتخاب دپارتمان / حوزه`;
+                const currentDept = document.getElementById('inpDept').value;
+                const isGenActive = currentDept === "عمومی";
+                container.innerHTML += `
+                    <div onclick="selectPickerOption('dept', 'عمومی', '🌐 عمومی / محیط بیمارستان / عدم تمایل به ذکر رشته')" class="p-3.5 rounded-2xl cursor-pointer flex justify-between items-center transition-all ${isGenActive ? 'bg-blue-600/20 border border-blue-400/50' : 'bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.05]'}">
+                        <span class="text-xs font-bold ${isGenActive ? 'text-blue-300 font-black' : 'text-slate-200'}">🌐 عمومی / محیط بیمارستان / عدم تمایل به ذکر رشته</span>
+                        ${isGenActive ? '<span class="text-blue-400 text-xs">✓</span>' : ''}
+                    </div>
+                `;
+
+                (appConfig.groups || []).forEach(g => {
+                    const isAct = currentDept === g;
+                    container.innerHTML += `
+                        <div onclick="selectPickerOption('dept', '${g}', '📁 دپارتمان ${g}')" class="p-3.5 rounded-2xl cursor-pointer flex justify-between items-center transition-all ${isAct ? 'bg-blue-600/20 border border-blue-400/50' : 'bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.05]'}">
+                            <span class="text-xs font-bold ${isAct ? 'text-blue-300 font-black' : 'text-slate-200'}">📁 دپارتمان ${g}</span>
+                            ${isAct ? '<span class="text-blue-400 text-xs">✓</span>' : ''}
+                        </div>
+                    `;
+                });
+            } else if (pickerType === 'cat') {
+                title.innerHTML = `<span>🏷</span> انتخاب دسته‌بندی موضوع`;
+                const currentCat = document.getElementById('inpCategory').value;
+                CATEGORIES_LIST.forEach(c => {
+                    const isAct = currentCat === c.id;
+                    container.innerHTML += `
+                        <div onclick="selectPickerOption('cat', '${c.id}', '${c.label}')" class="p-3.5 rounded-2xl cursor-pointer flex justify-between items-center transition-all ${isAct ? 'bg-blue-600/20 border border-blue-400/50' : 'bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.05]'}">
+                            <span class="text-xs font-bold ${isAct ? 'text-blue-300 font-black' : 'text-slate-200'}">${c.label}</span>
+                            ${isAct ? '<span class="text-blue-400 text-xs">✓</span>' : ''}
+                        </div>
+                    `;
+                });
+            }
+
+            document.getElementById('customPickerSheet').classList.remove('hidden');
+        }
+
+        function closeCustomPicker() { document.getElementById('customPickerSheet').classList.add('hidden'); }
+
+        function selectPickerOption(type, value, displayLabel) {
+            if (type === 'dept') {
+                document.getElementById('inpDept').value = value;
+                document.getElementById('selectedDeptDisplay').innerText = displayLabel;
+            } else if (type === 'cat') {
+                document.getElementById('inpCategory').value = value;
+                document.getElementById('selectedCatDisplay').innerText = displayLabel;
+            }
+            closeCustomPicker();
+        }
+
+        function init() {
+            window.addEventListener('blur', () => { document.getElementById('appBody').classList.add('window-blurred'); });
+            window.addEventListener('focus', () => { document.getElementById('appBody').classList.remove('window-blurred'); });
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') document.getElementById('appBody').classList.remove('window-blurred');
+            });
+            window.addEventListener('touchstart', () => { document.getElementById('appBody').classList.remove('window-blurred'); }, { passive: true });
+            window.addEventListener('click', () => { document.getElementById('appBody').classList.remove('window-blurred'); });
+
+            document.addEventListener('contextmenu', e => e.preventDefault());
+            document.addEventListener('keydown', e => {
+                if (e.ctrlKey && ['c', 'v', 'u', 's', 'p'].includes(e.key.toLowerCase())) e.preventDefault();
+            });
+
+            const urlParams = new URLSearchParams(window.location.search);
+            try {
+                const compressedData = urlParams.get('d');
+                if (compressedData) {
+                    const binaryString = window.atob(compressedData.replace(/-/g, '+').replace(/_/g, '/'));
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+                    const decompressed = pako.inflate(bytes, { to: 'string' });
+                    appConfig = JSON.parse(decompressed);
+
+                    // تفکیک دسترسی‌ها
+                    if (appConfig.is_official === 1) {
+                        // مدیران: ثبت مکاتبه کاملاً مخفی، کارتابل هوشمند فعال
+                        document.getElementById('roleBadge').innerText = `👤 ${appConfig.viewer_role}`;
+                        document.getElementById('tab_btn_new').classList.add('hidden');
+                        document.getElementById('tab_btn_inbox').classList.remove('hidden');
+                        document.getElementById('tab_btn_track').innerHTML = '<span>🔍</span> استعلام با کد';
+                        document.getElementById('tab_btn_inbox').innerHTML = '<span>📥</span> کارتابل بررسی';
+                        
+                        updateInboxBadges();
+                        renderSmartInbox();
+                        switchTab('inbox');
+                    } else {
+                        // دستیاران: فقط ثبت مکاتبه و پیگیری
+                        document.getElementById('tab_btn_inbox').classList.add('hidden');
+                        document.getElementById('tab_btn_new').classList.remove('hidden');
+                        switchTab('new');
+                    }
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function switchTab(tab) {
+            ['new', 'track', 'inbox'].forEach(t => {
+                const pane = document.getElementById(`view_${t}`);
+                const btn = document.getElementById(`tab_btn_${t}`);
+                if (pane) pane.classList.add('hidden');
+                if (btn) btn.className = "flex-1 py-2 text-[11px] font-semibold rounded-full text-slate-400 hover:text-slate-200 transition-all flex justify-center items-center gap-1.5";
+            });
+
+            const activePane = document.getElementById(`view_${tab}`);
+            const activeBtn = document.getElementById(`tab_btn_${tab}`);
+            if (activePane) activePane.classList.remove('hidden');
+            if (activeBtn) activeBtn.className = "flex-1 py-2 text-[11px] font-black rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all flex justify-center items-center gap-1.5";
+        }
+
+        function checkRecipientLogic() {
+            const coord = document.getElementById('chk_coordinator').checked;
+            const eduMgr = document.getElementById('chk_edu_manager').checked;
+            const vice = document.getElementById('chk_vice_dean').checked;
+            const dean = document.getElementById('chk_dean').checked;
+
+            const selectedCount = [coord, eduMgr, vice, dean].filter(Boolean).length;
+            const notice = document.getElementById('exclusiveNotice');
+
+            if (selectedCount === 0) {
+                document.getElementById('chk_coordinator').checked = true;
+                showGlassToast("حداقل یک مقام مسئول باید جهت دریافت نامه مشخص باشد.", "warning");
+                return;
+            }
+
+            if (!coord && selectedCount === 1) notice.classList.remove('hidden');
+            else notice.classList.add('hidden');
+        }
+
+        function submitSecretFeedback() {
+            const message = document.getElementById('inpMessage').value.trim();
+            if (!message) { showGlassToast("لطفاً شرح موضوع را بنویسید.", "warning"); return; }
+
+            const dept = document.getElementById('inpDept').value;
+            const category = document.getElementById('inpCategory').value;
+
+            const allowed = [];
+            if (document.getElementById('chk_coordinator').checked) allowed.push("کارشناس تحصیلات تکمیلی");
+            if (document.getElementById('chk_edu_manager').checked) allowed.push("مدیر آموزش");
+            if (document.getElementById('chk_vice_dean').checked) allowed.push("معاونت آموزش");
+            if (document.getElementById('chk_dean').checked) allowed.push("ریاست دانشکده");
+
+            const primary = allowed.includes("کارشناس تحصیلات تکمیلی") ? "کارشناس تحصیلات تکمیلی" : allowed[0];
+
+            const btn = document.getElementById('btnSubmit');
+            btn.innerHTML = '⏳ در حال ارسال...';
+            btn.classList.add('opacity-50', 'pointer-events-none');
+
+            const payload = {
+                action: "submit_confidential_feedback",
+                dept: dept,
+                category: category,
+                message: message,
+                primary_recipient: primary,
+                allowed_referrals: allowed.join(",")
+            };
+
+            try {
+                window.Bale.WebApp.sendData(JSON.stringify(payload));
+                setTimeout(() => window.Bale.WebApp.close(), 150);
+            } catch(e) {
+                showGlassToast("خطا در ارتباط با سرور.", "error");
+                btn.innerHTML = '🔒 ارسال محرمانه و دریافت کد رهگیری';
+                btn.classList.remove('opacity-50', 'pointer-events-none');
+            }
+        }
+
+        // ==========================================
+        // پیگیری با کد ۶ رقمی
+        // ==========================================
+        function trackSecretFeedback() {
+            let rawCode = document.getElementById('inpTrackingCode').value.trim();
+            if (!rawCode) { showGlassToast("لطفاً کد رهگیری را وارد فرمایید.", "warning"); return; }
+            
+            const cleanCode = rawCode.replace(/[^0-9A-Z]/g, '');
+            const targetFeedback = (appConfig.feedbacks || []).find(f => {
+                const fClean = String(f.code).toUpperCase().replace(/[^0-9A-Z]/g, '');
+                return fClean === cleanCode || String(f.code) === rawCode;
+            });
+
+            if (!targetFeedback) {
+                showGlassToast("نامه‌ای با این کد در سیستم یافت نشد.", "error");
+                return;
+            }
+
+            activeTrackingData = targetFeedback;
+            document.getElementById('tr_code').innerText = targetFeedback.code;
+            document.getElementById('tr_dept').innerText = targetFeedback.dept;
+            document.getElementById('tr_cat').innerText = targetFeedback.cat;
+            
+            // وضعیت با رنگ‌بندی تفکیک‌شده
+            const statusEl = document.getElementById('tr_status');
+            const consentTrigger = document.getElementById('btnConsentEditTrigger');
+            const replyBox = document.getElementById('residentReplyBox');
+
+            if (appConfig.is_official === 1) {
+                // اگر مسئول است: حالت Read-Only و عدم امکان دستکاری در دسترسی‌های دستیار
+                consentTrigger.classList.add('hidden');
+                replyBox.classList.add('hidden');
+                
+                if (targetFeedback.status === 'پاسخ داده شده') {
+                    statusEl.innerText = "پاسخ داده شده";
+                    statusEl.className = "text-[9px] font-black px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30";
+                } else {
+                    statusEl.innerText = "در حال بررسی";
+                    statusEl.className = "text-[9px] font-black px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30";
+                }
+            } else {
+                consentTrigger.classList.remove('hidden');
+                replyBox.classList.remove('hidden');
+
+                statusEl.innerText = targetFeedback.status;
+                if (targetFeedback.status === 'خوانده نشده') {
+                    statusEl.className = "text-[9px] font-black px-3 py-1 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30";
+                } else if (targetFeedback.status === 'پاسخ داده شده') {
+                    statusEl.className = "text-[9px] font-black px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30";
+                } else {
+                    statusEl.className = "text-[9px] font-black px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30";
+                }
+            }
+
+            document.getElementById('tr_allowed_list').innerText = targetFeedback.allowed.split(',').join(' ، ');
+            renderChatThread(targetFeedback.thread || []);
+            document.getElementById('trackResultContainer').classList.remove('hidden');
+        }
+
+        function renderChatThread(thread) {
+            const container = document.getElementById('chatThreadContainer');
+            container.innerHTML = '';
+
+            thread.forEach(msg => {
+                const isResident = msg.sender === 'resident';
+                const alignClass = isResident ? 'aurora-card text-right' : 'aurora-input border-blue-500/30 text-right';
+                const roleBadge = isResident ? '<span class="text-blue-400 text-[9px] font-bold">👤 فرستنده (دستیار)</span>' : `<span class="text-amber-300 text-[9px] font-bold">👨‍💼 ${msg.label}</span>`;
+
+                container.innerHTML += `
+                    <div class="${alignClass} p-3.5 rounded-2xl space-y-1 shadow-sm slide-up">
+                        <div class="flex justify-between items-center text-[10px]">
+                            ${roleBadge}
+                            <span class="text-slate-500 font-bold">${msg.time}</span>
+                        </div>
+                        <p class="text-xs font-bold text-slate-100 leading-relaxed whitespace-pre-wrap">${msg.text}</p>
+                    </div>
+                `;
+            });
+        }
+
+        function sendThreadReply(role) {
+            const input = document.getElementById('inpThreadReply');
+            const text = input.value.trim();
+            if (!text) return;
+            if (!activeTrackingData) return;
+
+            const payload = {
+                action: "reply_confidential_feedback",
+                code: activeTrackingData.code,
+                text: text,
+                sender_role: role
+            };
+
+            window.Bale.WebApp.sendData(JSON.stringify(payload));
+            input.value = '';
+            showGlassToast("پاسخ شما با موفقیت ثبت و ارسال شد.", "success");
+            setTimeout(() => window.Bale.WebApp.close(), 150);
+        }
+
+        function toggleConsentEditor() {
+            const box = document.getElementById('consentEditorBox');
+            box.classList.toggle('hidden');
+            if (!box.classList.contains('hidden') && activeTrackingData) {
+                const allowed = activeTrackingData.allowed.split(',');
+                document.getElementById('edit_coord').checked = allowed.includes("کارشناس تحصیلات تکمیلی");
+                document.getElementById('edit_edu_mgr').checked = allowed.includes("مدیر آموزش");
+                document.getElementById('edit_vice').checked = allowed.includes("معاونت آموزش");
+                document.getElementById('edit_dean').checked = allowed.includes("ریاست دانشکده");
+            }
+        }
+
+        function saveUpdatedConsent() {
+            if (!activeTrackingData) return;
+            const updated = [];
+            if (document.getElementById('edit_coord').checked) updated.push("کارشناس تحصیلات تکمیلی");
+            if (document.getElementById('edit_edu_mgr').checked) updated.push("مدیر آموزش");
+            if (document.getElementById('edit_vice').checked) updated.push("معاونت آموزش");
+            if (document.getElementById('edit_dean').checked) updated.push("ریاست دانشکده");
+
+            if (updated.length === 0) { showGlassToast("حداقل یک مرجع مجاز باید مشخص باشد.", "warning"); return; }
+
+            const payload = {
+                action: "update_feedback_permissions",
+                code: activeTrackingData.code,
+                allowed: updated.join(",")
+            };
+
+            window.Bale.WebApp.sendData(JSON.stringify(payload));
+            showGlassToast("مجوزهای ارجاع جدید با موفقیت اعمال گردید.", "success");
+            setTimeout(() => window.Bale.WebApp.close(), 150);
+        }
+
+        // ==========================================
+        // کارتابل هوشمند مسئولین (Smart Triage Inbox)
+        // ==========================================
+        function updateInboxBadges() {
+            const list = appConfig.feedbacks || [];
+            const unread = list.filter(f => f.status === 'unread' || f.status === 'خوانده نشده').length;
+            const inProgress = list.filter(f => f.status === 'in_progress' || f.status === 'در حال بررسی').length;
+            const answered = list.filter(f => f.status === 'answered' || f.status === 'پاسخ داده شده').length;
+
+            document.getElementById('cnt_unread').innerText = unread;
+            document.getElementById('cnt_progress').innerText = inProgress;
+            document.getElementById('cnt_answered').innerText = answered;
+        }
+
+        function setInboxFilter(filterKey, btnEl) {
+            activeInboxFilter = filterKey;
+            document.querySelectorAll('.inbox-filter-pill').forEach(b => {
+                b.className = "inbox-filter-pill flex-1 py-1.5 px-2.5 text-[10px] font-bold rounded-full bg-white/[0.04] text-slate-400 hover:text-white transition-all text-center";
+            });
+            btnEl.className = "inbox-filter-pill flex-1 py-1.5 px-2.5 text-[10px] font-black rounded-full bg-blue-600 text-white shadow-md transition-all text-center";
+            renderSmartInbox();
+        }
+
+        function filterInboxByQuickCode() {
+            renderSmartInbox();
+        }
+
+        function renderSmartInbox() {
+            const container = document.getElementById('inboxCardsContainer');
+            container.innerHTML = '';
+            
+            const rawSearch = document.getElementById('inpQuickInboxSearch').value.trim();
+            const cleanSearch = rawSearch.replace(/[^0-9]/g, '');
+
+            const list = appConfig.feedbacks || [];
+            
+            // فیلتر نامه‌ها بر اساس تب انتخابی
+            let filtered = list.filter(f => {
+                const s = f.status;
+                if (activeInboxFilter === 'unread') return s === 'unread' || s === 'خوانده نشده';
+                if (activeInboxFilter === 'in_progress') return s === 'in_progress' || s === 'در حال بررسی';
+                if (activeInboxFilter === 'answered') return s === 'answered' || s === 'پاسخ داده شده';
+                return true;
+            });
+
+            // اعمال فیلتر سرچ کد سریع
+            if (cleanSearch) {
+                filtered = list.filter(f => String(f.code).includes(cleanSearch));
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-14 px-4 aurora-card rounded-3xl space-y-2 mt-2">
+                        <div class="text-3xl">✨</div>
+                        <p class="text-xs font-black text-slate-200">هیچ مکاتبه بی‌پاسخی در انتظار بررسی شما نیست.</p>
+                        <p class="text-[10px] text-slate-400 font-semibold">پرونده‌های این بخش همگی رسیدگی و پردازش شده‌اند.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filtered.forEach(f => {
+                const isExclusive = !f.allowed.includes("کارشناس تحصیلات تکمیلی") && f.allowed.split(',').length === 1;
+                const sealBadge = isExclusive ? `<span class="bg-rose-500/15 text-rose-300 border border-rose-500/30 text-[9px] font-black px-2.5 py-0.5 rounded-full">🔒 انحصاری</span>` : '';
+
+                let statusBadge = '';
+                if (f.status === 'unread' || f.status === 'خوانده نشده') {
+                    statusBadge = `<span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>`;
+                } else if (f.status === 'in_progress' || f.status === 'در حال بررسی') {
+                    statusBadge = `<span class="w-2 h-2 rounded-full bg-amber-400"></span>`;
+                } else {
+                    statusBadge = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span>`;
+                }
+
+                const card = document.createElement('div');
+                card.className = "aurora-card p-4 rounded-3xl space-y-2 cursor-pointer hover:border-blue-500/40 transition-all slide-up";
+                card.onclick = () => openHandlerModal(f);
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            ${statusBadge}
+                            <span class="text-xs font-black text-white tracking-wider">#${f.code}</span>
+                            <span class="text-[10px] text-slate-400 font-bold mr-1">دپارتمان: ${f.dept}</span>
+                        </div>
+                        ${sealBadge}
+                    </div>
+                    <p class="text-xs font-bold text-slate-300 line-clamp-2 leading-relaxed">${f.text}</p>
+                    <div class="flex justify-between items-center pt-2.5 border-t border-white/[0.06] text-[10px] text-slate-400 font-bold">
+                        <span>موضوع: ${f.cat}</span>
+                        <span class="text-blue-400 font-black">بررسی و پاسخ ➔</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function openHandlerModal(feedback) {
+            activeModalFeedback = feedback;
+            document.getElementById('hm_code').innerText = `#${feedback.code}`;
+            document.getElementById('hm_dept').innerText = `دپارتمان ${feedback.dept}`;
+            document.getElementById('hm_text').innerText = feedback.text;
+
+            // ثبت خودکار وضعیت در حال بررسی در دیتابیس
+            if (feedback.status === 'unread' || feedback.status === 'خوانده نشده') {
+                feedback.status = 'in_progress';
+                window.Bale.WebApp.sendData(JSON.stringify({
+                    action: "mark_feedback_read",
+                    code: feedback.code
+                }));
+                updateInboxBadges();
+            }
+
+            renderChatThreadInModal(feedback.thread || []);
+
+            const allowedRoles = feedback.allowed.split(',');
+            const warningBanner = document.getElementById('handlerWarningBanner');
+            const buttonsContainer = document.getElementById('referralButtonsContainer');
+            buttonsContainer.innerHTML = '';
+
+            const isExclusiveOnly = !allowedRoles.includes("کارشناس تحصیلات تکمیلی") && allowedRoles.length === 1;
+
+            if (isExclusiveOnly) {
+                warningBanner.className = "bg-rose-500/15 border border-rose-500/30 p-3 rounded-2xl text-[10px] font-bold text-rose-300 leading-relaxed";
+                warningBanner.innerHTML = `🚫 **قفل سخت‌افزاری ارجاع:** فرستنده تاکید کرده است که این پیام منحصراً توسط شما بررسی شود. تمام گزینه‌های ارجاع و اشتراک‌گذاری مسدود شده است.`;
+                document.getElementById('referralActionSection').classList.add('hidden');
+            } else {
+                warningBanner.className = "aurora-input p-3 rounded-2xl text-[10px] font-bold text-slate-300";
+                warningBanner.innerHTML = `✅ **مراجع مجاز ارجاع:** دستیار اجازه ارجاع به این افراد را داده است: <b class="text-blue-300">${feedback.allowed.split(',').join(' ، ')}</b>`;
+                document.getElementById('referralActionSection').classList.remove('hidden');
+
+                const allPossibleRoles = ["مدیر آموزش", "معاونت آموزش", "ریاست دانشکده"];
+                allPossibleRoles.forEach(roleName => {
+                    const isAllowed = allowedRoles.includes(roleName);
+                    const btn = document.createElement('button');
+                    if (isAllowed) {
+                        btn.className = "w-full bg-white/[0.04] hover:bg-white/[0.08] text-blue-300 border border-blue-400/30 py-2.5 rounded-full text-xs font-black transition-all active:scale-95 flex justify-center items-center gap-1.5";
+                        btn.innerHTML = `<span>📤</span> ارجاع پرونده به ${roleName}`;
+                        btn.onclick = () => referFeedbackTo(roleName);
+                    } else {
+                        btn.className = "w-full bg-slate-900/60 text-slate-600 border border-white/[0.04] py-2.5 rounded-full text-xs font-bold cursor-not-allowed opacity-40 flex justify-center items-center gap-1.5";
+                        btn.innerHTML = `<span>🔒</span> ارجاع به ${roleName} (غیرمجاز توسط فرستنده)`;
+                        btn.disabled = true;
+                    }
+                    buttonsContainer.appendChild(btn);
+                });
+            }
+
+            document.getElementById('handlerModal').classList.remove('hidden');
+        }
+
+        function renderChatThreadInModal(thread) {
+            const container = document.getElementById('hm_thread');
+            container.innerHTML = '';
+            thread.forEach(msg => {
+                const isResident = msg.sender === 'resident';
+                const roleBadge = isResident ? '<span class="text-blue-400 text-[9px] font-bold">👤 فرستنده (دستیار)</span>' : `<span class="text-amber-300 text-[9px] font-bold">👨‍💼 ${msg.label}</span>`;
+                container.innerHTML += `
+                    <div class="aurora-input p-2.5 rounded-2xl space-y-1 text-right">
+                        <div class="flex justify-between items-center text-[9px]">
+                            ${roleBadge}
+                            <span class="text-slate-500 font-bold">${msg.time}</span>
+                        </div>
+                        <p class="text-[11px] font-bold text-slate-200 whitespace-pre-wrap">${msg.text}</p>
+                    </div>
+                `;
+            });
+        }
+
+        function closeHandlerModal() { 
+            document.getElementById('handlerModal').classList.add('hidden');
+            renderSmartInbox();
+        }
+
+        function submitHandlerReply() {
+            const input = document.getElementById('hm_reply_input');
+            const replyText = input.value.trim();
+            if (!replyText) { showGlassToast("لطفاً متن پاسخ را تایپ فرمایید.", "warning"); return; }
+            if (!activeModalFeedback) return;
+
+            const payload = {
+                action: "reply_confidential_feedback",
+                code: activeModalFeedback.code,
+                text: replyText,
+                sender_role: "handler"
+            };
+
+            window.Bale.WebApp.sendData(JSON.stringify(payload));
+            showGlassToast("پاسخ شما با موفقیت ثبت شد.", "success");
+            setTimeout(() => window.Bale.WebApp.close(), 150);
+        }
+
+        function referFeedbackTo(targetRole) {
+            const payload = {
+                action: "refer_confidential_feedback",
+                code: activeModalFeedback.code,
+                referred_to: targetRole
+            };
+            window.Bale.WebApp.sendData(JSON.stringify(payload));
+            showGlassToast(`نامه با موفقیت به ${targetRole} ارجاع داده شد.`, "success");
+            setTimeout(() => window.Bale.WebApp.close(), 150);
+        }
+
+        function closeApp() { try { window.Bale.WebApp.close(); } catch(e) {} }
+        window.Bale.WebApp.ready();
+        init();
+    </script>
+</body>
+</html>
