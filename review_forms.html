@@ -132,6 +132,10 @@
         let formsData = [];
         let currentFormId = null;
 
+        function esc(value) {
+            return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        }
+
         function init() {
             const urlParams = new URLSearchParams(window.location.search);
             try {
@@ -168,15 +172,15 @@
                 
                 card.innerHTML = `
                     <div class="flex justify-between items-start gap-2 mb-2">
-                        <h3 class="text-xs font-extrabold text-slate-800 line-clamp-1 flex-1">${form.title}</h3>
-                        <span class="text-[10px] font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">${form.t_code}</span>
+                        <h3 class="text-xs font-extrabold text-slate-800 line-clamp-1 flex-1">${esc(form.title)}</h3>
+                        <span class="text-[10px] font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">${esc(form.t_code)}</span>
                     </div>
                     <div class="flex items-center gap-1.5 text-xs font-bold text-slate-600 mb-3">
                         <span class="text-slate-400 text-sm">👤</span>
-                        <span class="truncate">${form.u_name} <span class="text-[10px] text-slate-400 font-normal">(${form.u_group})</span></span>
+                        <span class="truncate">${esc(form.u_name)} <span class="text-[10px] text-slate-400 font-normal">(${esc(form.u_group)})</span></span>
                     </div>
                     <div class="flex justify-between items-center pt-2.5 border-t border-slate-50 text-[10px] font-bold text-slate-400">
-                        <span>🕒 ${form.sub_at}</span>
+                        <span>🕒 ${esc(form.sub_at)}</span>
                         <div class="flex gap-1">${rosterBadge}${reasonBadge}</div>
                     </div>
                 `;
@@ -189,7 +193,7 @@
             currentFormId = form.r_id;
 
             document.getElementById('detailTitle').innerText = form.title;
-            document.getElementById('detailSubtitle').innerText = `${form.u_name} (${form.u_group})`;
+            document.getElementById('detailSubtitle').innerText = `${esc(form.u_name)} (${esc(form.u_group)})`;
             document.getElementById('detailCode').innerText = form.t_code;
             document.getElementById('detailTime').innerText = form.sub_at;
             document.getElementById('detailElapsed').innerText = form.elapsed;
@@ -218,7 +222,7 @@
                 if (ans.t === 'member_checklist' && Array.isArray(ans.a)) {
                     let listHtml = '';
                     ans.a.forEach((item, j) => {
-                        listHtml += `<div class="text-xs font-bold text-slate-700 py-2 px-1 border-b border-slate-100 last:border-0 flex items-center justify-between"><div class="flex items-center gap-2"><span class="text-indigo-600 bg-indigo-50 w-5 h-5 flex items-center justify-center rounded-md text-[10px] font-black">${j+1}</span> ${item.n}</div> <span class="text-[10px] text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded">${item.y}</span></div>`;
+                        listHtml += `<div class="text-xs font-bold text-slate-700 py-2 px-1 border-b border-slate-100 last:border-0 flex items-center justify-between"><div class="flex items-center gap-2"><span class="text-indigo-600 bg-indigo-50 w-5 h-5 flex items-center justify-center rounded-md text-[10px] font-black">${j+1}</span> ${esc(item.n)}</div> <span class="text-[10px] text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded">${esc(item.y)}</span></div>`;
                     });
                     ansHtml = `<div class="bg-slate-50 rounded-xl p-2.5 border border-slate-200/60 mt-2">${listHtml || '<span class="text-xs text-slate-400 p-2 block text-center">خالی</span>'}</div>`;
                 } 
@@ -227,22 +231,22 @@
                     ans.a.recs.forEach((rec, j) => {
                         let fieldsHtml = '';
                         ans.a.schema.forEach(sch => {
-                            fieldsHtml += `<div class="flex justify-between py-1.5 border-b border-slate-100 last:border-0"><span class="text-[10px] font-bold text-slate-400">${sch.label}</span><span class="text-xs font-black text-slate-700">${rec[sch.id] || '-'}</span></div>`;
+                            fieldsHtml += `<div class="flex justify-between py-1.5 border-b border-slate-100 last:border-0"><span class="text-[10px] font-bold text-slate-400">${esc(sch.label)}</span><span class="text-xs font-black text-slate-700">${esc(rec[sch.id] || '-')}</span></div>`;
                         });
                         recsHtml += `<div class="bg-white border border-slate-200/80 rounded-xl p-3 mb-2 last:mb-0 shadow-2xs"><div class="text-[10px] font-black text-indigo-600 mb-2 bg-indigo-50 px-2 py-0.5 rounded inline-block">مورد ${j+1}</div>${fieldsHtml}</div>`;
                     });
                     ansHtml = `<div class="bg-slate-50 rounded-xl p-2.5 border border-slate-200/60 mt-2">${recsHtml || '<span class="text-xs text-slate-400 p-2 block text-center">خالی</span>'}</div>`;
                 }
                 else if (Array.isArray(ans.a)) {
-                    const chips = ans.a.map(x => `<span class="inline-block bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-lg px-2 py-1 text-[10px] font-bold m-0.5">${x}</span>`).join('');
+                    const chips = ans.a.map(x => `<span class="inline-block bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-lg px-2 py-1 text-[10px] font-bold m-0.5">${esc(x)}</span>`).join('');
                     ansHtml = `<div class="bg-slate-50 rounded-xl p-3 border border-slate-200/60 mt-2">${chips || '<span class="text-xs text-slate-400">خالی</span>'}</div>`;
                 }
                 else if (ans.a && typeof ans.a === 'object') {
-                    const rows = Object.entries(ans.a).map(([k,v]) => `<div class="flex justify-between gap-3 py-1.5 border-b border-slate-100 last:border-0"><span class="text-[10px] text-slate-400 font-bold">${k}</span><span class="text-xs text-slate-700 font-black">${v}</span></div>`).join('');
+                    const rows = Object.entries(ans.a).map(([k,v]) => `<div class="flex justify-between gap-3 py-1.5 border-b border-slate-100 last:border-0"><span class="text-[10px] text-slate-400 font-bold">${esc(k)}</span><span class="text-xs text-slate-700 font-black">${esc(v)}</span></div>`).join('');
                     ansHtml = `<div class="bg-slate-50 rounded-xl p-3 border border-slate-200/60 mt-2">${rows}</div>`;
                 }
                 else {
-                    ansHtml = `<div class="bg-slate-50 rounded-xl p-3 border border-slate-200/60 mt-2"><p class="text-xs font-bold text-slate-800 whitespace-pre-wrap leading-relaxed">${ans.a}</p></div>`;
+                    ansHtml = `<div class="bg-slate-50 rounded-xl p-3 border border-slate-200/60 mt-2"><p class="text-xs font-bold text-slate-800 whitespace-pre-wrap leading-relaxed">${esc(ans.a)}</p></div>`;
                 }
 
                 const card = document.createElement('div');
@@ -250,7 +254,7 @@
                 card.innerHTML = `
                     <h4 class="text-[11px] font-black text-slate-400 uppercase leading-relaxed flex items-center gap-1.5">
                         <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
-                        ${ans.q}
+                        ${esc(ans.q)}
                     </h4>
                     ${ansHtml}
                 `;

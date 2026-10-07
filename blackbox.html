@@ -108,6 +108,10 @@
         let radarData = { users: [], milestones: {}, journey: {} };
         let selectedUserId = null;
 
+        function esc(value) {
+            return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        }
+
         function init() {
             const urlParams = new URLSearchParams(window.location.search);
             try {
@@ -188,8 +192,8 @@
                     <div class="flex items-center gap-3">
                         <div class="w-9 h-9 rounded-xl bg-slate-700/60 text-slate-300 flex items-center justify-center text-sm font-black">👤</div>
                         <div>
-                            <p class="text-xs font-black text-slate-100">${u.name}</p>
-                            <p class="text-[10px] font-bold text-slate-400 mt-0.5">📚 ${u.group} | 🔰 ${u.role}</p>
+                            <p class="text-xs font-black text-slate-100">${esc(u.name)}</p>
+                            <p class="text-[10px] font-bold text-slate-400 mt-0.5">📚 ${esc(u.group)} | 🔰 ${esc(u.role)}</p>
                         </div>
                     </div>
                     <div>${healthBadge}</div>
@@ -267,10 +271,10 @@
                 card.className = "bg-slate-800/70 border border-slate-700/70 p-3.5 rounded-2xl space-y-1.5 slide-up";
                 card.innerHTML = `
                     <div class="flex justify-between items-center text-[10px]">
-                        <span class="text-indigo-400 font-black">🕒 ${m.rel || 'به‌تازگی'}</span>
-                        <span class="text-slate-500 font-bold">${m.time}</span>
+                        <span class="text-indigo-400 font-black">🕒 ${esc(m.rel || 'به‌تازگی')}</span>
+                        <span class="text-slate-500 font-bold">${esc(m.time)}</span>
                     </div>
-                    <p class="text-xs font-extrabold text-slate-200 leading-relaxed">📝 ${m.action}</p>
+                    <p class="text-xs font-extrabold text-slate-200 leading-relaxed">📝 ${esc(m.action)}</p>
                 `;
                 container.appendChild(card);
             });
@@ -298,7 +302,7 @@
                     terminalHtml = `
                         <div class="mt-2.5 pt-2.5 border-t border-rose-500/20 space-y-2">
                             <div class="bg-black/80 rounded-xl p-2.5 text-[10px] font-mono text-rose-300 overflow-x-auto max-h-36 whitespace-pre border border-rose-500/30">
-${j.terminal}
+${esc(j.terminal)}
                             </div>
                             <button onclick="copyForAI('${encodeURIComponent(j.title)}', '${encodeURIComponent(j.payload || '')}', '${encodedTerm}')" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-900 font-black py-2 rounded-xl text-[10px] transition-all active:scale-95 flex justify-center items-center gap-1.5 shadow-md shadow-amber-500/10">
                                 📋 کپی لاگ برای هوش مصنوعی (Surgical Debug)
@@ -312,11 +316,11 @@ ${j.terminal}
                 card.innerHTML = `
                     <div class="flex justify-between items-center text-[10px]">
                         <span class="font-black text-slate-400 flex items-center gap-1.5">
-                            <span>${statusDot}</span> ${j.title}
+                            <span>${statusDot}</span> ${esc(j.title)}
                         </span>
-                        <span class="text-slate-500 font-bold">${j.rel || ''}</span>
+                        <span class="text-slate-500 font-bold">${esc(j.rel || '')}</span>
                     </div>
-                    ${j.payload ? `<p class="text-[10px] font-mono text-indigo-300 bg-slate-900/60 px-2 py-1 rounded-lg border border-slate-700/50 truncate">📦 کلید: ${j.payload}</p>` : ''}
+                    ${j.payload ? `<p class="text-[10px] font-mono text-indigo-300 bg-slate-900/60 px-2 py-1 rounded-lg border border-slate-700/50 truncate">📦 کلید: ${esc(j.payload)}</p>` : ''}
                     ${terminalHtml}
                 `;
                 container.appendChild(card);
