@@ -466,9 +466,9 @@
         function toggleGroupsView() {
             const role = getSelectedRole();
             const wrap = document.getElementById('groupsWrapper');
-            const customOn = document.getElementById('m_permissions_enabled').checked && role !== 'کارشناس پژوهش';
-            const selected = new Set(selectedPermissionKeys());
-            const needsGroup = role === 'کارشناس گروه' || role === 'کارشناس آموزش' || (customOn && db_permissions.some(p => Number(p.group_scoped || 0) === 1 && selected.has(String(p.key))));
+            // انتخاب گروه فقط برای کارشناس گروه/آموزش نمایش داده می‌شود.
+            // سمت‌های سفارشی حتی اگر دسترسی‌های مختلف داشته باشند، به انتخاب گروه اجباری نیستند.
+            const needsGroup = role === 'کارشناس گروه' || role === 'کارشناس آموزش';
             wrap.classList.toggle('hidden', !needsGroup);
         }
 
@@ -552,11 +552,10 @@
                 if (!legacyRoles.has(role) && permissionsEnabled !== 1) { showAlert("برای سمت جدید باید «دسترسی سفارشی» روشن باشد."); return; }
 
                 let groups = "همه گروه‌ها";
-                const groupScopedSelected = permissionsEnabled === 1 && db_permissions.some(p => Number(p.group_scoped || 0) === 1 && permissions.includes(String(p.key)));
-                if (role === 'کارشناس گروه' || role === 'کارشناس آموزش' || groupScopedSelected) {
+                if (role === 'کارشناس گروه' || role === 'کارشناس آموزش') {
                     const checks = document.querySelectorAll('.grp-check:checked');
                     const grps = Array.from(checks).map(c => c.value);
-                    if (grps.length === 0) { showAlert(role === 'کارشناس گروه' ? "برای ثبت سمت «کارشناس گروه» باید حداقل یک گروه آموزشی را تیک بزنید." : "برای دسترسی‌های گروهی حداقل یک گروه آموزشی را تیک بزنید."); return; }
+                    if (grps.length === 0) { showAlert("برای این سمت باید حداقل یک گروه آموزشی را تیک بزنید."); return; }
                     groups = grps.join(', ');
                 }
 
