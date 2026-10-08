@@ -107,14 +107,9 @@
 
                 <div>
                     <label class="block text-[11px] font-bold text-slate-500 mb-1 ml-1">سمت سازمانی</label>
-                    <select id="m_role" onchange="toggleGroupsView()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-indigo-700 focus:ring-2 focus:ring-indigo-400 outline-none appearance-none cursor-pointer">
-                        <option value="کارشناس گروه">کارشناس گروه</option>
-                        <option value="کارشناس پژوهش">کارشناس پژوهش</option>
-                        <option value="مدیر آموزش">مدیر آموزش</option>
-                        <option value="معاون آموزش دانشکده">معاون آموزش دانشکده</option>
-                        <option value="ریاست دانشکده">ریاست دانشکده</option>
-                        <option value="مدیر ارشد سامانه">مدیر ارشد سامانه</option>
-                    </select>
+                    <input type="text" id="m_role" list="roleSuggestions" oninput="handleRoleChange()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-indigo-700 focus:ring-2 focus:ring-indigo-400 outline-none" placeholder="مثلاً کارشناس EDO یا ادمین محدود">
+                    <datalist id="roleSuggestions"></datalist>
+                    <p class="text-[9px] text-slate-400 mt-1">می‌توانید یکی از سمت‌های قبلی را انتخاب کنید یا یک سمت جدید تایپ کنید.</p>
                 </div>
 
                 <div id="groupsWrapper">
@@ -122,6 +117,29 @@
                     <div id="m_groups" class="max-h-32 overflow-y-auto bg-slate-50 p-2 border border-slate-200 rounded-xl space-y-1">
                         <!-- چک‌باکس گروه‌ها -->
                     </div>
+                </div>
+
+                <div id="permissionModeBox" class="bg-indigo-50 p-3 rounded-xl border border-indigo-200/70">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <p class="text-xs font-black text-indigo-800">🎛 دسترسی سفارشی</p>
+                            <p class="text-[9px] text-indigo-600 mt-0.5 leading-relaxed">اگر روشن باشد، خودتان مشخص می‌کنید این حساب دقیقاً کدام قسمت‌ها را ببیند.</p>
+                        </div>
+                        <div class="relative inline-block w-12 h-6 align-middle select-none shrink-0">
+                            <input type="checkbox" id="m_permissions_enabled" onchange="togglePermissionView()" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer m-0 p-0"/>
+                            <label for="m_permissions_enabled" class="toggle-label block overflow-hidden h-6 rounded-full cursor-pointer"></label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="researchAccessNotice" class="hidden bg-emerald-50 p-3 rounded-xl border border-emerald-200 text-[10px] font-bold text-emerald-800 leading-relaxed">
+                    🔒 دسترسی «کارشناس پژوهش» ثابت است: فقط مشاهده دستیاران دانشکده و ویرایش وضعیت پایان‌نامه‌ها. هیچ دسترسی سومی از این صفحه به آن اضافه نمی‌شود.
+                </div>
+
+                <div id="permissionsWrapper" class="hidden">
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1 ml-1">قسمت‌های مجاز</label>
+                    <div id="m_permissions" class="max-h-56 overflow-y-auto bg-slate-50 p-2 border border-slate-200 rounded-xl space-y-2"></div>
+                    <p class="text-[9px] text-slate-400 mt-1">هر موردی که تیک نخورده باشد در منوی این حساب نمایش داده نمی‌شود.</p>
                 </div>
 
                 <div id="statusWrapper" class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100">
@@ -186,6 +204,12 @@
     <script>
         let db_users = []; 
         let db_groups = [];
+        let db_permissions = [];
+        let db_roles = [];
+        const legacyRoles = new Set([
+            'کارشناس گروه','کارشناس آموزش','کارشناس پژوهش','کارشناس تحصیلات تکمیلی','کارشناس تحصیلات تکمیلی بالینی','دستیار',
+            'مدیر آموزش','معاون آموزش دانشکده','معاونت آموزش','ریاست دانشکده','مقام ارشد (ریاست/مدیر)','مدیر ارشد سامانه'
+        ]);
         let new_users = []; 
         let edited_users = {}; 
         let archived_users = []; // آرایه شناسه‌های بایگانی شده
@@ -215,7 +239,10 @@
                     const data = JSON.parse(decompressed);
                     db_users = data.u || [];
                     db_groups = data.g || [];
+                    db_permissions = Array.isArray(data.p) ? data.p : [];
+                    db_roles = Array.isArray(data.r) ? data.r : [];
                 }
+                renderRoleSuggestions();
                 renderUsers();
             } catch(e) { 
                 console.error(e); 
@@ -223,11 +250,80 @@
             }
         }
 
+        function parsePermissionList(raw) {
+            try {
+                if (Array.isArray(raw)) return raw.map(String);
+                if (!raw) return [];
+                const v = JSON.parse(raw);
+                return Array.isArray(v) ? v.map(String) : [];
+            } catch (_) { return []; }
+        }
+
+        function renderRoleSuggestions() {
+            const dl = document.getElementById('roleSuggestions');
+            dl.innerHTML = '';
+            const base = ['کارشناس گروه','کارشناس پژوهش','کارشناس EDO','کارشناس آموزش','کارشناس تحصیلات تکمیلی','کارشناس تحصیلات تکمیلی بالینی','دستیار','مدیر آموزش','معاون آموزش دانشکده','ریاست دانشکده','ادمین محدود'];
+            [...new Set([...base, ...db_roles])].filter(Boolean).forEach(role => {
+                const o = document.createElement('option'); o.value = role; dl.appendChild(o);
+            });
+        }
+
+        function renderPermissionOptions(selected=[]) {
+            const container = document.getElementById('m_permissions');
+            container.innerHTML = '';
+            const sel = new Set((selected || []).map(String));
+            db_permissions.forEach(p => {
+                const label = document.createElement('label');
+                label.className = 'flex gap-2 p-2 bg-white border border-slate-100 rounded-xl cursor-pointer';
+                const cb = document.createElement('input');
+                cb.type = 'checkbox'; cb.value = String(p.key); cb.className = 'perm-check mt-0.5 w-4 h-4 text-indigo-600 rounded';
+                cb.checked = sel.has(String(p.key));
+                cb.addEventListener('change', toggleGroupsView);
+                const textWrap = document.createElement('div');
+                const title = document.createElement('p'); title.className = 'text-[11px] font-black text-slate-700'; title.textContent = p.label || p.key;
+                const desc = document.createElement('p'); desc.className = 'text-[9px] text-slate-400 mt-0.5 leading-relaxed'; desc.textContent = p.desc || '';
+                textWrap.appendChild(title); textWrap.appendChild(desc);
+                label.appendChild(cb); label.appendChild(textWrap); container.appendChild(label);
+            });
+        }
+
+        function selectedPermissionKeys() {
+            return Array.from(document.querySelectorAll('.perm-check:checked')).map(x => String(x.value));
+        }
+
+        function handleRoleChange() {
+            const role = document.getElementById('m_role').value.trim();
+            const permToggle = document.getElementById('m_permissions_enabled');
+            if (legacyRoles.has(role)) {
+                // نقش‌های فعلی سیستم دسترسی تثبیت‌شده خودشان را دارند.
+                permToggle.checked = false;
+                permToggle.disabled = true;
+            } else if (role) {
+                // هر سمت جدید الزاماً با دسترسی سفارشی ساخته می‌شود.
+                permToggle.checked = true;
+                permToggle.disabled = true;
+            } else {
+                permToggle.checked = false;
+                permToggle.disabled = false;
+            }
+            togglePermissionView();
+            toggleGroupsView();
+        }
+
+        function togglePermissionView() {
+            const role = document.getElementById('m_role').value.trim();
+            const enabled = document.getElementById('m_permissions_enabled').checked && role !== 'کارشناس پژوهش';
+            document.getElementById('permissionsWrapper').classList.toggle('hidden', !enabled);
+            document.getElementById('researchAccessNotice').classList.toggle('hidden', role !== 'کارشناس پژوهش');
+            document.getElementById('permissionModeBox').classList.toggle('opacity-60', role === 'کارشناس پژوهش');
+            toggleGroupsView();
+        }
+
         function getUserDisplayData(u_id, is_new=false) {
             if (is_new) return new_users.find(x => x.id === u_id);
             if (edited_users[u_id]) return edited_users[u_id];
             const raw = db_users.find(x => String(x[0]) === String(u_id));
-            if (raw) return { id: raw[0], phone: raw[1], name: raw[2], role: raw[3], groups: raw[4], status: raw[5], prefix: raw[6] || 'جناب آقای / سرکار خانم', appointed_at: raw[7] || '', is_ghost: raw[8] || 0 };
+            if (raw) return { id: raw[0], phone: raw[1], name: raw[2], role: raw[3], groups: raw[4], status: raw[5], prefix: raw[6] || 'جناب آقای / سرکار خانم', appointed_at: raw[7] || '', is_ghost: raw[8] || 0, permissions_enabled: Number(raw[9] || 0), permissions: parsePermissionList(raw[10]) };
             return null;
         }
 
@@ -246,7 +342,7 @@
                     const u_id = String(raw[0]);
                     if (archived_users.includes(u_id) || hard_deleted_users.includes(u_id)) return; // اگر حذف شده نشان نده
                     
-                    const u = edited_users[u_id] || { id: raw[0], phone: raw[1], name: raw[2], role: raw[3], groups: raw[4], status: raw[5], prefix: raw[6] || 'جناب آقای / سرکار خانم', appointed_at: raw[7] || '' };
+                    const u = edited_users[u_id] || { id: raw[0], phone: raw[1], name: raw[2], role: raw[3], groups: raw[4], status: raw[5], prefix: raw[6] || 'جناب آقای / سرکار خانم', appointed_at: raw[7] || '', is_ghost: raw[8] || 0, permissions_enabled: Number(raw[9] || 0), permissions: parsePermissionList(raw[10]) };
                     if (filter && !u.name.toLowerCase().includes(filter) && !String(u.phone).includes(filter)) return;
                     container.innerHTML += createUserCard(u, false, !!edited_users[u_id]);
                 });
@@ -264,6 +360,8 @@
             else if (isEdited) { badge = '<span class="bg-amber-100 text-amber-600 text-[9px] px-2 py-0.5 rounded-md">ویرایش شده</span>'; bg = 'bg-amber-50/30 border-amber-100'; }
             
             const ghostBadge = (u.is_ghost === 1) ? '<span class="bg-purple-100 text-purple-700 text-[9px] font-black px-2 py-0.5 rounded-md mr-1 border border-purple-200">👻 تستر نامرئی</span>' : '';
+            const permCount = Array.isArray(u.permissions) ? u.permissions.length : 0;
+            const permissionBadge = (Number(u.permissions_enabled || 0) === 1) ? `<span class="bg-indigo-100 text-indigo-700 text-[9px] font-black px-2 py-0.5 rounded-md mr-1 border border-indigo-200">🎛 ${permCount} دسترسی</span>` : '';
             const statusIcon = (u.is_ghost === 1) ? '👻' : (u.status === 'active' ? '🟢' : '🔴');
             const grpStr = u.groups || "نامشخص";
             const groupTruncate = grpStr.length > 25 ? grpStr.substring(0,25) + '...' : grpStr;
@@ -280,7 +378,7 @@
                 <div class="${bg} p-3.5 rounded-2xl shadow-sm border border-slate-100 slide-up hover:shadow-md transition-all">
                     <div class="flex justify-between items-start">
                         <div>
-                            <p class="text-sm font-extrabold text-slate-800">${statusIcon} ${prefixStr}${u.name} ${badge} ${ghostBadge}</p>
+                            <p class="text-sm font-extrabold text-slate-800">${statusIcon} ${prefixStr}${u.name} ${badge} ${ghostBadge} ${permissionBadge}</p>
                             <p class="text-[11px] font-bold text-slate-500 mt-1">📱 ${u.phone} | 🔰 ${u.role}</p>
                             <p class="text-[10px] text-slate-400 mt-0.5">📚 ${groupTruncate}</p>
                         </div>
@@ -328,10 +426,12 @@
         }
 
         function toggleGroupsView() {
-            const role = document.getElementById('m_role').value;
+            const role = document.getElementById('m_role').value.trim();
             const wrap = document.getElementById('groupsWrapper');
-            if (role === 'کارشناس گروه') wrap.classList.remove('hidden');
-            else wrap.classList.add('hidden');
+            const customOn = document.getElementById('m_permissions_enabled').checked && role !== 'کارشناس پژوهش';
+            const selected = new Set(selectedPermissionKeys());
+            const needsGroup = role === 'کارشناس گروه' || role === 'کارشناس آموزش' || (customOn && db_permissions.some(p => Number(p.group_scoped || 0) === 1 && selected.has(String(p.key))));
+            wrap.classList.toggle('hidden', !needsGroup);
         }
 
         function openUserModal(u_id, isNew=false) {
@@ -341,6 +441,7 @@
                 
                 let u = null;
                 if (u_id) u = getUserDisplayData(u_id, isNew);
+                renderPermissionOptions(u && Array.isArray(u.permissions) ? u.permissions : []);
 
                 let selectedGrps = u && u.groups ? String(u.groups).split(',').map(s=>s.trim()) : [];
                 db_groups.forEach(g => {
@@ -364,6 +465,7 @@
                     document.getElementById('m_appointed').value = u.appointed_at || "";
                     document.getElementById('m_status').checked = (u.status === 'active');
                     document.getElementById('m_is_ghost').checked = (u.is_ghost === 1);
+                    document.getElementById('m_permissions_enabled').checked = (Number(u.permissions_enabled || 0) === 1);
                     document.getElementById('statusWrapper').classList.remove('hidden');
                 } else {
                     document.getElementById('modalTitleText').innerText = 'افزودن کاربر جدید';
@@ -374,10 +476,13 @@
                     document.getElementById('m_role').value = 'کارشناس گروه';
                     document.getElementById('m_prefix').value = 'آقای';
                     document.getElementById('m_status').checked = true;
+                    document.getElementById('m_is_ghost').checked = false;
+                    document.getElementById('m_permissions_enabled').checked = false;
+                    document.getElementById('m_appointed').value = '';
                     document.getElementById('statusWrapper').classList.add('hidden');
                 }
 
-                toggleGroupsView();
+                handleRoleChange();
                 document.getElementById('userModal').classList.remove('hidden');
             } catch (e) {
                 showAlert("خطا در باز کردن فرم ویرایش: " + e.message);
@@ -393,25 +498,31 @@
                 const rawId = document.getElementById('m_original_id').value;
                 const name = document.getElementById('m_name').value.trim();
                 const phone = document.getElementById('m_phone').value.trim();
-                const role = document.getElementById('m_role').value;
+                const role = document.getElementById('m_role').value.trim();
                 const prefix = document.getElementById('m_prefix').value;
                 const isActive = document.getElementById('m_status').checked;
                 const status = isActive ? 'active' : 'suspended';
                 
-                if (!name || !phone) { showAlert("نام و شماره الزامی است."); return; }
+                if (!name || !phone || !role) { showAlert("نام، شماره و سمت الزامی است."); return; }
                 if (phone.length < 5) { showAlert("شماره/آیدی وارد شده نامعتبر است."); return; }
 
+                let permissionsEnabled = document.getElementById('m_permissions_enabled').checked ? 1 : 0;
+                let permissions = permissionsEnabled ? selectedPermissionKeys() : [];
+                if (role === 'کارشناس پژوهش') { permissionsEnabled = 0; permissions = []; }
+                if (!legacyRoles.has(role) && permissionsEnabled !== 1) { showAlert("برای سمت جدید باید «دسترسی سفارشی» روشن باشد."); return; }
+
                 let groups = "همه گروه‌ها";
-                if (role === 'کارشناس گروه') {
+                const groupScopedSelected = permissionsEnabled === 1 && db_permissions.some(p => Number(p.group_scoped || 0) === 1 && permissions.includes(String(p.key)));
+                if (role === 'کارشناس گروه' || role === 'کارشناس آموزش' || groupScopedSelected) {
                     const checks = document.querySelectorAll('.grp-check:checked');
                     const grps = Array.from(checks).map(c => c.value);
-                    if (grps.length === 0) { showAlert("حداقل باید یک گروه آموزشی برای کارشناس تیک بزنید."); return; }
+                    if (grps.length === 0) { showAlert("برای دسترسی‌های گروهی حداقل یک گروه آموزشی را تیک بزنید."); return; }
                     groups = grps.join(', ');
                 }
 
                 const appointed = document.getElementById('m_appointed').value.trim();
                 const isGhost = document.getElementById('m_is_ghost').checked ? 1 : 0;
-                const userData = { id: phone, phone: phone, name: name, role: role, groups: groups, status: status, prefix: prefix, appointed_at: appointed, is_ghost: isGhost };
+                const userData = { id: phone, phone: phone, name: name, role: role, groups: groups, status: status, prefix: prefix, appointed_at: appointed, is_ghost: isGhost, permissions_enabled: permissionsEnabled, permissions: permissions };
 
                 if (rawId.startsWith('NEW_')) {
                     let realId = rawId.replace('NEW_', '');
