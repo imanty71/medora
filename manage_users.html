@@ -107,9 +107,12 @@
 
                 <div>
                     <label class="block text-[11px] font-bold text-slate-500 mb-1 ml-1">سمت سازمانی</label>
-                    <input type="text" id="m_role" list="roleSuggestions" oninput="handleRoleChange()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-indigo-700 focus:ring-2 focus:ring-indigo-400 outline-none" placeholder="مثلاً کارشناس EDO یا ادمین محدود">
-                    <datalist id="roleSuggestions"></datalist>
-                    <p id="roleHelp" class="text-[9px] text-slate-400 mt-1">می‌توانید یکی از سمت‌های قبلی را انتخاب کنید یا یک سمت جدید تایپ کنید.</p>
+                    <select id="m_role" onchange="handleRoleChange()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-indigo-700 focus:ring-2 focus:ring-indigo-400 outline-none appearance-none cursor-pointer"></select>
+                </div>
+
+                <div id="customRoleWrapper" class="hidden">
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1 ml-1">عنوان سمت جدید</label>
+                    <input type="text" id="m_custom_role" oninput="handleRoleChange()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-indigo-700 focus:ring-2 focus:ring-indigo-400 outline-none" placeholder="مثلاً کارشناس EDO یا ادمین محدود">
                 </div>
 
                 <div id="groupsWrapper">
@@ -119,22 +122,19 @@
                     </div>
                 </div>
 
-                <div id="permissionModeBox" onclick="handlePermissionCardClick(event)" class="bg-indigo-50 p-3 rounded-xl border border-indigo-200/70">
+                <div id="permissionModeBox" class="hidden bg-indigo-50 p-3 rounded-xl border border-indigo-200/70">
                     <div class="flex items-center justify-between gap-3">
                         <div>
                             <p class="text-xs font-black text-indigo-800">🎛 دسترسی سفارشی</p>
                             <p class="text-[9px] text-indigo-600 mt-0.5 leading-relaxed">اگر روشن باشد، خودتان مشخص می‌کنید این حساب دقیقاً کدام قسمت‌ها را ببیند.</p>
                         </div>
                         <div class="relative inline-block w-12 h-6 align-middle select-none shrink-0">
-                            <input type="checkbox" id="m_permissions_enabled" onchange="togglePermissionView()" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer m-0 p-0"/>
+                            <input type="checkbox" id="m_permissions_enabled" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer m-0 p-0"/>
                             <label for="m_permissions_enabled" class="toggle-label block overflow-hidden h-6 rounded-full cursor-pointer"></label>
                         </div>
                     </div>
                 </div>
 
-                <div id="researchAccessNotice" class="hidden bg-emerald-50 p-3 rounded-xl border border-emerald-200 text-[10px] font-bold text-emerald-800 leading-relaxed">
-                    🔒 دسترسی «کارشناس پژوهش» ثابت است: فقط مشاهده دستیاران دانشکده و ویرایش وضعیت پایان‌نامه‌ها. هیچ دسترسی سومی از این صفحه به آن اضافه نمی‌شود.
-                </div>
 
                 <div id="permissionsWrapper" class="hidden">
                     <label class="block text-[11px] font-bold text-slate-500 mb-1 ml-1">قسمت‌های مجاز</label>
@@ -242,7 +242,8 @@
                     db_permissions = Array.isArray(data.p) ? data.p : [];
                     db_roles = Array.isArray(data.r) ? data.r : [];
                 }
-                renderRoleSuggestions();
+                renderRoleOptions();
+                document.getElementById('m_permissions_enabled').addEventListener('change', function(){ this.dataset.userTouched='1'; togglePermissionView(); });
                 renderUsers();
             } catch(e) { 
                 console.error(e); 
@@ -259,13 +260,25 @@
             } catch (_) { return []; }
         }
 
-        function renderRoleSuggestions() {
-            const dl = document.getElementById('roleSuggestions');
-            dl.innerHTML = '';
-            const base = ['کارشناس گروه','کارشناس پژوهش','کارشناس EDO','کارشناس آموزش','کارشناس تحصیلات تکمیلی','کارشناس تحصیلات تکمیلی بالینی','دستیار','مدیر آموزش','معاون آموزش دانشکده','ریاست دانشکده','ادمین محدود'];
-            [...new Set([...base, ...db_roles])].filter(Boolean).forEach(role => {
-                const o = document.createElement('option'); o.value = role; dl.appendChild(o);
+        function renderRoleOptions() {
+            const select = document.getElementById('m_role');
+            select.innerHTML = '';
+            const base = [
+                'کارشناس گروه','کارشناس پژوهش','کارشناس آموزش','کارشناس تحصیلات تکمیلی',
+                'کارشناس تحصیلات تکمیلی بالینی','دستیار','مدیر آموزش','معاون آموزش دانشکده',
+                'ریاست دانشکده','مدیر ارشد سامانه'
+            ];
+            const roles = [...new Set([...base, ...db_roles].filter(Boolean))];
+            roles.forEach(role => {
+                const o = document.createElement('option');
+                o.value = role;
+                o.textContent = role;
+                select.appendChild(o);
             });
+            const custom = document.createElement('option');
+            custom.value = '__custom__';
+            custom.textContent = '➕ سمت جدید / سفارشی';
+            select.appendChild(custom);
         }
 
         function renderPermissionOptions(selected=[]) {
@@ -291,69 +304,52 @@
             return Array.from(document.querySelectorAll('.perm-check:checked')).map(x => String(x.value));
         }
 
-        function handleRoleChange() {
-            const role = document.getElementById('m_role').value.trim();
-            const permToggle = document.getElementById('m_permissions_enabled');
-            const help = document.getElementById('roleHelp');
+        function getSelectedRole() {
+            const selected = document.getElementById('m_role').value;
+            if (selected === '__custom__') return document.getElementById('m_custom_role').value.trim();
+            return String(selected || '').trim();
+        }
 
-            if (role === 'کارشناس پژوهش') {
-                // پژوهش عمداً قفل است: فقط دسترسی‌های اختصاصی خودش.
-                permToggle.checked = false;
-                permToggle.disabled = true;
-                help.textContent = '🔒 کارشناس پژوهش دسترسی ثابت دارد. برای خارج کردن شخص از این نقش، همین عنوان را به سمت دیگری تغییر دهید.';
-                help.className = 'text-[9px] text-purple-600 font-bold mt-1';
-            } else if (legacyRoles.has(role)) {
-                // نقش‌های آماده سیستم همان سطح دسترسی تثبیت‌شده خودشان را دارند.
-                permToggle.checked = false;
-                permToggle.disabled = true;
-                help.textContent = role === 'کارشناس گروه'
-                    ? 'برای تغییر از پژوهش به کارشناس گروه، یک یا چند گروه را پایین تیک بزنید و سپس ذخیره کنید.'
-                    : 'این سمت از نقش‌های آماده سیستم است و دسترسی ثابت خودش را دارد. برای دسترسی دلخواه، یک عنوان جدید مثل «کارشناس EDO» وارد کنید.';
-                help.className = 'text-[9px] text-amber-600 font-bold mt-1';
-            } else if (role) {
-                // سمت جدید: دسترسی سفارشی به صورت پیش‌فرض روشن است ولی سوییچ واقعاً قابل کلیک است.
-                if (!permToggle.checked) permToggle.checked = true;
-                permToggle.disabled = false;
-                help.textContent = '✅ سمت جدید است؛ حالا دسترسی‌های موردنظر را از بخش «دسترسی سفارشی» انتخاب کنید.';
-                help.className = 'text-[9px] text-emerald-600 font-bold mt-1';
+        function selectRoleValue(role) {
+            const select = document.getElementById('m_role');
+            const value = String(role || 'کارشناس گروه').trim();
+            const exists = Array.from(select.options).some(o => o.value === value);
+            if (exists) {
+                select.value = value;
+                document.getElementById('m_custom_role').value = '';
             } else {
-                permToggle.checked = false;
-                permToggle.disabled = false;
-                help.textContent = 'می‌توانید یکی از سمت‌های قبلی را انتخاب کنید یا یک سمت جدید تایپ کنید.';
-                help.className = 'text-[9px] text-slate-400 mt-1';
+                select.value = '__custom__';
+                document.getElementById('m_custom_role').value = value;
             }
-            togglePermissionView();
+        }
+
+        function handleRoleChange() {
+            const selectValue = document.getElementById('m_role').value;
+            const role = getSelectedRole();
+            const isNewCustom = selectValue === '__custom__';
+            const isCustomExisting = !!role && !legacyRoles.has(role);
+            const isCustom = isNewCustom || isCustomExisting;
+            const permToggle = document.getElementById('m_permissions_enabled');
+
+            document.getElementById('customRoleWrapper').classList.toggle('hidden', !isNewCustom);
+            document.getElementById('permissionModeBox').classList.toggle('hidden', !isCustom);
+
+            if (!isCustom) {
+                permToggle.checked = false;
+                document.getElementById('permissionsWrapper').classList.add('hidden');
+            } else {
+                // برای سمت سفارشی، دسترسی سفارشی به‌صورت پیش‌فرض روشن است و سوییچ کاملاً قابل کلیک است.
+                if (!permToggle.dataset.userTouched) permToggle.checked = true;
+                togglePermissionView();
+            }
             toggleGroupsView();
         }
 
-        function handlePermissionCardClick(event) {
-            if (event.target && (event.target.id === 'm_permissions_enabled' || event.target.getAttribute('for') === 'm_permissions_enabled')) return;
-            const role = document.getElementById('m_role').value.trim();
-            const toggle = document.getElementById('m_permissions_enabled');
-            if (role === 'کارشناس پژوهش') {
-                showAlert('کارشناس پژوهش عمداً قفل است و فقط دسترسی‌های پژوهش را دارد. برای تغییر، ابتدا سمت سازمانی را عوض کنید.');
-                return;
-            }
-            if (legacyRoles.has(role)) {
-                showAlert('این سمت دسترسی ثابت دارد. برای دسترسی سفارشی، در «سمت سازمانی» یک عنوان جدید مثل کارشناس EDO یا ادمین محدود بنویسید.');
-                return;
-            }
-            if (!role) {
-                showAlert('اول عنوان سمت سازمانی را وارد کنید.');
-                return;
-            }
-            if (!toggle.disabled) {
-                toggle.checked = !toggle.checked;
-                togglePermissionView();
-            }
-        }
-
         function togglePermissionView() {
-            const role = document.getElementById('m_role').value.trim();
-            const enabled = document.getElementById('m_permissions_enabled').checked && role !== 'کارشناس پژوهش';
+            const role = getSelectedRole();
+            const isCustom = !!role && !legacyRoles.has(role);
+            const enabled = isCustom && document.getElementById('m_permissions_enabled').checked;
             document.getElementById('permissionsWrapper').classList.toggle('hidden', !enabled);
-            document.getElementById('researchAccessNotice').classList.toggle('hidden', role !== 'کارشناس پژوهش');
-            document.getElementById('permissionModeBox').classList.toggle('opacity-60', role === 'کارشناس پژوهش');
             toggleGroupsView();
         }
 
@@ -464,7 +460,7 @@
         }
 
         function toggleGroupsView() {
-            const role = document.getElementById('m_role').value.trim();
+            const role = getSelectedRole();
             const wrap = document.getElementById('groupsWrapper');
             const customOn = document.getElementById('m_permissions_enabled').checked && role !== 'کارشناس پژوهش';
             const selected = new Set(selectedPermissionKeys());
@@ -492,13 +488,15 @@
                     `;
                 });
 
+                document.getElementById('m_permissions_enabled').dataset.userTouched = '';
+
                 if (u) {
                     document.getElementById('modalTitleText').innerText = 'ویرایش کاربر';
                     document.getElementById('modalIcon').innerText = '✏️';
                     document.getElementById('m_original_id').value = isNew ? `NEW_${u.id}` : u.id;
                     document.getElementById('m_name').value = u.name || "";
                     document.getElementById('m_phone').value = u.phone || "";
-                    document.getElementById('m_role').value = u.role || "کارشناس گروه";
+                    selectRoleValue(u.role || "کارشناس گروه");
                     document.getElementById('m_prefix').value = u.prefix || "جناب آقای / سرکار خانم";
                     document.getElementById('m_appointed').value = u.appointed_at || "";
                     document.getElementById('m_status').checked = (u.status === 'active');
@@ -511,7 +509,7 @@
                     document.getElementById('m_original_id').value = 'NEW_';
                     document.getElementById('m_name').value = '';
                     document.getElementById('m_phone').value = '';
-                    document.getElementById('m_role').value = 'کارشناس گروه';
+                    selectRoleValue('کارشناس گروه');
                     document.getElementById('m_prefix').value = 'آقای';
                     document.getElementById('m_status').checked = true;
                     document.getElementById('m_is_ghost').checked = false;
@@ -536,7 +534,7 @@
                 const rawId = document.getElementById('m_original_id').value;
                 const name = document.getElementById('m_name').value.trim();
                 const phone = document.getElementById('m_phone').value.trim();
-                const role = document.getElementById('m_role').value.trim();
+                const role = getSelectedRole();
                 const prefix = document.getElementById('m_prefix').value;
                 const isActive = document.getElementById('m_status').checked;
                 const status = isActive ? 'active' : 'suspended';
