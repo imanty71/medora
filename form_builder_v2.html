@@ -9,95 +9,500 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
 <style>
-body{font-family:Vazirmatn,sans-serif;background:#020617;color:#e2e8f0;-webkit-font-smoothing:antialiased}.card{background:linear-gradient(145deg,rgba(15,23,42,.84),rgba(2,6,23,.9));border:1px solid rgba(148,163,184,.12);box-shadow:0 18px 50px rgba(0,0,0,.25);backdrop-filter:blur(20px)}.inp{background:rgba(15,23,42,.75);border:1px solid rgba(148,163,184,.16)}.inp:focus{outline:none;border-color:rgba(59,130,246,.75);box-shadow:0 0 0 3px rgba(59,130,246,.12)}.type-card{transition:.2s}.type-card:active{transform:scale(.985)}.selected{border-color:rgba(59,130,246,.75)!important;background:rgba(37,99,235,.14)!important}.fade{animation:fade .22s ease}@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}.no-scrollbar::-webkit-scrollbar{display:none}
+body{font-family:Vazirmatn,sans-serif;background:#020617;color:#e2e8f0;-webkit-font-smoothing:antialiased}
+.card{background:linear-gradient(145deg,rgba(15,23,42,.86),rgba(2,6,23,.92));border:1px solid rgba(148,163,184,.13);box-shadow:0 18px 50px rgba(0,0,0,.25);backdrop-filter:blur(20px)}
+.inp{background:rgba(15,23,42,.78);border:1px solid rgba(148,163,184,.18)}
+.inp:focus{outline:none;border-color:rgba(59,130,246,.78);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+.type-card{transition:.2s}.type-card:active{transform:scale(.985)}
+.fade{animation:fade .2s ease}@keyframes fade{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.pill{border:1px solid rgba(148,163,184,.15);background:rgba(15,23,42,.62)}
 </style>
 </head>
 <body class="min-h-screen overflow-x-hidden">
-<div class="fixed inset-0 pointer-events-none -z-10 overflow-hidden"><div class="absolute -top-24 -right-20 w-80 h-80 rounded-full bg-blue-600/20 blur-[100px]"></div><div class="absolute bottom-0 -left-20 w-96 h-96 rounded-full bg-cyan-500/10 blur-[120px]"></div></div>
-<header class="sticky top-0 z-30 bg-slate-950/85 backdrop-blur-2xl border-b border-white/[.06] px-4 py-3">
-  <div class="flex items-center justify-between gap-3"><div><h1 class="text-sm font-black text-white">🧩 استودیوی حرفه‌ای فرم‌ساز</h1><p class="text-[10px] text-slate-400 mt-1" id="stepHint">ابتدا نوع فرم را مشخص کنید</p></div><span id="stepBadge" class="text-[10px] font-black bg-blue-500/10 text-blue-300 border border-blue-400/20 px-3 py-1.5 rounded-full">مرحله ۱ از ۳</span></div>
+<div class="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+  <div class="absolute -top-24 -right-20 w-80 h-80 rounded-full bg-blue-600/20 blur-[100px]"></div>
+  <div class="absolute bottom-0 -left-20 w-96 h-96 rounded-full bg-cyan-500/10 blur-[120px]"></div>
+</div>
+
+<header class="sticky top-0 z-30 bg-slate-950/88 backdrop-blur-2xl border-b border-white/[.06] px-4 py-3">
+  <div class="flex items-center justify-between gap-3">
+    <div>
+      <h1 id="pageTitle" class="text-sm font-black text-white">🧩 استودیوی حرفه‌ای فرم‌ساز</h1>
+      <p id="stepHint" class="text-[10px] text-slate-400 mt-1">نوع فرم موردنظر را انتخاب کنید</p>
+    </div>
+    <span id="stepBadge" class="text-[10px] font-black bg-blue-500/10 text-blue-300 border border-blue-400/20 px-3 py-1.5 rounded-full">انتخاب نوع فرم</span>
+  </div>
 </header>
+
 <main class="p-4 pb-28 max-w-2xl mx-auto">
-<section id="step1" class="space-y-3 fade">
-  <div class="card rounded-3xl p-4"><h2 class="text-xs font-black text-white">چه نوع فرمی می‌خواهید بسازید؟</h2><p class="text-[10px] text-slate-400 mt-1 leading-5">نوع فرم را قبل از نوشتن سؤال‌ها انتخاب کنید؛ هر نوع، رفتار مناسب خودش را خواهد داشت.</p></div>
+
+<!-- انتخاب نوع فرم -->
+<section id="page-home" class="page space-y-3 fade">
+  <div class="card rounded-3xl p-4">
+    <h2 class="text-xs font-black text-white">چه چیزی می‌خواهید بسازید؟</h2>
+    <p class="text-[10px] text-slate-400 mt-1 leading-5">بعد از انتخاب، فقط تنظیمات و ابزارهای مربوط به همان نوع فرم نمایش داده می‌شود.</p>
+  </div>
   <div class="grid gap-3">
-    <button onclick="chooseKind('structured')" class="type-card card rounded-3xl p-4 text-right border border-white/10"><div class="flex gap-3"><span class="text-2xl">📄</span><div><b class="text-sm text-white">فرم اطلاعات ثابت</b><p class="text-[10px] text-slate-400 mt-1 leading-5">برای اطلاعات متفاوت در یک فرم؛ مثل نام مدیر گروه، تعداد دستیار سال ۱ تا ۵، معاون آموزش و تلفن.</p></div></div></button>
-    <button onclick="chooseKind('repeatable')" class="type-card card rounded-3xl p-4 text-right border border-white/10"><div class="flex gap-3"><span class="text-2xl">📋</span><div><b class="text-sm text-white">فرم لیست تکرارشونده</b><p class="text-[10px] text-slate-400 mt-1 leading-5">برای ثبت چند رکورد هم‌شکل؛ مثل مشخصات چند دستیار، تجهیزات یا اعضای هیئت علمی.</p></div></div></button>
-    <button onclick="chooseKind('member_checklist')" class="type-card card rounded-3xl p-4 text-right border border-white/10"><div class="flex gap-3"><span class="text-2xl">👥</span><div><b class="text-sm text-white">چک‌لیست اعضای گروه</b><p class="text-[10px] text-slate-400 mt-1 leading-5">برای انتخاب/تأیید اعضای موجود گروه و در صورت نیاز به‌روزرسانی آرشیو دستیاران.</p></div></div></button>
-    <button onclick="chooseKind('survey')" class="type-card card rounded-3xl p-4 text-right border border-white/10"><div class="flex gap-3"><span class="text-2xl">📊</span><div><b class="text-sm text-white">نظرسنجی / ارزشیابی</b><p class="text-[10px] text-slate-400 mt-1 leading-5">لیکرت، ستاره، NPS، بله/خیر، تک/چندانتخابی، رتبه‌بندی، ماتریس، اسلایدر و پاسخ تشریحی.</p></div></div></button>
-    <button onclick="chooseKind('system_bale_phone')" class="type-card rounded-3xl p-4 text-right border border-emerald-400/20 bg-emerald-500/[.07]"><div class="flex gap-3"><span class="text-2xl">📱</span><div><b class="text-sm text-emerald-200">فرم سیستمی اتصال دستیاران به بله</b><p class="text-[10px] text-emerald-100/60 mt-1 leading-5">فرم آماده و قفل‌شده برای جمع‌آوری نام، شماره فعال بله و کد ملی؛ پس از تأیید، حساب دستیار به‌صورت خودکار فعال می‌شود.</p></div></div></button>
+    <button onclick="chooseKind('structured')" class="type-card card rounded-3xl p-4 text-right">
+      <div class="flex gap-3"><span class="text-2xl">📄</span><div><b class="text-sm text-white">فرم اطلاعات ثابت</b><p class="text-[10px] text-slate-400 mt-1 leading-5">چند فیلد متفاوت در یک فرم؛ مثل متن، عدد، تاریخ، موبایل، انتخابی و بله/خیر.</p></div></div>
+    </button>
+    <button onclick="chooseKind('repeatable')" class="type-card card rounded-3xl p-4 text-right">
+      <div class="flex gap-3"><span class="text-2xl">📋</span><div><b class="text-sm text-white">فرم لیست تکرارشونده</b><p class="text-[10px] text-slate-400 mt-1 leading-5">برای ورود چند ردیف با ستون‌های یکسان؛ مثل فهرست افراد، تجهیزات یا فعالیت‌ها.</p></div></div>
+    </button>
+    <button onclick="chooseKind('member_checklist')" class="type-card card rounded-3xl p-4 text-right">
+      <div class="flex gap-3"><span class="text-2xl">👥</span><div><b class="text-sm text-white">چک‌لیست دستیاران گروه</b><p class="text-[10px] text-slate-400 mt-1 leading-5">لیست دستیاران موجود گروه به‌صورت خودکار نمایش داده می‌شود؛ بدون سؤال یا فیلد اضافی.</p></div></div>
+    </button>
+    <button onclick="chooseKind('survey')" class="type-card card rounded-3xl p-4 text-right">
+      <div class="flex gap-3"><span class="text-2xl">📊</span><div><b class="text-sm text-white">نظرسنجی / ارزشیابی</b><p class="text-[10px] text-slate-400 mt-1 leading-5">طراحی سؤال‌های لیکرت، ستاره، NPS، رتبه‌بندی، ماتریس، انتخابی و تشریحی.</p></div></div>
+    </button>
+    <button onclick="chooseKind('system_bale_phone')" class="type-card rounded-3xl p-4 text-right border border-emerald-400/20 bg-emerald-500/[.07]">
+      <div class="flex gap-3"><span class="text-2xl">📱</span><div><b class="text-sm text-emerald-200">اتصال دستیاران به بله</b><p class="text-[10px] text-emerald-100/60 mt-1 leading-5">فرم سیستمی آماده برای دریافت شماره فعال بله و اتصال حساب دستیاران.</p></div></div>
+    </button>
   </div>
 </section>
 
-<section id="step2" class="hidden space-y-3 fade">
+<!-- اطلاعات پایه فرم اطلاعات ثابت -->
+<section id="page-structured-base" class="page hidden space-y-3 fade">
+  <div class="card rounded-3xl p-4">
+    <div class="flex items-center gap-3"><span class="text-2xl">📄</span><div><h2 class="text-xs font-black text-white">مشخصات فرم اطلاعات ثابت</h2><p class="text-[10px] text-slate-400 mt-1">فقط اطلاعات پایه این فرم را تعیین کنید.</p></div></div>
+  </div>
   <div class="card rounded-3xl p-4 space-y-4">
-    <div><label class="text-[10px] font-black text-slate-300">عنوان فرم</label><input id="title" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold" placeholder="مثلاً: اطلاعات ساختاری گروه‌های آموزشی"></div>
-    <div><label class="text-[10px] font-black text-slate-300">توضیحات / راهنمای کاربر</label><textarea id="desc" rows="3" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold resize-none" placeholder="توضیح کوتاه درباره هدف فرم..."></textarea></div>
-    <div id="audienceBox"><label class="text-[10px] font-black text-slate-300">گروه‌های هدف</label><div id="groups" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2"></div></div>
-    <div class="grid grid-cols-2 gap-2"><div><label class="text-[10px] font-black text-slate-300">مهلت</label><select id="deadline" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold"><option value="0">بدون مهلت</option><option value="1">۱ روز</option><option value="3">۳ روز</option><option value="7" selected>۷ روز</option><option value="14">۱۴ روز</option><option value="30">۳۰ روز</option></select></div><div id="targetRoleBox" class="hidden"><label class="text-[10px] font-black text-slate-300">مخاطب نظرسنجی</label><select id="targetRole" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold"><option value="دستیار">دستیاران</option><option value="کارشناس گروه">کارشناسان گروه</option><option value="همه">همه کاربران مجاز</option></select></div></div>
+    <div><label class="text-[10px] font-black text-slate-300">عنوان فرم</label><input id="structuredTitle" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold" placeholder="مثلاً: اطلاعات ساختاری گروه آموزشی"></div>
+    <div><label class="text-[10px] font-black text-slate-300">توضیحات / راهنما</label><textarea id="structuredDesc" rows="3" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold resize-none" placeholder="هدف این فرم را کوتاه توضیح دهید"></textarea></div>
+    <div><label class="text-[10px] font-black text-slate-300">گروه‌های هدف</label><div id="groupsStructured" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2"></div></div>
+    <div><label class="text-[10px] font-black text-slate-300">مهلت تکمیل</label><select id="structuredDeadline" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold deadline-select"></select></div>
   </div>
-  <div id="surveySettings" class="hidden card rounded-3xl p-4 space-y-3"><h3 class="text-xs font-black text-white">تنظیمات نظرسنجی</h3><label class="flex justify-between items-center text-xs"><span>ناشناس باشد</span><input id="anonymous" type="checkbox" checked class="w-4 h-4"></label><label class="flex justify-between items-center text-xs"><span>امکان پاسخ چندباره</span><input id="multiSubmit" type="checkbox" class="w-4 h-4"></label><label class="flex justify-between items-center text-xs"><span>نمایش نتیجه به پاسخ‌دهنده</span><input id="showResults" type="checkbox" class="w-4 h-4"></label></div>
-  <div id="checklistSettings" class="hidden card rounded-3xl p-4"><label class="flex justify-between items-center text-xs"><span>تغییرات این فرم آرشیو اصلی دستیاران را به‌روزرسانی کند</span><input id="rosterUpdate" type="checkbox" class="w-4 h-4"></label></div>
 </section>
 
-<section id="step3" class="hidden space-y-3 fade">
-  <div id="fieldsHeader" class="card rounded-3xl p-4"><div class="flex items-center justify-between"><div><h2 class="text-xs font-black text-white">طراحی محتوای فرم</h2><p class="text-[10px] text-slate-400 mt-1">عنوان و نوع هر سؤال را همین‌جا کنار هم مشخص کنید.</p></div><button onclick="addField()" class="bg-blue-600 text-white text-[10px] font-black px-3 py-2 rounded-xl">＋ افزودن</button></div></div>
-  <div id="fields" class="space-y-3"></div>
-</section>
-</main>
-
-<!-- تایید نهایی قبل از ساخت و انتشار -->
-<div id="publishConfirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4">
-  <div class="card w-full max-w-sm rounded-3xl p-5 fade">
-    <div class="text-3xl text-center mb-3">⚠️</div>
-    <h3 class="text-sm font-black text-white text-center">آیا از ساخت و انتشار این فرم مطمئن هستید؟</h3>
-    <p class="text-[11px] text-slate-400 text-center leading-6 mt-2">تا وقتی «بله، ساخت و منتشر شود» را نزنید، هیچ فرمی ساخته نمی‌شود و چیزی در کانال منتشر نخواهد شد.</p>
-    <div class="grid grid-cols-2 gap-2 mt-5">
-      <button onclick="closePublishConfirm()" class="bg-white/[.07] text-slate-200 rounded-2xl p-3 text-xs font-black">❌ خیر، برگرد</button>
-      <button onclick="confirmPublishNow()" class="bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl p-3 text-xs font-black">✅ بله، ساخت و منتشر شود</button>
+<!-- طراحی فیلدهای فرم اطلاعات ثابت -->
+<section id="page-structured-design" class="page hidden space-y-3 fade">
+  <div class="card rounded-3xl p-4">
+    <div class="flex items-center justify-between gap-3">
+      <div><h2 class="text-xs font-black text-white">طراحی فیلدهای فرم</h2><p class="text-[10px] text-slate-400 mt-1">هر فیلدی که پاسخ‌دهنده باید تکمیل کند را اضافه کنید.</p></div>
+      <button onclick="addField()" class="bg-blue-600 text-white text-[10px] font-black px-3 py-2 rounded-xl">＋ افزودن فیلد</button>
     </div>
   </div>
-</div>
-<footer class="fixed bottom-0 left-0 right-0 z-30 bg-slate-950/90 backdrop-blur-2xl border-t border-white/[.06] p-3"><div class="max-w-2xl mx-auto flex gap-2"><button id="backBtn" onclick="backStep()" class="hidden w-1/3 bg-white/[.06] text-slate-300 rounded-2xl p-3 text-xs font-black">مرحله قبل</button><button id="nextBtn" onclick="nextStep()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl p-3 text-xs font-black">ادامه</button><button id="saveBtn" onclick="askConfirmSave()" class="hidden flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl p-3 text-xs font-black">✅ ساخت و انتشار فرم</button></div></footer>
+  <div id="structuredEmpty" class="card rounded-3xl p-5 text-center">
+    <div class="text-2xl mb-2">🧱</div><div class="text-xs font-black text-white">هنوز فیلدی اضافه نشده</div><p class="text-[10px] text-slate-400 mt-1">برای شروع «افزودن فیلد» را بزنید.</p>
+  </div>
+  <div id="structuredFields" class="space-y-3"></div>
+</section>
+
+<!-- اطلاعات پایه فرم لیستی -->
+<section id="page-repeatable-base" class="page hidden space-y-3 fade">
+  <div class="card rounded-3xl p-4">
+    <div class="flex items-center gap-3"><span class="text-2xl">📋</span><div><h2 class="text-xs font-black text-white">مشخصات فرم لیست تکرارشونده</h2><p class="text-[10px] text-slate-400 mt-1">هر پاسخ‌دهنده می‌تواند چند ردیف با ستون‌های یکسان ثبت کند.</p></div></div>
+  </div>
+  <div class="card rounded-3xl p-4 space-y-4">
+    <div><label class="text-[10px] font-black text-slate-300">عنوان لیست</label><input id="repeatableTitle" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold" placeholder="مثلاً: فهرست تجهیزات آموزشی"></div>
+    <div><label class="text-[10px] font-black text-slate-300">توضیحات / راهنما</label><textarea id="repeatableDesc" rows="3" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold resize-none" placeholder="توضیح دهید هر ردیف باید شامل چه اطلاعاتی باشد"></textarea></div>
+    <div><label class="text-[10px] font-black text-slate-300">گروه‌های هدف</label><div id="groupsRepeatable" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2"></div></div>
+    <div><label class="text-[10px] font-black text-slate-300">مهلت تکمیل</label><select id="repeatableDeadline" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold deadline-select"></select></div>
+  </div>
+</section>
+
+<!-- طراحی ستون‌های فرم لیستی -->
+<section id="page-repeatable-design" class="page hidden space-y-3 fade">
+  <div class="card rounded-3xl p-4">
+    <div class="flex items-center justify-between gap-3">
+      <div><h2 class="text-xs font-black text-white">ستون‌های هر ردیف</h2><p class="text-[10px] text-slate-400 mt-1">فقط ستون‌هایی را تعریف کنید که در هر ردیف تکرار می‌شوند.</p></div>
+      <button onclick="addField()" class="bg-blue-600 text-white text-[10px] font-black px-3 py-2 rounded-xl">＋ افزودن ستون</button>
+    </div>
+  </div>
+  <div id="repeatableEmpty" class="card rounded-3xl p-5 text-center">
+    <div class="text-2xl mb-2">📑</div><div class="text-xs font-black text-white">هنوز ستونی تعریف نشده</div><p class="text-[10px] text-slate-400 mt-1">مثلاً نام، تعداد، تاریخ یا وضعیت را به‌عنوان ستون اضافه کنید.</p>
+  </div>
+  <div id="repeatableFields" class="space-y-3"></div>
+</section>
+
+<!-- چک‌لیست دستیاران -->
+<section id="page-checklist" class="page hidden space-y-3 fade">
+  <div class="card rounded-3xl p-4">
+    <div class="flex items-center gap-3"><span class="text-2xl">👥</span><div><h2 class="text-xs font-black text-white">تنظیم چک‌لیست دستیاران گروه</h2><p class="text-[10px] text-slate-400 mt-1">این فرم سؤال‌ساز ندارد؛ لیست دستیاران گروه به‌صورت خودکار بارگذاری می‌شود.</p></div></div>
+  </div>
+  <div class="card rounded-3xl p-4 space-y-4">
+    <div><label class="text-[10px] font-black text-slate-300">عنوان چک‌لیست</label><input id="checklistTitle" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold" placeholder="مثلاً: تأیید فهرست دستیاران نیمسال جاری"></div>
+    <div><label class="text-[10px] font-black text-slate-300">راهنمای کارشناس گروه</label><textarea id="checklistDesc" rows="3" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold resize-none" placeholder="مثلاً: اسامی موجود را بررسی و موارد صحیح را تأیید کنید"></textarea></div>
+    <div><label class="text-[10px] font-black text-slate-300">گروه‌های هدف</label><div id="groupsChecklist" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2"></div></div>
+    <div><label class="text-[10px] font-black text-slate-300">مهلت تکمیل</label><select id="checklistDeadline" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold deadline-select"></select></div>
+  </div>
+  <div class="card rounded-3xl p-4 space-y-3">
+    <h3 class="text-xs font-black text-white">رفتار این چک‌لیست</h3>
+    <div class="pill rounded-2xl p-3 text-[10px] leading-5 text-slate-300">✅ اسامی دستیاران از آرشیو همان گروه خوانده می‌شود.</div>
+    <div class="pill rounded-2xl p-3 text-[10px] leading-5 text-slate-300">✅ کارشناس فقط همان لیست را بررسی/تأیید می‌کند؛ سؤال اضافی وجود ندارد.</div>
+    <label class="pill rounded-2xl p-3 flex items-start justify-between gap-3 text-xs">
+      <span><b class="text-white">به‌روزرسانی آرشیو اصلی دستیاران</b><small class="block text-[9px] text-slate-400 mt-1 leading-5">اگر روشن باشد، تغییرات تأییدشده این فرم می‌تواند آرشیو اصلی را به‌روزرسانی کند.</small></span>
+      <input id="rosterUpdate" type="checkbox" class="w-4 h-4 mt-1">
+    </label>
+  </div>
+</section>
+
+<!-- اطلاعات پایه نظرسنجی -->
+<section id="page-survey-base" class="page hidden space-y-3 fade">
+  <div class="card rounded-3xl p-4">
+    <div class="flex items-center gap-3"><span class="text-2xl">📊</span><div><h2 class="text-xs font-black text-white">تنظیمات نظرسنجی / ارزشیابی</h2><p class="text-[10px] text-slate-400 mt-1">مخاطب، محرمانگی و نحوه پاسخ فقط برای همین نظرسنجی تنظیم می‌شود.</p></div></div>
+  </div>
+  <div class="card rounded-3xl p-4 space-y-4">
+    <div><label class="text-[10px] font-black text-slate-300">عنوان نظرسنجی</label><input id="surveyTitle" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold" placeholder="مثلاً: ارزشیابی کیفیت آموزش بالینی"></div>
+    <div><label class="text-[10px] font-black text-slate-300">توضیحات برای پاسخ‌دهنده</label><textarea id="surveyDesc" rows="3" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold resize-none" placeholder="هدف نظرسنجی و نحوه استفاده از نتایج"></textarea></div>
+    <div><label class="text-[10px] font-black text-slate-300">گروه‌های هدف</label><div id="groupsSurvey" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2"></div></div>
+    <div class="grid grid-cols-2 gap-2">
+      <div><label class="text-[10px] font-black text-slate-300">مهلت پاسخ</label><select id="surveyDeadline" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold deadline-select"></select></div>
+      <div><label class="text-[10px] font-black text-slate-300">مخاطب</label><select id="targetRole" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold"><option value="دستیار">دستیاران</option><option value="کارشناس گروه">کارشناسان گروه</option><option value="همه">همه کاربران مجاز</option></select></div>
+    </div>
+  </div>
+  <div class="card rounded-3xl p-4 space-y-3">
+    <h3 class="text-xs font-black text-white">تنظیمات پاسخ‌گویی</h3>
+    <label class="pill rounded-2xl p-3 flex justify-between items-center text-xs"><span>پاسخ‌ها ناشناس باشد</span><input id="anonymous" type="checkbox" checked class="w-4 h-4"></label>
+    <label class="pill rounded-2xl p-3 flex justify-between items-center text-xs"><span>امکان پاسخ چندباره</span><input id="multiSubmit" type="checkbox" class="w-4 h-4"></label>
+    <label class="pill rounded-2xl p-3 flex justify-between items-center text-xs"><span>نمایش نتیجه به پاسخ‌دهنده</span><input id="showResults" type="checkbox" class="w-4 h-4"></label>
+  </div>
+</section>
+
+<!-- طراحی سوالات نظرسنجی -->
+<section id="page-survey-design" class="page hidden space-y-3 fade">
+  <div class="card rounded-3xl p-4">
+    <div class="flex items-center justify-between gap-3">
+      <div><h2 class="text-xs font-black text-white">سؤال‌های نظرسنجی</h2><p class="text-[10px] text-slate-400 mt-1">هر سؤال فقط با ابزارهای مخصوص ارزشیابی ساخته می‌شود.</p></div>
+      <button onclick="addField()" class="bg-blue-600 text-white text-[10px] font-black px-3 py-2 rounded-xl">＋ افزودن سؤال</button>
+    </div>
+  </div>
+  <div id="surveyEmpty" class="card rounded-3xl p-5 text-center">
+    <div class="text-2xl mb-2">📊</div><div class="text-xs font-black text-white">هنوز سؤالی اضافه نشده</div><p class="text-[10px] text-slate-400 mt-1">نوع سؤال را از ابزارهای ارزشیابی انتخاب کنید.</p>
+  </div>
+  <div id="surveyFields" class="space-y-3"></div>
+</section>
+
+<!-- فرم سیستمی اتصال بله -->
+<section id="page-bale" class="page hidden space-y-3 fade">
+  <div class="card rounded-3xl p-4 border border-emerald-400/20">
+    <div class="flex items-center gap-3"><span class="text-2xl">📱</span><div><h2 class="text-xs font-black text-emerald-100">فرم سیستمی اتصال دستیاران به بله</h2><p class="text-[10px] text-emerald-100/60 mt-1">ساختار این فرم ثابت و محافظت‌شده است و سؤال یا ستون دستی ندارد.</p></div></div>
+  </div>
+  <div class="card rounded-3xl p-4 space-y-3">
+    <h3 class="text-xs font-black text-white">اطلاعاتی که سیستم دریافت می‌کند</h3>
+    <div class="pill rounded-2xl p-3 text-[10px]">👤 نام و نام خانوادگی دستیار</div>
+    <div class="pill rounded-2xl p-3 text-[10px]">📱 شماره موبایل فعال در پیام‌رسان بله</div>
+    <div class="pill rounded-2xl p-3 text-[10px]">🆔 کد ملی (اختیاری)</div>
+    <p class="text-[9px] leading-5 text-slate-400">بعد از بررسی و تأیید پاسخ، اطلاعات معتبر برای اتصال دستیار به سامانه استفاده می‌شود.</p>
+  </div>
+  <div class="card rounded-3xl p-4 space-y-4">
+    <div><label class="text-[10px] font-black text-slate-300">گروه‌های هدف</label><div id="groupsBale" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2"></div></div>
+    <div><label class="text-[10px] font-black text-slate-300">مهلت ثبت شماره‌ها</label><select id="baleDeadline" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold"><option value="1">۱ روز</option><option value="3">۳ روز</option><option value="7" selected>۷ روز</option><option value="14">۱۴ روز</option><option value="30">۳۰ روز</option></select></div>
+  </div>
+</section>
+
+</main>
+
+<footer id="footerBar" class="fixed bottom-0 left-0 right-0 z-30 bg-slate-950/92 backdrop-blur-2xl border-t border-white/[.06] p-3 hidden">
+  <div class="max-w-2xl mx-auto flex gap-2">
+    <button id="backBtn" onclick="backStep()" class="w-1/3 bg-white/[.06] text-slate-300 rounded-2xl p-3 text-xs font-black">مرحله قبل</button>
+    <button id="nextBtn" onclick="nextStep()" class="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl p-3 text-xs font-black">ادامه</button>
+    <button id="saveBtn" onclick="askConfirmSave()" class="hidden flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl p-3 text-xs font-black">✅ ساخت و انتشار</button>
+  </div>
+</footer>
+
 <script>
-let cfg={groups:[]},kind='',step=1,fields=[];
-const STRUCT_TYPES=[['text','🔠 متن کوتاه'],['textarea','📝 متن بلند'],['number','🔢 عدد'],['phone','📱 موبایل'],['nid','🆔 کد ملی'],['email','✉️ ایمیل'],['yesno','✅ بله / خیر'],['choice','🔘 تک‌انتخابی'],['checkbox','☑️ چندانتخابی'],['select','🔽 فهرست کشویی'],['date','📅 تاریخ'],['time','🕒 زمان'],['section','🧩 عنوان بخش']];
-const REPEAT_TYPES=[['text','🔠 متن'],['number','🔢 عدد'],['phone','📱 موبایل'],['nid','🆔 کد ملی'],['email','✉️ ایمیل'],['select','🔽 انتخابی'],['date','📅 تاریخ']];
-const SURVEY_TYPES=[['likert3','📊 لیکرت ۳ گزینه‌ای'],['likert5','📊 لیکرت ۵ گزینه‌ای'],['likert7','📊 لیکرت ۷ گزینه‌ای'],['star','⭐ ۵ ستاره'],['score10','🔢 امتیاز ۱ تا ۱۰'],['nps','📈 NPS از ۰ تا ۱۰'],['yesno','✅ بله / خیر'],['choice','🔘 تک‌انتخابی'],['checkbox','☑️ چندانتخابی'],['select','🔽 فهرست کشویی'],['number','🔢 عدد'],['text','📝 متن کوتاه'],['textarea','📄 متن بلند'],['slider','🎚 اسلایدر ۰ تا ۱۰۰'],['ranking','🥇 رتبه‌بندی'],['date','📅 تاریخ'],['time','🕒 زمان'],['matrix','🧩 ماتریس / Grid']];
-function init(){try{const p=new URLSearchParams(location.search).get('d');if(p){const b=atob(p.replace(/-/g,'+').replace(/_/g,'/'));const a=Uint8Array.from(b,c=>c.charCodeAt(0));cfg=JSON.parse(pako.inflate(a,{to:'string'}));}}catch(e){console.error(e)}renderGroups();window.Bale.WebApp.ready()}
-function renderGroups(){const box=document.getElementById('groups');box.innerHTML='';const all=['🌐 عمومی (همه کاربران مجاز)',...(cfg.groups||[])];all.forEach((g,i)=>box.innerHTML+=`<label class="inp rounded-xl p-2.5 flex items-center gap-2 text-[10px] font-bold"><input class="grp" type="checkbox" value="${esc(g)}" ${i===0?'checked':''}><span>${esc(g)}</span></label>`)}
+let cfg={groups:[]}, kind='', currentPage='home', fields=[];
+
+const KIND_META={
+  structured:{title:'📄 فرم اطلاعات ثابت',base:'structured-base',design:'structured-design',steps:3},
+  repeatable:{title:'📋 فرم لیست تکرارشونده',base:'repeatable-base',design:'repeatable-design',steps:3},
+  member_checklist:{title:'👥 چک‌لیست دستیاران گروه',base:'checklist',design:null,steps:2},
+  survey:{title:'📊 نظرسنجی / ارزشیابی',base:'survey-base',design:'survey-design',steps:3},
+  system_bale_phone:{title:'📱 اتصال دستیاران به بله',base:'bale',design:null,steps:2}
+};
+
+const STRUCT_TYPES=[
+ ['text','🔠 متن کوتاه'],['textarea','📝 متن بلند'],['number','🔢 عدد'],['phone','📱 موبایل'],
+ ['nid','🆔 کد ملی'],['email','✉️ ایمیل'],['yesno','✅ بله / خیر'],['choice','🔘 تک‌انتخابی'],
+ ['checkbox','☑️ چندانتخابی'],['select','🔽 فهرست کشویی'],['date','📅 تاریخ'],['time','🕒 زمان'],['section','🧩 عنوان بخش']
+];
+const REPEAT_TYPES=[
+ ['text','🔠 متن'],['number','🔢 عدد'],['phone','📱 موبایل'],['nid','🆔 کد ملی'],['email','✉️ ایمیل'],['select','🔽 انتخابی'],['date','📅 تاریخ']
+];
+const SURVEY_TYPES=[
+ ['likert3','📊 لیکرت ۳ گزینه‌ای'],['likert5','📊 لیکرت ۵ گزینه‌ای'],['likert7','📊 لیکرت ۷ گزینه‌ای'],
+ ['star','⭐ ۵ ستاره'],['score10','🔢 امتیاز ۱ تا ۱۰'],['nps','📈 NPS از ۰ تا ۱۰'],['yesno','✅ بله / خیر'],
+ ['choice','🔘 تک‌انتخابی'],['checkbox','☑️ چندانتخابی'],['select','🔽 فهرست کشویی'],['number','🔢 عدد'],
+ ['text','📝 متن کوتاه'],['textarea','📄 متن بلند'],['slider','🎚 اسلایدر ۰ تا ۱۰۰'],['ranking','🥇 رتبه‌بندی'],
+ ['date','📅 تاریخ'],['time','🕒 زمان'],['matrix','🧩 ماتریس / Grid']
+];
+
+function init(){
+  try{
+    const p=new URLSearchParams(location.search).get('d');
+    if(p){
+      const b=atob(p.replace(/-/g,'+').replace(/_/g,'/'));
+      const a=Uint8Array.from(b,c=>c.charCodeAt(0));
+      cfg=JSON.parse(pako.inflate(a,{to:'string'}));
+    }
+  }catch(e){console.error(e)}
+  renderAllGroups();
+  fillDeadlines();
+  showPage('home');
+  try{window.Bale.WebApp.ready()}catch(e){}
+}
+
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function chooseKind(k){kind=k;if(k==='system_bale_phone'){document.getElementById('step1').classList.add('hidden');document.getElementById('step2').classList.remove('hidden');step=2;document.getElementById('title').value='فرم راستی‌آزمایی و ثبت شماره تماس بله دستیاران';document.getElementById('desc').value='جمع‌آوری شماره موبایل فعال دستیاران در پیام‌رسان بله برای فعال‌سازی دسترسی آنان به سامانه.';document.getElementById('title').disabled=true;document.getElementById('desc').disabled=true;document.getElementById('stepHint').innerText='فرم سیستمی آماده؛ فقط گروه‌های هدف و مهلت را کنترل کنید';updateNav();return}go(2)}
-function go(n){step=n;['step1','step2','step3'].forEach((id,i)=>document.getElementById(id).classList.toggle('hidden',i!==n-1));document.getElementById('surveySettings').classList.toggle('hidden',kind!=='survey');document.getElementById('targetRoleBox').classList.toggle('hidden',kind!=='survey');document.getElementById('checklistSettings').classList.toggle('hidden',kind!=='member_checklist');if(n===3&&fields.length===0){if(kind==='structured'){fields=[mk('text','نام مدیر گروه'),mk('phone','شماره تماس مدیر گروه'),mk('text','معاون آموزش گروه'),mk('number','تعداد دستیار سال ۱'),mk('number','تعداد دستیار سال ۲')]}else if(kind==='repeatable'){fields=[mk('text','نام و نام خانوادگی'),mk('phone','شماره موبایل')]}else if(kind==='member_checklist'){fields=[mk('member_checklist','لیست دستیاران گروه')]}else if(kind==='survey'){fields=[surveyMk('likert5','میزان رضایت کلی')]}renderFields()}updateNav()}
-function mk(t,l){return{id:'f_'+Math.random().toString(36).slice(2,10),type:t,label:l||'',required:t!=='section',options:[],config:{}}}function surveyMk(t,l){return{id:'q_'+Math.random().toString(36).slice(2,10),type:t,label:l||'',required:true,options:[],config:{}}}
-function nextStep(){if(step===1)return;if(step===2){if(!document.getElementById('title').value.trim()){toast('عنوان فرم را وارد کنید');return}if(kind==='system_bale_phone'){askConfirmSave();return}go(3)}}
-function backStep(){if(step===2){document.getElementById('title').disabled=false;document.getElementById('desc').disabled=false;go(1)}else if(step===3)go(2)}
-function updateNav(){document.getElementById('stepBadge').innerText=`مرحله ${step} از ۳`;document.getElementById('stepHint').innerText=step===1?'ابتدا نوع فرم را مشخص کنید':step===2?'اطلاعات پایه و مخاطبان':'سؤال‌ها و فیلدها را طراحی کنید';document.getElementById('backBtn').classList.toggle('hidden',step===1);document.getElementById('nextBtn').classList.toggle('hidden',step!==2);document.getElementById('saveBtn').classList.toggle('hidden',step!==3)}
-function addField(){fields.push(kind==='survey'?surveyMk('likert5',''):mk(kind==='member_checklist'?'member_checklist':'text',''));renderFields()}
+
+function fillDeadlines(){
+  document.querySelectorAll('.deadline-select').forEach(sel=>{
+    sel.innerHTML='<option value="0">بدون مهلت</option><option value="1">۱ روز</option><option value="3">۳ روز</option><option value="7" selected>۷ روز</option><option value="14">۱۴ روز</option><option value="30">۳۰ روز</option>';
+  });
+}
+
+function renderGroupsInto(id){
+  const box=document.getElementById(id); if(!box)return;
+  box.innerHTML='';
+  const all=['🌐 عمومی (همه کاربران مجاز)',...(cfg.groups||[])];
+  all.forEach((g,i)=>{
+    box.innerHTML+=`<label class="inp rounded-xl p-2.5 flex items-center gap-2 text-[10px] font-bold cursor-pointer">
+      <input class="grp" type="checkbox" value="${esc(g)}" ${i===0?'checked':''}>
+      <span>${esc(g)}</span>
+    </label>`;
+  });
+}
+function renderAllGroups(){
+  ['groupsStructured','groupsRepeatable','groupsChecklist','groupsSurvey','groupsBale'].forEach(renderGroupsInto);
+}
+
+function chooseKind(k){
+  kind=k; fields=[];
+  const meta=KIND_META[k]; if(!meta)return;
+  if(k==='member_checklist'){
+    fields=[{id:'fixed_member_checklist',type:'member_checklist',label:'لیست دستیاران گروه',required:true,options:[],config:{}}];
+  }
+  showPage(meta.base);
+}
+
+function showPage(name){
+  currentPage=name;
+  document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden'));
+  const el=document.getElementById('page-'+name); if(el)el.classList.remove('hidden');
+  updateChrome();
+  if(name.endsWith('-design'))renderFields();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function updateChrome(){
+  const footer=document.getElementById('footerBar');
+  const back=document.getElementById('backBtn');
+  const next=document.getElementById('nextBtn');
+  const save=document.getElementById('saveBtn');
+  const title=document.getElementById('pageTitle');
+  const hint=document.getElementById('stepHint');
+  const badge=document.getElementById('stepBadge');
+
+  if(currentPage==='home'){
+    footer.classList.add('hidden');
+    title.innerText='🧩 استودیوی حرفه‌ای فرم‌ساز';
+    hint.innerText='نوع فرم موردنظر را انتخاب کنید';
+    badge.innerText='انتخاب نوع فرم';
+    return;
+  }
+
+  footer.classList.remove('hidden');
+  const meta=KIND_META[kind];
+  title.innerText=meta.title;
+  back.classList.remove('hidden');
+
+  const onBase=currentPage===meta.base;
+  const onDesign=meta.design && currentPage===meta.design;
+  const stepNo=onBase?2:3;
+  badge.innerText=`مرحله ${stepNo} از ${meta.steps}`;
+
+  save.classList.add('hidden');
+  next.classList.add('hidden');
+
+  if(onBase){
+    if(meta.steps===2){
+      save.classList.remove('hidden');
+      save.innerText=kind==='member_checklist'?'✅ بررسی نهایی و انتشار چک‌لیست':'✅ بررسی نهایی و انتشار فرم اتصال';
+    }else{
+      next.classList.remove('hidden');
+      next.innerText=kind==='survey'?'طراحی سؤال‌ها':'مرحله طراحی';
+    }
+  }else if(onDesign){
+    save.classList.remove('hidden');
+    save.innerText=kind==='survey'?'✅ بررسی نهایی و انتشار نظرسنجی':'✅ بررسی نهایی و انتشار فرم';
+  }
+
+  if(kind==='structured') hint.innerText=onBase?'مشخصات پایه فرم':'فیلدهای موردنیاز را طراحی کنید';
+  if(kind==='repeatable') hint.innerText=onBase?'مشخصات پایه لیست':'ستون‌های هر ردیف را طراحی کنید';
+  if(kind==='member_checklist') hint.innerText='فقط تنظیمات مربوط به چک‌لیست دستیاران';
+  if(kind==='survey') hint.innerText=onBase?'تنظیمات نظرسنجی':'سؤال‌های ارزشیابی را طراحی کنید';
+  if(kind==='system_bale_phone') hint.innerText='فرم سیستمی آماده؛ فقط مخاطبان و مهلت را تعیین کنید';
+}
+
+function validateBase(){
+  if(kind==='system_bale_phone'){
+    if(!selectedGroups().length){toast('حداقل یک گروه هدف انتخاب کنید');return false}
+    return true;
+  }
+  const ids=getBaseIds();
+  const title=(document.getElementById(ids.title)?.value||'').trim();
+  if(!title){toast(kind==='survey'?'عنوان نظرسنجی را وارد کنید':'عنوان فرم را وارد کنید');return false}
+  if(!selectedGroups().length){toast('حداقل یک گروه هدف انتخاب کنید');return false}
+  return true;
+}
+
+function nextStep(){
+  if(!validateBase())return;
+  const meta=KIND_META[kind];
+  if(meta.design)showPage(meta.design);
+}
+
+function backStep(){
+  const meta=KIND_META[kind];
+  if(!meta){showPage('home');return}
+  if(meta.design && currentPage===meta.design){showPage(meta.base);return}
+  showPage('home');
+}
+
+function getBaseIds(){
+  if(kind==='structured')return{title:'structuredTitle',desc:'structuredDesc',deadline:'structuredDeadline',groups:'groupsStructured'};
+  if(kind==='repeatable')return{title:'repeatableTitle',desc:'repeatableDesc',deadline:'repeatableDeadline',groups:'groupsRepeatable'};
+  if(kind==='member_checklist')return{title:'checklistTitle',desc:'checklistDesc',deadline:'checklistDeadline',groups:'groupsChecklist'};
+  if(kind==='survey')return{title:'surveyTitle',desc:'surveyDesc',deadline:'surveyDeadline',groups:'groupsSurvey'};
+  return{title:null,desc:null,deadline:'baleDeadline',groups:'groupsBale'};
+}
+
+function selectedGroups(){
+  const ids=getBaseIds(); const box=document.getElementById(ids.groups); if(!box)return[];
+  const arr=[...box.querySelectorAll('.grp:checked')].map(x=>x.value);
+  if(arr.includes('🌐 عمومی (همه کاربران مجاز)'))return['🌐 عمومی (همه کاربران مجاز)'];
+  return arr;
+}
+
+function typeOptions(){
+  if(kind==='survey')return SURVEY_TYPES;
+  if(kind==='repeatable')return REPEAT_TYPES;
+  return STRUCT_TYPES;
+}
+
+function mk(type,label=''){
+  return{id:'f_'+Math.random().toString(36).slice(2,10),type,label,required:type!=='section',options:[],config:{}};
+}
+function addField(){
+  if(kind==='structured')fields.push(mk('text',''));
+  else if(kind==='repeatable')fields.push(mk('text',''));
+  else if(kind==='survey')fields.push({id:'q_'+Math.random().toString(36).slice(2,10),type:'likert5',label:'',required:true,options:[],config:{}});
+  else return;
+  renderFields();
+}
 function delField(i){fields.splice(i,1);renderFields()}
-function typeOptions(){const arr=kind==='survey'?SURVEY_TYPES:(kind==='repeatable'?REPEAT_TYPES:(kind==='member_checklist'?[['member_checklist','👥 چک‌لیست اعضا']]:STRUCT_TYPES));return arr}
+function splitOpts(v){return v.split(/[،,]/).map(x=>x.trim()).filter(Boolean)}
+function setOptions(i,v){fields[i].options=splitOpts(v)}
 function needsOptions(t){return['choice','checkbox','select','ranking'].includes(t)}
-function renderFields(){const box=document.getElementById('fields');box.innerHTML='';fields.forEach((f,i)=>{const opts=typeOptions().map(x=>`<option value="${x[0]}" ${f.type===x[0]?'selected':''}>${x[1]}</option>`).join('');const optInput=needsOptions(f.type)?`<div><label class="text-[9px] text-slate-400">گزینه‌ها؛ هر گزینه را با «،» جدا کنید</label><input class="inp w-full rounded-xl p-2.5 text-[10px] mt-1" value="${esc((f.options||[]).join('، '))}" oninput="setOptions(${i},this.value)"></div>`:'';const matrix=f.type==='matrix'?`<div class="grid gap-2"><input class="inp rounded-xl p-2.5 text-[10px]" value="${esc((f.config.rows||[]).join('، '))}" placeholder="ردیف‌ها: کیفیت آموزش، امکانات..." oninput="fields[${i}].config.rows=splitOpts(this.value)"><input class="inp rounded-xl p-2.5 text-[10px]" value="${esc((f.config.cols||['ضعیف','متوسط','خوب','عالی']).join('، '))}" placeholder="ستون‌ها: ضعیف، متوسط، خوب، عالی" oninput="fields[${i}].config.cols=splitOpts(this.value)"></div>`:'';box.innerHTML+=`<div class="card rounded-3xl p-4 space-y-3 fade"><div class="flex justify-between items-center"><span class="text-[10px] font-black text-blue-400">${kind==='survey'?'سؤال':'فیلد'} ${i+1}</span><button onclick="delField(${i})" class="text-rose-400 text-xs">🗑</button></div><input class="inp w-full rounded-xl p-2.5 text-xs font-bold" value="${esc(f.label)}" oninput="fields[${i}].label=this.value" placeholder="عنوان ${kind==='survey'?'سؤال':'فیلد'}"><select class="inp w-full rounded-xl p-2.5 text-[10px] font-bold" onchange="fields[${i}].type=this.value;renderFields()">${opts}</select>${f.type==='section'?'':`<label class="flex justify-between items-center text-[10px]"><span>پاسخ الزامی</span><input type="checkbox" ${f.required?'checked':''} onchange="fields[${i}].required=this.checked"></label>`}${optInput}${matrix}</div>`})}
-function splitOpts(v){return v.split(/[،,]/).map(x=>x.trim()).filter(Boolean)}function setOptions(i,v){fields[i].options=splitOpts(v)}
-function selectedGroups(){const a=[...document.querySelectorAll('.grp:checked')].map(x=>x.value);if(a.includes('🌐 عمومی (همه کاربران مجاز)'))return['🌐 عمومی (همه کاربران مجاز)'];return a}
+
+function renderFields(){
+  let boxId='',emptyId='';
+  if(kind==='structured'){boxId='structuredFields';emptyId='structuredEmpty'}
+  else if(kind==='repeatable'){boxId='repeatableFields';emptyId='repeatableEmpty'}
+  else if(kind==='survey'){boxId='surveyFields';emptyId='surveyEmpty'}
+  else return;
+
+  const box=document.getElementById(boxId), empty=document.getElementById(emptyId);
+  box.innerHTML=''; empty.classList.toggle('hidden',fields.length>0);
+
+  fields.forEach((f,i)=>{
+    const opts=typeOptions().map(x=>`<option value="${x[0]}" ${f.type===x[0]?'selected':''}>${x[1]}</option>`).join('');
+    const optionInput=needsOptions(f.type)?`<div><label class="text-[9px] text-slate-400">گزینه‌ها را با «،» جدا کنید</label><input class="inp w-full rounded-xl p-2.5 text-[10px] mt-1" value="${esc((f.options||[]).join('، '))}" oninput="setOptions(${i},this.value)" placeholder="گزینه اول، گزینه دوم"></div>`:'';
+    const matrix=f.type==='matrix'?`<div class="grid gap-2"><input class="inp rounded-xl p-2.5 text-[10px]" value="${esc((f.config.rows||[]).join('، '))}" placeholder="ردیف‌ها: کیفیت آموزش، امکانات..." oninput="fields[${i}].config.rows=splitOpts(this.value)"><input class="inp rounded-xl p-2.5 text-[10px]" value="${esc((f.config.cols||['ضعیف','متوسط','خوب','عالی']).join('، '))}" placeholder="ستون‌ها: ضعیف، متوسط، خوب، عالی" oninput="fields[${i}].config.cols=splitOpts(this.value)"></div>`:'';
+    const labelWord=kind==='survey'?'متن سؤال':(kind==='repeatable'?'نام ستون':'عنوان فیلد');
+    const itemWord=kind==='survey'?'سؤال':(kind==='repeatable'?'ستون':'فیلد');
+    box.innerHTML+=`<div class="card rounded-3xl p-4 space-y-3 fade">
+      <div class="flex justify-between items-center"><span class="text-[10px] font-black text-blue-400">${itemWord} ${i+1}</span><button onclick="delField(${i})" class="text-rose-400 text-xs">🗑 حذف</button></div>
+      <input class="inp w-full rounded-xl p-2.5 text-xs font-bold" value="${esc(f.label)}" oninput="fields[${i}].label=this.value" placeholder="${labelWord}">
+      <select class="inp w-full rounded-xl p-2.5 text-[10px] font-bold" onchange="fields[${i}].type=this.value;renderFields()">${opts}</select>
+      ${f.type==='section'?'':`<label class="pill rounded-xl p-2.5 flex justify-between items-center text-[10px]"><span>پاسخ الزامی</span><input type="checkbox" ${f.required?'checked':''} onchange="fields[${i}].required=this.checked"></label>`}
+      ${optionInput}${matrix}
+    </div>`;
+  });
+}
+
+function validateDesign(){
+  if(kind==='member_checklist'||kind==='system_bale_phone')return true;
+  if(!fields.length){toast(kind==='survey'?'حداقل یک سؤال بسازید':kind==='repeatable'?'حداقل یک ستون بسازید':'حداقل یک فیلد بسازید');return false}
+  if(fields.some(f=>!String(f.label||'').trim())){toast(kind==='survey'?'متن همه سؤال‌ها را کامل کنید':kind==='repeatable'?'نام همه ستون‌ها را کامل کنید':'عنوان همه فیلدها را کامل کنید');return false}
+  for(const f of fields){
+    if(needsOptions(f.type)&&!(f.options||[]).length){toast('برای فیلد/سؤال انتخابی حداقل یک گزینه وارد کنید');return false}
+    if(f.type==='matrix'&&(!(f.config.rows||[]).length||!(f.config.cols||[]).length)){toast('برای سؤال ماتریسی ردیف‌ها و ستون‌ها را کامل کنید');return false}
+  }
+  return true;
+}
+
+function formLabel(){
+  if(kind==='structured')return'فرم اطلاعات ثابت';
+  if(kind==='repeatable')return'فرم لیست تکرارشونده';
+  if(kind==='member_checklist')return'چک‌لیست دستیاران گروه';
+  if(kind==='survey')return'نظرسنجی / ارزشیابی';
+  return'فرم اتصال دستیاران به بله';
+}
+
 function askConfirmSave(){
-  const title=(document.getElementById('title').value||'این فرم').trim();
-  const ok=window.confirm(`آیا مطمئن هستید می‌خواهید فرم «${title}» ساخته و در کانال منتشر شود؟\n\nتا قبل از تأیید، هیچ فرم یا پستی ساخته نمی‌شود.`);
+  if(!validateBase()||!validateDesign())return;
+  const ids=getBaseIds();
+  const title=kind==='system_bale_phone'?'فرم راستی‌آزمایی و ثبت شماره تماس بله دستیاران':(document.getElementById(ids.title)?.value||'').trim();
+  const groups=selectedGroups();
+  const ok=window.confirm(`آیا مطمئن هستید می‌خواهید ${formLabel()} «${title}» ساخته و در کانال منتشر شود؟\n\nگروه هدف: ${groups.join('، ')}\n\nتا قبل از تأیید، هیچ فرم یا پستی ساخته نمی‌شود.`);
   if(!ok)return;
-  saveForm(true);
+  saveForm();
 }
-function closePublishConfirm(){
-  const modal=document.getElementById('publishConfirmModal');
-  if(!modal)return;
-  modal.classList.add('hidden');
-  modal.classList.remove('flex');
+
+function saveForm(){
+  const ids=getBaseIds(), groups=selectedGroups();
+  const deadline=+(document.getElementById(ids.deadline)?.value||0);
+
+  if(kind==='system_bale_phone'){
+    window.Bale.WebApp.sendData(JSON.stringify({
+      action:'dispatch_resident_phone_collection_v2',
+      confirmed:1,
+      target_groups:groups,
+      deadline_days:deadline||7
+    }));
+    return;
+  }
+
+  const title=(document.getElementById(ids.title)?.value||'').trim();
+  const description=(document.getElementById(ids.desc)?.value||'').trim();
+  const settings={
+    target_role:'دستیار',
+    is_anonymous:0,
+    allow_multiple:0,
+    show_results:0,
+    is_roster_update:0
+  };
+
+  if(kind==='survey'){
+    settings.target_role=document.getElementById('targetRole').value;
+    settings.is_anonymous=document.getElementById('anonymous').checked?1:0;
+    settings.allow_multiple=document.getElementById('multiSubmit').checked?1:0;
+    settings.show_results=document.getElementById('showResults').checked?1:0;
+  }
+  if(kind==='member_checklist'){
+    settings.is_roster_update=document.getElementById('rosterUpdate').checked?1:0;
+  }
+
+  const payload={
+    action:'save_form_v2',
+    confirmed:1,
+    form_kind:kind,
+    title,
+    description,
+    target_groups:groups,
+    deadline_days:deadline,
+    fields,
+    settings
+  };
+  window.Bale.WebApp.sendData(JSON.stringify(payload));
 }
-function confirmPublishNow(){
-  closePublishConfirm();
-  saveForm(true);
+
+function toast(t){
+  try{window.Bale.WebApp.showAlert(t)}catch(e){alert(t)}
 }
-function saveForm(confirmed=false){if(!confirmed){askConfirmSave();return}const groups=selectedGroups();if(!groups.length){toast('حداقل یک گروه هدف انتخاب کنید');return}if(kind==='system_bale_phone'){window.Bale.WebApp.sendData(JSON.stringify({action:'dispatch_resident_phone_collection_v2',confirmed:1,target_groups:groups,deadline_days:+document.getElementById('deadline').value||7}));return}if(!fields.length){toast('حداقل یک سؤال یا فیلد بسازید');return}if(fields.some(f=>!String(f.label||'').trim())){toast('عنوان همه سؤال‌ها را کامل کنید');return}const payload={action:'save_form_v2',confirmed:1,form_kind:kind,title:document.getElementById('title').value.trim(),description:document.getElementById('desc').value.trim(),target_groups:groups,deadline_days:+document.getElementById('deadline').value||0,fields,settings:{target_role:document.getElementById('targetRole').value,is_anonymous:document.getElementById('anonymous').checked?1:0,allow_multiple:document.getElementById('multiSubmit').checked?1:0,show_results:document.getElementById('showResults').checked?1:0,is_roster_update:document.getElementById('rosterUpdate').checked?1:0}};window.Bale.WebApp.sendData(JSON.stringify(payload))}
-function toast(t){try{window.Bale.WebApp.showAlert(t)}catch(e){alert(t)}}
-init();updateNav();
+
+init();
 </script>
-</body></html>
+</body>
+</html>
