@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>استودیوی ویرایش فرم V2</title>
+<link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.0.0/Vazirmatn-font-face.css" rel="stylesheet">
+<script src="https://tapi.bale.ai/miniapp.js?3"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+<style>
+body{font-family:Vazirmatn,sans-serif;background:#020617;color:#e2e8f0;-webkit-font-smoothing:antialiased}.card{background:linear-gradient(145deg,rgba(15,23,42,.88),rgba(2,6,23,.94));border:1px solid rgba(148,163,184,.13);box-shadow:0 18px 50px rgba(0,0,0,.25);backdrop-filter:blur(20px)}.inp{background:rgba(15,23,42,.8);border:1px solid rgba(148,163,184,.18)}.inp:focus{outline:none;border-color:rgba(59,130,246,.78);box-shadow:0 0 0 3px rgba(59,130,246,.12)}.pill{border:1px solid rgba(148,163,184,.14);background:rgba(15,23,42,.62)}.fade{animation:fade .2s ease}@keyframes fade{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}.no-scrollbar::-webkit-scrollbar{display:none}
+</style>
+</head>
+<body class="min-h-screen overflow-x-hidden">
+<div class="fixed inset-0 pointer-events-none -z-10 overflow-hidden"><div class="absolute -top-24 -right-20 w-80 h-80 rounded-full bg-blue-600/20 blur-[100px]"></div><div class="absolute bottom-0 -left-20 w-96 h-96 rounded-full bg-emerald-500/10 blur-[120px]"></div></div>
+<header class="sticky top-0 z-30 bg-slate-950/90 backdrop-blur-2xl border-b border-white/[.06] px-4 py-3">
+  <div class="flex items-center justify-between gap-3">
+    <div><h1 class="text-sm font-black text-white">🛠 استودیوی ویرایش فرم منتشرشده</h1><p id="headerHint" class="text-[10px] text-slate-400 mt-1">فقط اطلاعات امن و قابل‌ویرایش نمایش داده می‌شود</p></div>
+    <span id="codeBadge" class="text-[10px] font-black bg-blue-500/10 text-blue-300 border border-blue-400/20 px-3 py-1.5 rounded-full">کد -</span>
+  </div>
+</header>
+<main class="p-4 pb-28 max-w-2xl mx-auto">
+  <section id="editPage" class="space-y-3 fade">
+    <div class="card rounded-3xl p-4">
+      <div class="flex items-start gap-3"><span id="kindIcon" class="text-2xl">📋</span><div><h2 id="kindTitle" class="text-xs font-black text-white">فرم V2</h2><p id="kindDesc" class="text-[10px] text-slate-400 mt-1 leading-5">ساختار فرم پس از انتشار محافظت می‌شود.</p></div></div>
+    </div>
+
+    <div class="card rounded-3xl p-4 space-y-4">
+      <h3 class="text-xs font-black text-white">اطلاعات قابل ویرایش</h3>
+      <div><label class="text-[10px] font-black text-slate-300">عنوان فرم</label><input id="title" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold" maxlength="300"></div>
+      <div><label class="text-[10px] font-black text-slate-300">توضیحات / راهنما</label><textarea id="desc" rows="3" maxlength="5000" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold resize-none"></textarea></div>
+    </div>
+
+    <div class="card rounded-3xl p-4 space-y-3">
+      <div><h3 class="text-xs font-black text-white">گروه‌های هدف</h3><p class="text-[9px] text-slate-400 mt-1">حالت عمومی و انتخاب گروه‌های مشخص هم‌زمان فعال نمی‌شوند.</p></div>
+      <label class="pill rounded-2xl p-3 flex items-center gap-3 cursor-pointer"><input type="radio" name="groupMode" id="modeAll" value="all" onchange="setGroupMode('all',true)"><span><b class="text-xs text-white">همه گروه‌های دستیاری</b><small class="block text-[9px] text-slate-400 mt-1">تمام گروه‌های آموزشی ثبت‌شده در سامانه</small></span></label>
+      <label class="pill rounded-2xl p-3 flex items-center gap-3 cursor-pointer"><input type="radio" name="groupMode" id="modeSelected" value="selected" onchange="setGroupMode('selected',true)"><span><b class="text-xs text-white">انتخاب گروه‌های موردنظر</b><small class="block text-[9px] text-slate-400 mt-1">یک یا چند گروه مشخص</small></span></label>
+      <div id="legacyTargetNotice" class="hidden rounded-2xl border border-amber-400/20 bg-amber-500/[.08] p-3 text-[9px] leading-5 text-amber-100">⚠️ این فرم با ساختار قدیمی «عمومی برای همه کاربران مجاز» منتشر شده است. تا وقتی بخش گروه‌های هدف را تغییر ندهید، همان هدف قبلی بدون تغییر حفظ می‌شود.</div>
+      <div id="groupsBox" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+    </div>
+
+    <div class="card rounded-3xl p-4 space-y-3">
+      <h3 class="text-xs font-black text-white">مهلت تکمیل</h3>
+      <div class="pill rounded-2xl p-3 text-[10px] text-slate-300">مهلت فعلی: <b id="currentDeadline" class="text-white">-</b></div>
+      <select id="deadline" onchange="toggleCustomDeadline()" class="inp w-full rounded-2xl p-3 text-xs font-bold">
+        <option value="-1">بدون تغییر</option>
+        <option value="0">حذف مهلت</option>
+        <option value="1">مهلت جدید: ۱ روز</option>
+        <option value="3">مهلت جدید: ۳ روز</option>
+        <option value="7">مهلت جدید: ۷ روز</option>
+        <option value="14">مهلت جدید: ۱۴ روز</option>
+        <option value="30">مهلت جدید: ۳۰ روز</option>
+        <option value="custom">عدد دلخواه</option>
+      </select>
+      <input id="customDeadline" type="number" min="1" max="3650" class="hidden inp w-full rounded-2xl p-3 text-xs font-bold" placeholder="تعداد روز">
+    </div>
+
+    <div class="card rounded-3xl p-4 space-y-3 border border-amber-400/10">
+      <div class="flex items-center justify-between"><div><h3 class="text-xs font-black text-white">🔒 ساختار فرم</h3><p class="text-[9px] text-slate-400 mt-1">برای حفظ پاسخ‌های قبلی، این بخش فقط خواندنی است.</p></div><span id="responseBadge" class="text-[9px] rounded-xl bg-slate-800 px-2 py-1 text-slate-300">۰ پاسخ</span></div>
+      <div id="structureSummary" class="space-y-2"></div>
+    </div>
+  </section>
+
+  <section id="reviewPage" class="hidden space-y-3 fade">
+    <div class="card rounded-3xl p-4"><div class="text-center"><div class="text-3xl">🔎</div><h2 class="text-sm font-black text-white mt-2">بررسی نهایی تغییرات</h2><p class="text-[10px] text-slate-400 mt-1">قبل از اعمال، اطلاعات زیر را کنترل کنید.</p></div></div>
+    <div id="reviewContent" class="card rounded-3xl p-4 space-y-3 text-[10px] leading-6"></div>
+    <div class="rounded-2xl border border-amber-400/20 bg-amber-500/[.08] p-3 text-[9px] text-amber-100 leading-5">🔒 ساختار و سؤال‌های فرم تغییر نمی‌کنند. فقط عنوان، توضیحات، گروه هدف و مهلت قابل بروزرسانی است.</div>
+  </section>
+</main>
+
+<footer class="fixed bottom-0 left-0 right-0 z-30 bg-slate-950/92 backdrop-blur-2xl border-t border-white/[.06] p-3">
+  <div class="max-w-2xl mx-auto flex gap-2">
+    <button id="backBtn" onclick="goBack()" class="w-1/3 bg-white/[.06] text-slate-300 rounded-2xl p-3 text-xs font-black">بستن</button>
+    <button id="reviewBtn" onclick="openReview()" class="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl p-3 text-xs font-black">🔎 بررسی نهایی</button>
+    <button id="applyBtn" onclick="openConfirm()" class="hidden flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl p-3 text-xs font-black">💾 اعمال تغییرات</button>
+  </div>
+</footer>
+
+<div id="confirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+  <div class="card w-full max-w-sm rounded-3xl p-5 fade"><div class="text-3xl text-center">⚠️</div><h3 class="text-sm font-black text-white text-center mt-3">آیا تغییرات این فرم اعمال شود؟</h3><p class="text-[10px] text-slate-400 text-center leading-6 mt-2">پس از تأیید، اطلاعات فرم در دیتابیس و پست منتشرشده در کانال بروزرسانی می‌شود.</p><div class="grid grid-cols-2 gap-2 mt-5"><button onclick="closeConfirm()" class="bg-white/[.07] text-slate-200 rounded-2xl p-3 text-xs font-black">❌ خیر</button><button onclick="submitEdit()" class="bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl p-3 text-xs font-black">✅ بله، اعمال شود</button></div></div>
+</div>
+
+<script>
+let cfg={}, allGroups=[], initialGroups=[], groupsTouched=false, legacyPublic=false, currentPage='edit';
+const PUBLIC_LABELS=['🌐 عمومی (همه کاربران مجاز)','همه گروه‌ها'];
+const TYPE_LABELS={text:'متن کوتاه',textarea:'متن بلند',number:'عدد',phone:'موبایل',nid:'کد ملی',email:'ایمیل',yesno:'بله/خیر',choice:'تک‌انتخابی',checkbox:'چندانتخابی',select:'فهرست کشویی',date:'تاریخ',time:'زمان',section:'عنوان بخش',multi_record:'لیست تکرارشونده',member_checklist:'چک‌لیست دستیاران'};
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function sameSet(a,b){const aa=[...new Set(a)].sort(),bb=[...new Set(b)].sort();return aa.length===bb.length&&aa.every((x,i)=>x===bb[i])}
+function init(){
+  try{const p=new URLSearchParams(location.search).get('d');if(!p)throw new Error('missing data');const b=atob(p.replace(/-/g,'+').replace(/_/g,'/'));const a=Uint8Array.from(b,c=>c.charCodeAt(0));cfg=JSON.parse(pako.inflate(a,{to:'string'}));}catch(e){showAlert('اطلاعات فرم دریافت نشد.');return}
+  allGroups=Array.isArray(cfg.all_groups)?cfg.all_groups:[];initialGroups=Array.isArray(cfg.g)?cfg.g:[];legacyPublic=initialGroups.some(g=>PUBLIC_LABELS.includes(g));
+  document.getElementById('codeBadge').innerText='کد '+(cfg.code??'-');document.getElementById('title').value=cfg.t||'';document.getElementById('desc').value=cfg.d||'';document.getElementById('currentDeadline').innerText=cfg.dl_j||'بدون مهلت';document.getElementById('responseBadge').innerText=`${Number(cfg.rc||0)} پاسخ`;
+  setupKind();renderGroups();setupInitialGroupMode();renderStructure();try{window.Bale.WebApp.ready()}catch(e){}
+}
+function setupKind(){
+  const settings=cfg.settings&&typeof cfg.settings==='object'?cfg.settings:{};let icon='📋',title='فرم V2',desc='ساختار این فرم پس از انتشار محافظت می‌شود.';
+  if(settings.system_form==='resident_bale_phone'){icon='📱';title='فرم سیستمی اتصال دستیاران به بله';desc='ساختار سیستمی فرم ثابت و غیرقابل تغییر است.'}
+  else if(cfg.kind==='structured'){icon='📄';title='فرم اطلاعات ثابت';desc='فیلدهای فرم قفل هستند؛ فقط اطلاعات انتشار قابل ویرایش است.'}
+  else if(cfg.kind==='repeatable'){icon='📋';title='فرم لیست تکرارشونده';desc='ستون‌های لیست قفل هستند؛ فقط اطلاعات انتشار قابل ویرایش است.'}
+  else if(cfg.kind==='member_checklist'){icon='👥';title='چک‌لیست دستیاران گروه';desc='لیست دستیاران و رفتار چک‌لیست پس از انتشار قفل است.'}
+  document.getElementById('kindIcon').innerText=icon;document.getElementById('kindTitle').innerText=title;document.getElementById('kindDesc').innerText=desc;
+}
+function renderGroups(){const box=document.getElementById('groupsBox');box.innerHTML='';allGroups.forEach(g=>{const checked=initialGroups.includes(g)?'checked':'';box.innerHTML+=`<label class="inp rounded-xl p-2.5 flex items-center gap-2 text-[10px] font-bold cursor-pointer"><input class="grp" type="checkbox" value="${esc(g)}" ${checked} onchange="groupCheckboxChanged()"><span>${esc(g)}</span></label>`})}
+function setupInitialGroupMode(){
+  if(legacyPublic){document.getElementById('modeAll').checked=true;document.getElementById('legacyTargetNotice').classList.remove('hidden');setGroupMode('all',false);return}
+  if(allGroups.length&&sameSet(initialGroups,allGroups)){document.getElementById('modeAll').checked=true;setGroupMode('all',false)}else{document.getElementById('modeSelected').checked=true;setGroupMode('selected',false)}
+}
+function setGroupMode(mode,fromUser){if(fromUser){groupsTouched=true;document.getElementById('legacyTargetNotice').classList.add('hidden')}const box=document.getElementById('groupsBox');if(mode==='all'){box.classList.add('hidden');if(fromUser)document.querySelectorAll('.grp').forEach(x=>x.checked=false)}else{box.classList.remove('hidden')}}
+function groupCheckboxChanged(){groupsTouched=true;document.getElementById('legacyTargetNotice').classList.add('hidden')}
+function selectedGroups(){if(document.getElementById('modeAll').checked)return [...allGroups];return [...document.querySelectorAll('.grp:checked')].map(x=>x.value)}
+function toggleCustomDeadline(){document.getElementById('customDeadline').classList.toggle('hidden',document.getElementById('deadline').value!=='custom')}
+function readDeadline(){const v=document.getElementById('deadline').value;if(v==='custom'){const n=parseInt(document.getElementById('customDeadline').value||'0',10);if(!n||n<1||n>3650){showAlert('تعداد روز مهلت جدید باید بین ۱ تا ۳۶۵۰ باشد.');return null}return n}return parseInt(v,10)}
+function renderStructure(){
+  const box=document.getElementById('structureSummary');box.innerHTML='';const settings=cfg.settings&&typeof cfg.settings==='object'?cfg.settings:{};const q=Array.isArray(cfg.q)?cfg.q:[];
+  if(settings.system_form==='resident_bale_phone'){['نام و نام خانوادگی دستیار','شماره موبایل فعال در بله','کد ملی (اختیاری)'].forEach(x=>addLocked(box,x,'فیلد سیستمی'));return}
+  if(cfg.kind==='member_checklist'){addLocked(box,'لیست دستیاران گروه','چک‌لیست سیستمی');if(Number(cfg.ru||0)===1)addLocked(box,'به‌روزرسانی آرشیو اصلی دستیاران','فعال');return}
+  if(cfg.kind==='repeatable'){
+    let found=false;q.forEach(row=>{const typ=row[1],raw=row[2];if(typ==='multi_record'){try{const obj=JSON.parse(raw);const schema=Array.isArray(obj.schema)?obj.schema:[];schema.forEach(c=>{addLocked(box,c.label||'ستون بدون عنوان',TYPE_LABELS[c.type]||c.type||'ستون');found=true})}catch(e){}}});if(!found)addLocked(box,'ساختار لیست تکرارشونده','قفل‌شده');return
+  }
+  q.forEach(row=>addLocked(box,row[2]||'فیلد بدون عنوان',TYPE_LABELS[row[1]]||row[1]||'فیلد'));if(!q.length)addLocked(box,'ساختار فرم','قفل‌شده');
+}
+function addLocked(box,label,type){box.innerHTML+=`<div class="pill rounded-2xl p-3 flex items-center justify-between gap-3"><span class="text-[10px] font-bold text-slate-200">${esc(label)}</span><span class="text-[9px] text-slate-400 whitespace-nowrap">🔒 ${esc(type)}</span></div>`}
+function validate(){const title=document.getElementById('title').value.trim();if(!title){showAlert('عنوان فرم را وارد کنید.');return false}if(groupsTouched){const groups=selectedGroups();if(!groups.length){showAlert('حداقل یک گروه هدف انتخاب کنید.');return false}}return readDeadline()!==null}
+function openReview(){if(!validate())return;currentPage='review';document.getElementById('editPage').classList.add('hidden');document.getElementById('reviewPage').classList.remove('hidden');document.getElementById('reviewBtn').classList.add('hidden');document.getElementById('applyBtn').classList.remove('hidden');document.getElementById('backBtn').innerText='مرحله قبل';renderReview();window.scrollTo({top:0,behavior:'smooth'})}
+function renderReview(){const title=document.getElementById('title').value.trim(),desc=document.getElementById('desc').value.trim();const groups=selectedGroups();const dl=readDeadline();let targetText='بدون تغییر';if(groupsTouched)targetText=document.getElementById('modeAll').checked?'همه گروه‌های دستیاری':groups.join('، ');let deadlineText='بدون تغییر';if(dl===0)deadlineText='حذف مهلت';else if(dl>0)deadlineText=`${dl} روز از زمان اعمال`;document.getElementById('reviewContent').innerHTML=`<div><span class="text-slate-400">عنوان:</span> <b class="text-white">${esc(title)}</b></div><div><span class="text-slate-400">توضیحات:</span> <span class="text-slate-200">${esc(desc||'بدون توضیحات')}</span></div><div><span class="text-slate-400">گروه هدف:</span> <b class="text-white">${esc(targetText)}</b></div><div><span class="text-slate-400">مهلت:</span> <b class="text-white">${esc(deadlineText)}</b></div>`}
+function goBack(){if(currentPage==='review'){currentPage='edit';document.getElementById('reviewPage').classList.add('hidden');document.getElementById('editPage').classList.remove('hidden');document.getElementById('applyBtn').classList.add('hidden');document.getElementById('reviewBtn').classList.remove('hidden');document.getElementById('backBtn').innerText='بستن';window.scrollTo({top:0,behavior:'smooth'});return}try{window.Bale.WebApp.close()}catch(e){history.back()}}
+function openConfirm(){document.getElementById('confirmModal').classList.remove('hidden');document.getElementById('confirmModal').classList.add('flex')}
+function closeConfirm(){document.getElementById('confirmModal').classList.add('hidden');document.getElementById('confirmModal').classList.remove('flex')}
+function submitEdit(){if(!validate())return;closeConfirm();const dl=readDeadline();const payload={action:'submit_v2_form_meta_edit',f_id:cfg.f_id,title:document.getElementById('title').value.trim(),desc:document.getElementById('desc').value.trim(),groups_changed:groupsTouched?1:0,groups:selectedGroups(),deadline_days:dl};try{window.Bale.WebApp.sendData(JSON.stringify(payload));document.getElementById('applyBtn').disabled=true;document.getElementById('applyBtn').innerText='⏳ در حال اعمال...';setTimeout(()=>{try{window.Bale.WebApp.close()}catch(e){}},250)}catch(e){showAlert('خطا در ارسال تغییرات به ربات.')}}
+function showAlert(t){try{window.Bale.WebApp.showAlert(t)}catch(e){alert(t)}}
+init();
+</script>
+</body>
+</html>
