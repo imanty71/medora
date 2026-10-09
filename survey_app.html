@@ -26,6 +26,7 @@ body{font-family:Vazirmatn,sans-serif;background:#020617;color:#e2e8f0;-webkit-f
     </div>
     <div class="flex gap-2 mt-2 flex-wrap">
       <span id="sourceBadge" class="text-[9px] bg-violet-500/10 text-violet-300 border border-violet-400/20 px-2.5 py-1 rounded-full"></span>
+      <span id="codeBadge" class="text-[9px] bg-amber-500/10 text-amber-200 border border-amber-400/20 px-2.5 py-1 rounded-full"></span>
       <span id="statusBadge" class="text-[9px] px-2.5 py-1 rounded-full border"></span>
       <span id="anonBadge" class="text-[9px] bg-emerald-500/10 text-emerald-300 border border-emerald-400/20 px-2.5 py-1 rounded-full"></span>
       <span id="countBadge" class="text-[9px] bg-blue-500/10 text-blue-300 border border-blue-400/20 px-2.5 py-1 rounded-full"></span>
@@ -60,13 +61,13 @@ function toggleDrawer(){$('drawer').classList.toggle('hidden')}
 function renderDrawer(){
   const b=$('surveyList');b.innerHTML='';
   if(!surveys.length){b.innerHTML='<div class="text-center text-xs text-slate-500 py-5">نظرسنجی‌ای برای شما ثبت نشده است.</div>';return}
-  surveys.forEach((s,i)=>{const btn=document.createElement('button');btn.type='button';btn.className='w-full inp rounded-2xl p-3 text-right';btn.innerHTML=`<div class="flex justify-between gap-2"><b class="text-xs text-white">${esc(s.title)}</b><span class="text-[8px] ${s.expired?'text-slate-400':s.answered?'text-emerald-300':'text-rose-300'}">${esc(statusText(s))}</span></div><div class="text-[9px] text-slate-400 mt-1">🏢 ${esc(s.source||'—')} • 🎯 ${esc(s.audience||'—')} • ${(s.questions||[]).length} سؤال</div>`;btn.addEventListener('click',()=>pick(i));b.appendChild(btn)})
+  surveys.forEach((s,i)=>{const btn=document.createElement('button');btn.type='button';btn.className='w-full inp rounded-2xl p-3 text-right';btn.innerHTML=`<div class="flex justify-between gap-2"><b class="text-xs text-white">${esc(s.title)}</b><span class="text-[8px] ${s.expired?'text-slate-400':s.answered?'text-emerald-300':'text-rose-300'}">${esc(statusText(s))}</span></div><div class="text-[9px] text-slate-400 mt-1">🏢 ${esc(s.source||'—')} • 📟 ${esc(s.tracking_code??'—')} • 🎯 ${esc(s.audience||'—')} • ${(s.questions||[]).length} سؤال</div>`;btn.addEventListener('click',()=>pick(i));b.appendChild(btn)})
 }
 function pick(i){cur=surveys[i];ans={};toggleDrawer();render()}
 function render(){
   const qbox=$('questions');qbox.innerHTML='';
   if(!cur){$('title').innerText='نظرسنجی‌ای وجود ندارد';$('submitBtn').disabled=true;return}
-  $('title').innerText=cur.title;$('desc').innerText=cur.description||'';$('sourceBadge').innerText=`🏢 صادرکننده: ${cur.source||'—'}`;$('statusBadge').innerText=statusText(cur);$('statusBadge').className=`text-[9px] px-2.5 py-1 rounded-full border ${statusClass(cur)}`;$('anonBadge').innerText=cur.is_anonymous?'🔒 پاسخ ناشناس':'👤 پاسخ با هویت';$('countBadge').innerText=`${(cur.questions||[]).length} سؤال`;$('deadlineBadge').innerText=`⏳ ${cur.deadline||'بدون مهلت'}`;
+  $('title').innerText=cur.title;$('desc').innerText=cur.description||'';$('sourceBadge').innerText=`🏢 صادرکننده: ${cur.source||'—'}`;$('codeBadge').innerText=`📟 کد: ${cur.tracking_code??'—'}`;$('statusBadge').innerText=statusText(cur);$('statusBadge').className=`text-[9px] px-2.5 py-1 rounded-full border ${statusClass(cur)}`;$('anonBadge').innerText=cur.is_anonymous?'🔒 پاسخ ناشناس':'👤 پاسخ با هویت';$('countBadge').innerText=`${(cur.questions||[]).length} سؤال`;$('deadlineBadge').innerText=`⏳ ${cur.deadline||'بدون مهلت'}`;
   if(cur.expired){qbox.innerHTML='<div class="card rounded-3xl p-4 text-center text-xs text-slate-300">مهلت این نظرسنجی به پایان رسیده است. ساختار آن برای سابقه شما قابل مشاهده است اما ثبت پاسخ جدید ممکن نیست.</div>'}
   else if(cur.answered&&!cur.allow_multiple){qbox.innerHTML='<div class="card rounded-3xl p-4 text-center text-xs text-emerald-300">پاسخ شما قبلاً ثبت شده است. این نظرسنجی در سوابق شما باقی می‌ماند.</div>'}
   ;(cur.questions||[]).forEach((q,i)=>qbox.insertAdjacentHTML('beforeend',questionCard(q,i)));
