@@ -81,10 +81,10 @@ function renderFields(){const box=document.getElementById('fields');box.innerHTM
 function splitOpts(v){return v.split(/[،,]/).map(x=>x.trim()).filter(Boolean)}function setOptions(i,v){fields[i].options=splitOpts(v)}
 function selectedGroups(){const a=[...document.querySelectorAll('.grp:checked')].map(x=>x.value);if(a.includes('🌐 عمومی (همه کاربران مجاز)'))return['🌐 عمومی (همه کاربران مجاز)'];return a}
 function askConfirmSave(){
-  const modal=document.getElementById('publishConfirmModal');
-  if(!modal){saveForm();return}
-  modal.classList.remove('hidden');
-  modal.classList.add('flex');
+  const title=(document.getElementById('title').value||'این فرم').trim();
+  const ok=window.confirm(`آیا مطمئن هستید می‌خواهید فرم «${title}» ساخته و در کانال منتشر شود؟\n\nتا قبل از تأیید، هیچ فرم یا پستی ساخته نمی‌شود.`);
+  if(!ok)return;
+  saveForm(true);
 }
 function closePublishConfirm(){
   const modal=document.getElementById('publishConfirmModal');
@@ -94,9 +94,9 @@ function closePublishConfirm(){
 }
 function confirmPublishNow(){
   closePublishConfirm();
-  saveForm();
+  saveForm(true);
 }
-function saveForm(){const groups=selectedGroups();if(!groups.length){toast('حداقل یک گروه هدف انتخاب کنید');return}if(kind==='system_bale_phone'){window.Bale.WebApp.sendData(JSON.stringify({action:'dispatch_resident_phone_collection_v2',target_groups:groups,deadline_days:+document.getElementById('deadline').value||7}));return}if(!fields.length){toast('حداقل یک سؤال یا فیلد بسازید');return}if(fields.some(f=>!String(f.label||'').trim())){toast('عنوان همه سؤال‌ها را کامل کنید');return}const payload={action:'save_form_v2',form_kind:kind,title:document.getElementById('title').value.trim(),description:document.getElementById('desc').value.trim(),target_groups:groups,deadline_days:+document.getElementById('deadline').value||0,fields,settings:{target_role:document.getElementById('targetRole').value,is_anonymous:document.getElementById('anonymous').checked?1:0,allow_multiple:document.getElementById('multiSubmit').checked?1:0,show_results:document.getElementById('showResults').checked?1:0,is_roster_update:document.getElementById('rosterUpdate').checked?1:0}};window.Bale.WebApp.sendData(JSON.stringify(payload))}
+function saveForm(confirmed=false){if(!confirmed){askConfirmSave();return}const groups=selectedGroups();if(!groups.length){toast('حداقل یک گروه هدف انتخاب کنید');return}if(kind==='system_bale_phone'){window.Bale.WebApp.sendData(JSON.stringify({action:'dispatch_resident_phone_collection_v2',confirmed:1,target_groups:groups,deadline_days:+document.getElementById('deadline').value||7}));return}if(!fields.length){toast('حداقل یک سؤال یا فیلد بسازید');return}if(fields.some(f=>!String(f.label||'').trim())){toast('عنوان همه سؤال‌ها را کامل کنید');return}const payload={action:'save_form_v2',confirmed:1,form_kind:kind,title:document.getElementById('title').value.trim(),description:document.getElementById('desc').value.trim(),target_groups:groups,deadline_days:+document.getElementById('deadline').value||0,fields,settings:{target_role:document.getElementById('targetRole').value,is_anonymous:document.getElementById('anonymous').checked?1:0,allow_multiple:document.getElementById('multiSubmit').checked?1:0,show_results:document.getElementById('showResults').checked?1:0,is_roster_update:document.getElementById('rosterUpdate').checked?1:0}};window.Bale.WebApp.sendData(JSON.stringify(payload))}
 function toast(t){try{window.Bale.WebApp.showAlert(t)}catch(e){alert(t)}}
 init();updateNav();
 </script>
