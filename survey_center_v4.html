@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>مرکز نظرسنجی و ارزشیابی</title>
+<link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.0.0/Vazirmatn-font-face.css" rel="stylesheet">
+<script src="https://tapi.bale.ai/miniapp.js?3"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+<style>
+body{font-family:Vazirmatn,sans-serif;background:#020617;color:#e2e8f0;-webkit-font-smoothing:antialiased}
+.card{background:linear-gradient(145deg,rgba(15,23,42,.9),rgba(2,6,23,.95));border:1px solid rgba(148,163,184,.13);box-shadow:0 18px 50px rgba(0,0,0,.22)}
+.inp{background:rgba(15,23,42,.8);border:1px solid rgba(148,163,184,.17)}
+.on{background:rgba(37,99,235,.28)!important;border-color:rgba(96,165,250,.65)!important;color:#bfdbfe!important}
+</style>
+</head>
+<body class="min-h-screen pb-28">
+<header class="sticky top-0 z-20 bg-slate-950 border-b border-white/10 p-4">
+  <div class="max-w-2xl mx-auto">
+    <div class="flex justify-between gap-3 items-start">
+      <div class="min-w-0"><h1 id="title" class="text-sm font-black text-white">مرکز نظرسنجی و ارزشیابی</h1><p id="desc" class="text-[10px] text-slate-400 leading-5 mt-1">در حال دریافت اطلاعات...</p></div>
+      <button type="button" id="drawerBtn" class="text-[10px] font-black bg-white/5 px-3 py-2 rounded-xl">فرم‌ها ▾</button>
+    </div>
+    <div class="flex gap-2 mt-2 flex-wrap">
+      <span id="sourceBadge" class="hidden text-[9px] bg-violet-500/10 text-violet-300 border border-violet-400/20 px-2.5 py-1 rounded-full"></span>
+      <span id="codeBadge" class="hidden text-[9px] bg-amber-500/10 text-amber-200 border border-amber-400/20 px-2.5 py-1 rounded-full"></span>
+      <span id="statusBadge" class="hidden text-[9px] px-2.5 py-1 rounded-full border"></span>
+      <span id="anonBadge" class="hidden text-[9px] bg-emerald-500/10 text-emerald-300 border border-emerald-400/20 px-2.5 py-1 rounded-full"></span>
+      <span id="countBadge" class="hidden text-[9px] bg-blue-500/10 text-blue-300 border border-blue-400/20 px-2.5 py-1 rounded-full"></span>
+      <span id="deadlineBadge" class="hidden text-[9px] bg-white/5 text-slate-300 border border-white/10 px-2.5 py-1 rounded-full"></span>
+    </div>
+  </div>
+</header>
+<div id="drawer" class="hidden fixed inset-0 z-40 bg-black/70 p-0">
+  <div class="absolute bottom-0 left-0 right-0 card rounded-t-[28px] p-4 max-h-[72vh] overflow-y-auto">
+    <div class="flex justify-between mb-3"><b class="text-xs">نظرسنجی‌ها و ارزشیابی‌های شما</b><button type="button" id="drawerClose">✕</button></div>
+    <div id="surveyList" class="space-y-2"></div>
+  </div>
+</div>
+<main id="questions" class="max-w-2xl mx-auto p-4 space-y-3"></main>
+<footer class="fixed bottom-0 left-0 right-0 bg-slate-950 border-t border-white/10 p-3">
+  <div class="max-w-2xl mx-auto"><button id="submitBtn" type="button" disabled class="w-full bg-slate-800 text-slate-500 font-black text-xs p-4 rounded-2xl">در حال بارگذاری...</button></div>
+</footer>
+<script>
+(function(){
+var payload={};
+var surveys=[];
+var currentSurvey=null;
+var answers={};
+function byId(id){return document.getElementById(id);}
+function esc(v){return String(v===undefined||v===null?'':v).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
+function enc(v){return encodeURIComponent(String(v===undefined||v===null?'':v));}
+function show(el){if(el){el.className=el.className.replace(/\bhidden\b/g,'').replace(/\s+/g,' ').trim();}}
+function statusText(s){if(s.expired){return '⛔ منقضی';}if(s.answered&&!s.allow_multiple){return '✅ پاسخ داده‌اید';}if(s.answered&&s.allow_multiple){return '✅ پاسخ ثبت شده؛ پاسخ مجدد مجاز است';}return '🔴 در انتظار پاسخ';}
+function toggleDrawer(){var d=byId('drawer');if(!d){return;}if((' '+d.className+' ').indexOf(' hidden ')>=0){d.className=d.className.replace(/\bhidden\b/g,'').replace(/\s+/g,' ').trim();}else{d.className+=' hidden';}}
+function readPayload(){
+  var q=window.location.search||'';var m=q.match(/[?&]d=([^&]+)/);if(!m){throw new Error('payload-missing');}
+  if(typeof window.pako==='undefined'){throw new Error('pako-missing');}
+  var p=m[1];var b=window.atob(p.replace(/-/g,'+').replace(/_/g,'/'));var a=new Uint8Array(b.length);var i;
+  for(i=0;i<b.length;i++){a[i]=b.charCodeAt(i);}return JSON.parse(window.pako.inflate(a,{to:'string'}));
+}
+function renderDrawer(){
+  var box=byId('surveyList');var i,s,btn,meta;if(!box){return;}box.innerHTML='';
+  if(!surveys.length){box.innerHTML='<div class="text-center text-xs text-slate-500 py-5">نظرسنجی‌ای برای شما ثبت نشده است.</div>';return;}
+  for(i=0;i<surveys.length;i++){
+    s=surveys[i];btn=document.createElement('button');btn.type='button';btn.className='w-full inp rounded-2xl p-3 text-right';
+    meta='🏢 '+esc(s.source||'—')+' • 📟 '+esc(s.tracking_code===undefined||s.tracking_code===null?'—':s.tracking_code)+' • 🎯 '+esc(s.audience||'—')+' • '+esc((s.questions||[]).length)+' سؤال';
+    btn.innerHTML='<div class="flex justify-between gap-2"><b class="text-xs text-white">'+esc(s.title)+'</b><span class="text-[8px] text-slate-400">'+esc(statusText(s))+'</span></div><div class="text-[9px] text-slate-400 mt-1">'+meta+'</div>';
+    (function(idx){btn.onclick=function(){currentSurvey=surveys[idx];answers={};toggleDrawer();render();};})(i);box.appendChild(btn);
+  }
+}
+function scaleButtons(q,vals){var html='<div class="flex gap-1.5 flex-wrap">';var i,v;for(i=0;i<vals.length;i++){v=vals[i];html+='<button type="button" data-scale="'+esc(q.id)+'" data-val="'+esc(v.v)+'" class="flex-1 min-w-[54px] inp rounded-xl p-2 text-[9px] font-bold '+(answers[q.id]===v.v?'on':'')+'">'+esc(v.l)+'</button>';}return html+'</div>';}
+function body(q){
+  var t=q.type,opts=q.options||[],v=answers[q.id],i,x,html,a,sv,ranks,rows,cols,obj,r,c;
+  if(t==='likert3'){return scaleButtons(q,[{v:1,l:'ضعیف'},{v:2,l:'متوسط'},{v:3,l:'خوب'}]);}
+  if(t==='likert5'){return scaleButtons(q,[{v:1,l:'کاملاً مخالف'},{v:2,l:'مخالف'},{v:3,l:'نظری ندارم'},{v:4,l:'موافق'},{v:5,l:'کاملاً موافق'}]);}
+  if(t==='likert7'){a=[];for(i=1;i<=7;i++){a.push({v:i,l:String(i)});}return scaleButtons(q,a);}
+  if(t==='star'){html='<div class="flex justify-center gap-3">';for(i=1;i<=5;i++){html+='<button type="button" data-star="'+esc(q.id)+'" data-val="'+i+'" class="text-2xl '+(i<=(v||0)?'text-amber-300':'text-slate-700')+'">★</button>';}return html+'</div>';}
+  if(t==='score10'||t==='nps'){a=[];for(i=(t==='nps'?0:1);i<=10;i++){a.push({v:i,l:String(i)});}return scaleButtons(q,a);}
+  if(t==='yesno'){return '<div class="flex gap-2"><button type="button" data-choice="'+esc(q.id)+'" data-val="'+enc('بله')+'" class="flex-1 inp rounded-xl p-3 text-xs '+(v==='بله'?'on':'')+'">✅ بله</button><button type="button" data-choice="'+esc(q.id)+'" data-val="'+enc('خیر')+'" class="flex-1 inp rounded-xl p-3 text-xs '+(v==='خیر'?'on':'')+'">❌ خیر</button></div>';}
+  if(t==='choice'){html='<div class="space-y-2">';for(i=0;i<opts.length;i++){x=opts[i];html+='<button type="button" data-choice="'+esc(q.id)+'" data-val="'+enc(x)+'" class="w-full inp rounded-xl p-3 text-right text-[10px] font-bold '+(v===x?'on':'')+'">'+esc(x)+'</button>';}return html+'</div>';}
+  if(t==='checkbox'){a=(v instanceof Array)?v:[];html='<div class="space-y-2">';for(i=0;i<opts.length;i++){x=opts[i];html+='<button type="button" data-check="'+esc(q.id)+'" data-val="'+enc(x)+'" class="w-full inp rounded-xl p-3 text-right text-[10px] font-bold '+(a.indexOf(x)>=0?'on':'')+'">'+(a.indexOf(x)>=0?'☑':'☐')+' '+esc(x)+'</button>';}return html+'</div>';}
+  if(t==='select'){html='<select data-input="'+esc(q.id)+'" class="inp w-full rounded-xl p-3 text-xs"><option value="">انتخاب کنید...</option>';for(i=0;i<opts.length;i++){x=opts[i];html+='<option value="'+esc(x)+'" '+(v===x?'selected':'')+'>'+esc(x)+'</option>';}return html+'</select>';}
+  if(t==='number'||t==='text'||t==='date'||t==='time'){return '<input type="'+(t==='text'?'text':t)+'" data-input="'+esc(q.id)+'" value="'+esc(v===undefined?'':v)+'" class="inp w-full rounded-xl p-3 text-xs">';}
+  if(t==='textarea'){return '<textarea rows="4" data-input="'+esc(q.id)+'" class="inp w-full rounded-xl p-3 text-xs resize-none">'+esc(v===undefined?'':v)+'</textarea>';}
+  if(t==='slider'){sv=(v===undefined||v===null)?50:v;return '<div><input data-slider="'+esc(q.id)+'" type="range" min="0" max="100" value="'+esc(sv)+'" class="w-full"><div class="text-center text-blue-300 text-xs font-black mt-1">'+esc(sv)+'</div></div>';}
+  if(t==='ranking'){ranks=(v&&typeof v==='object')?v:{};html='<div class="space-y-2">';for(i=0;i<opts.length;i++){x=opts[i];html+='<div class="inp rounded-xl p-2.5 flex justify-between items-center gap-2"><span class="text-[10px] font-bold">'+esc(x)+'</span><select data-rank-q="'+esc(q.id)+'" data-rank-o="'+enc(x)+'" class="bg-slate-900 rounded-lg p-1.5 text-[10px]"><option value="">رتبه</option>';for(r=1;r<=opts.length;r++){html+='<option value="'+r+'" '+(String(ranks[x])===String(r)?'selected':'')+'>'+r+'</option>';}html+='</select></div>';}return html+'</div>';}
+  if(t==='matrix'){rows=(q.config&&q.config.rows)?q.config.rows:[];cols=(q.config&&q.config.cols)?q.config.cols:['ضعیف','متوسط','خوب','عالی'];obj=(v&&typeof v==='object')?v:{};html='<div class="overflow-x-auto"><table class="w-full text-[9px]"><thead><tr><th class="p-2"></th>';for(i=0;i<cols.length;i++){html+='<th class="p-2 text-slate-400">'+esc(cols[i])+'</th>';}html+='</tr></thead><tbody>';for(r=0;r<rows.length;r++){html+='<tr><td class="p-2 font-bold">'+esc(rows[r])+'</td>';for(c=0;c<cols.length;c++){html+='<td class="p-2 text-center"><input type="radio" data-matrix-q="'+esc(q.id)+'" data-matrix-r="'+enc(rows[r])+'" data-matrix-c="'+enc(cols[c])+'" name="m_'+esc(q.id)+'_'+r+'" '+(obj[rows[r]]===cols[c]?'checked':'')+'></td>';}html+='</tr>';}return html+'</tbody></table></div>';}
+  return '<div class="text-[10px] text-rose-300">نوع سؤال پشتیبانی نمی‌شود.</div>';
+}
+function questionCard(q,i){return '<div class="card rounded-3xl p-4 space-y-3"><div class="flex gap-2"><span class="w-6 h-6 flex items-center justify-center rounded-full bg-blue-500/15 text-blue-300 text-[10px] font-black">'+(i+1)+'</span><p class="text-xs font-black text-slate-100 leading-5 flex-1">'+esc(q.q)+' '+(q.required?'<span class="text-rose-400">*</span>':'<span class="text-slate-500 text-[9px]">اختیاری</span>')+'</p></div>'+body(q)+'</div>';}
+function setAnswer(id,v){answers[id]=v;render();}
+function bind(){var qbox=byId('questions'),els,i,el;
+  els=qbox.querySelectorAll('[data-scale]');for(i=0;i<els.length;i++){el=els[i];el.onclick=function(){var raw=this.getAttribute('data-val');setAnswer(this.getAttribute('data-scale'),/^-?\d+(\.\d+)?$/.test(raw)?Number(raw):raw);};}
+  els=qbox.querySelectorAll('[data-star]');for(i=0;i<els.length;i++){el=els[i];el.onclick=function(){setAnswer(this.getAttribute('data-star'),Number(this.getAttribute('data-val')));};}
+  els=qbox.querySelectorAll('[data-choice]');for(i=0;i<els.length;i++){el=els[i];el.onclick=function(){setAnswer(this.getAttribute('data-choice'),decodeURIComponent(this.getAttribute('data-val')));};}
+  els=qbox.querySelectorAll('[data-check]');for(i=0;i<els.length;i++){el=els[i];el.onclick=function(){var id=this.getAttribute('data-check'),o=decodeURIComponent(this.getAttribute('data-val')),a=(answers[id] instanceof Array)?answers[id].slice():[],ix=a.indexOf(o);if(ix>=0){a.splice(ix,1);}else{a.push(o);}setAnswer(id,a);};}
+  els=qbox.querySelectorAll('[data-input]');for(i=0;i<els.length;i++){el=els[i];el.oninput=function(){answers[this.getAttribute('data-input')]=this.value;};}
+  els=qbox.querySelectorAll('[data-slider]');for(i=0;i<els.length;i++){el=els[i];el.oninput=function(){answers[this.getAttribute('data-slider')]=Number(this.value);if(this.nextElementSibling){this.nextElementSibling.innerText=this.value;}};}
+  els=qbox.querySelectorAll('[data-rank-q]');for(i=0;i<els.length;i++){el=els[i];el.onchange=function(){var id=this.getAttribute('data-rank-q'),o=decodeURIComponent(this.getAttribute('data-rank-o')),x=(answers[id]&&typeof answers[id]==='object')?answers[id]:{};x[o]=this.value?Number(this.value):null;answers[id]=x;};}
+  els=qbox.querySelectorAll('[data-matrix-q]');for(i=0;i<els.length;i++){el=els[i];el.onchange=function(){var id=this.getAttribute('data-matrix-q'),r=decodeURIComponent(this.getAttribute('data-matrix-r')),c=decodeURIComponent(this.getAttribute('data-matrix-c')),x=(answers[id]&&typeof answers[id]==='object')?answers[id]:{};x[r]=c;answers[id]=x;};}
+}
+function render(){var qbox=byId('questions'),i,q,btn,badge;if(!qbox){return;}qbox.innerHTML='';if(!currentSurvey){byId('title').innerText='نظرسنجی‌ای وجود ندارد';byId('desc').innerText='مورد فعالی برای این حساب پیدا نشد.';return;}
+  byId('title').innerText=currentSurvey.title||'نظرسنجی';byId('desc').innerText=currentSurvey.description||'';
+  badge=byId('sourceBadge');badge.innerText='🏢 صادرکننده: '+(currentSurvey.source||'—');show(badge);badge=byId('codeBadge');badge.innerText='📟 کد: '+(currentSurvey.tracking_code===undefined||currentSurvey.tracking_code===null?'—':currentSurvey.tracking_code);show(badge);badge=byId('statusBadge');badge.innerText=statusText(currentSurvey);show(badge);badge=byId('anonBadge');badge.innerText=currentSurvey.is_anonymous?'🔒 پاسخ ناشناس':'👤 پاسخ با هویت';show(badge);badge=byId('countBadge');badge.innerText=(currentSurvey.questions||[]).length+' سؤال';show(badge);badge=byId('deadlineBadge');badge.innerText='⏳ '+(currentSurvey.deadline||'بدون مهلت');show(badge);
+  if(currentSurvey.expired){qbox.innerHTML='<div class="card rounded-3xl p-4 text-center text-xs text-slate-300">مهلت این نظرسنجی به پایان رسیده است.</div>';}
+  else if(currentSurvey.answered&&!currentSurvey.allow_multiple){qbox.innerHTML='<div class="card rounded-3xl p-4 text-center text-xs text-emerald-300">پاسخ شما قبلاً ثبت شده است.</div>';}
+  for(i=0;i<(currentSurvey.questions||[]).length;i++){q=currentSurvey.questions[i];qbox.innerHTML+=questionCard(q,i);}bind();btn=byId('submitBtn');btn.disabled=!currentSurvey.can_submit;if(currentSurvey.can_submit){btn.className='w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black text-xs p-4 rounded-2xl';btn.innerText='📤 ثبت نهایی پاسخ‌ها';}else{btn.className='w-full bg-slate-800 text-slate-500 font-black text-xs p-4 rounded-2xl';btn.innerText=currentSurvey.expired?'⛔ مهلت پایان یافته':'✅ پاسخ قبلاً ثبت شده';}
+}
+function empty(v){if(v===undefined||v===null||v===''){return true;}if(v instanceof Array&&v.length===0){return true;}if(typeof v==='object'&&!(v instanceof Array)){for(var k in v){if(Object.prototype.hasOwnProperty.call(v,k)){return false;}}return true;}return false;}
+function submit(){var i,q,vals,j,seen,rows,obj;if(!currentSurvey||!currentSurvey.can_submit){return;}for(i=0;i<(currentSurvey.questions||[]).length;i++){q=currentSurvey.questions[i];if(q.required&&empty(answers[q.id])){alert('لطفاً سؤال «'+q.q+'» را پاسخ دهید.');return;}if(q.type==='ranking'&&answers[q.id]){vals=[];for(var k in answers[q.id]){if(answers[q.id][k]){vals.push(String(answers[q.id][k]));}}seen={};for(j=0;j<vals.length;j++){if(seen[vals[j]]){alert('در سؤال «'+q.q+'» هر رتبه باید فقط یک‌بار استفاده شود.');return;}seen[vals[j]]=1;}}if(q.type==='matrix'&&q.required){rows=(q.config&&q.config.rows)?q.config.rows:[];obj=answers[q.id]||{};for(j=0;j<rows.length;j++){if(!Object.prototype.hasOwnProperty.call(obj,rows[j])){alert('تمام ردیف‌های سؤال «'+q.q+'» را پاسخ دهید.');return;}}}}
+  try{if(!window.Bale||!window.Bale.WebApp||!window.Bale.WebApp.sendData){throw new Error('bale-api-missing');}window.Bale.WebApp.sendData(JSON.stringify({action:'submit_survey_response',survey_id:currentSurvey.id||currentSurvey.survey_id,answers:answers}));}catch(e){alert('ارسال پاسخ از داخل Mini App انجام نشد. لطفاً صفحه را ببندید و دوباره از ربات وارد شوید.');}
+}
+function boot(){try{payload=readPayload();surveys=payload.all_surveys||[];currentSurvey=null;for(var i=0;i<surveys.length;i++){if(surveys[i].can_submit){currentSurvey=surveys[i];break;}}if(!currentSurvey&&surveys.length){currentSurvey=surveys[0];}renderDrawer();render();}catch(e){byId('title').innerText='خطا در بارگذاری نظرسنجی';byId('desc').innerText='داده صفحه خوانده نشد: '+String(e&&e.message?e.message:e);byId('questions').innerHTML='<div class="card rounded-3xl p-4 text-center text-xs text-rose-200">⚠️ صفحه نتوانست داده نظرسنجی را بخواند.</div>';byId('submitBtn').innerText='⛔ خطا در بارگذاری';}
+  byId('drawerBtn').onclick=toggleDrawer;byId('drawerClose').onclick=toggleDrawer;byId('drawer').onclick=function(e){if(e.target===this){toggleDrawer();}};byId('submitBtn').onclick=submit;try{if(window.Bale&&window.Bale.WebApp){window.Bale.WebApp.ready();}}catch(e){}
+}
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',boot);}else{boot();}
+})();
+</script>
+</body>
+</html>
