@@ -17,6 +17,7 @@ body{font-family:Vazirmatn,sans-serif;background:#020617;color:#e2e8f0;-webkit-f
 .ring:after{content:"";position:absolute;width:82px;height:82px;border-radius:999px;background:#07101f;border:1px solid rgba(148,163,184,.1)}
 .fade{animation:fade .25s ease}@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .badge{border:1px solid rgba(148,163,184,.13);background:rgba(15,23,42,.72)}
+.tabbtn{min-height:44px;border:1px solid rgba(148,163,184,.12);background:rgba(15,23,42,.55);color:#94a3b8;transition:.2s}.tabbtn.active{background:linear-gradient(135deg,rgba(37,99,235,.28),rgba(16,185,129,.16));border-color:rgba(96,165,250,.38);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.03)}
 </style>
 </head>
 <body class="min-h-screen overflow-x-hidden">
@@ -42,40 +43,45 @@ body{font-family:Vazirmatn,sans-serif;background:#020617;color:#e2e8f0;-webkit-f
     </div>
   </section>
 
-  <section class="grid grid-cols-2 gap-3">
+  <nav class="card rounded-3xl p-2 grid grid-cols-2 gap-2" aria-label="بخش‌های کارنامه">
+    <button id="tabOverviewBtn" type="button" class="tabbtn active rounded-2xl px-3 py-3 text-[10px] font-black" aria-selected="true">📊 نمای کلی عملکرد</button>
+    <button id="tabSurveysBtn" type="button" class="tabbtn rounded-2xl px-3 py-3 text-[10px] font-black" aria-selected="false">🗳 مشارکت در نظرسنجی‌ها <span id="surveyTabBadge" class="mr-1 text-[8px] text-slate-400"></span></button>
+  </nav>
+
+  <section data-pane="overview" class="grid grid-cols-2 gap-3">
     <div class="card rounded-3xl p-4"><div class="text-[9px] text-slate-400">کل وظایف محوله</div><div id="assigned" class="text-2xl font-black text-white mt-1">0</div></div>
     <div class="card rounded-3xl p-4"><div class="text-[9px] text-slate-400">انجام‌شده</div><div id="completed" class="text-2xl font-black text-emerald-300 mt-1">0</div></div>
     <div class="card rounded-3xl p-4"><div class="text-[9px] text-slate-400">در انتظار اقدام</div><div id="pendingCount" class="text-2xl font-black text-amber-300 mt-1">0</div></div>
     <div class="card rounded-3xl p-4"><div class="text-[9px] text-slate-400">گذشته از مهلت</div><div id="overdue" class="text-2xl font-black text-rose-300 mt-1">0</div></div>
   </section>
 
-  <section class="card rounded-3xl p-4 space-y-4">
+  <section data-pane="overview" class="card rounded-3xl p-4 space-y-4">
     <div class="flex items-center justify-between"><div><h3 class="text-xs font-black text-white">تفکیک عملکرد</h3><p class="text-[9px] text-slate-400 mt-1">محاسبه در سطح کل گروه و بدون حساب‌های Ghost</p></div><div id="punctuality" class="badge rounded-full px-3 py-1.5 text-[9px]">وقت‌شناسی: —</div></div>
     <div><div class="flex justify-between text-[10px] mb-2"><span>📄 اسناد نیازمند اقدام</span><b id="filesText">0 از 0</b></div><div class="progress"><i id="filesBar" style="width:0%"></i></div></div>
     <div><div class="flex justify-between text-[10px] mb-2"><span>📋 فرم‌ها</span><b id="formsText">0 از 0</b></div><div class="progress"><i id="formsBar" style="width:0%"></i></div></div>
     <div><div class="flex justify-between text-[10px] mb-2"><span>👁 اسناد صرفاً جهت مشاهده</span><b id="obsText">0 از 0</b></div><div class="progress"><i id="obsBar" style="width:0%"></i></div></div>
   </section>
 
-  <section class="card rounded-3xl p-4 space-y-3">
-    <div><h3 class="text-xs font-black text-white">📊 مشارکت در نظرسنجی‌ها و ارزشیابی‌ها</h3><p class="text-[9px] text-slate-400 mt-1">فقط آمار پاسخ‌دهی گروه شما نمایش داده می‌شود؛ سؤال‌ها، جواب‌ها و تحلیل محتوا محرمانه و در اختیار سازنده است.</p></div>
+  <section data-pane="surveys" class="card rounded-3xl p-4 space-y-4 hidden">
+    <div class="flex items-start justify-between gap-3"><div><h3 class="text-xs font-black text-white">🗳 مشارکت در نظرسنجی‌ها و ارزشیابی‌ها</h3><p class="text-[9px] text-slate-400 mt-1 leading-5">فقط نظرسنجی‌هایی نمایش داده می‌شوند که مخاطب آن‌ها کارشناسان گروه شما هستند. سؤال‌ها، پاسخ‌ها و تحلیل محتوا محرمانه و در اختیار سازنده است.</p></div><span class="badge shrink-0 rounded-full px-2.5 py-1 text-[8px] text-emerald-300">آمار مشارکت</span></div>
     <div class="grid grid-cols-2 gap-2">
-      <div class="soft rounded-2xl p-3"><div class="text-[9px] text-violet-300">EDO</div><div id="surveyEdoRate" class="text-xl font-black text-white mt-1">۰٪</div><div id="surveyEdoMeta" class="text-[8px] text-slate-400 mt-1">—</div></div>
-      <div class="soft rounded-2xl p-3"><div class="text-[9px] text-sky-300">تحصیلات تکمیلی</div><div id="surveyGradRate" class="text-xl font-black text-white mt-1">۰٪</div><div id="surveyGradMeta" class="text-[8px] text-slate-400 mt-1">—</div></div>
+      <div class="soft rounded-2xl p-3"><div class="flex items-center justify-between gap-2"><div class="text-[9px] text-violet-300 font-black">EDO</div><span class="text-sm">📊</span></div><div id="surveyEdoRate" class="text-2xl font-black text-white mt-2">۰٪</div><div id="surveyEdoMeta" class="text-[8px] text-slate-400 mt-1 leading-4">—</div></div>
+      <div class="soft rounded-2xl p-3"><div class="flex items-center justify-between gap-2"><div class="text-[9px] text-sky-300 font-black">تحصیلات تکمیلی</div><span class="text-sm">🎓</span></div><div id="surveyGradRate" class="text-2xl font-black text-white mt-2">۰٪</div><div id="surveyGradMeta" class="text-[8px] text-slate-400 mt-1 leading-4">—</div></div>
     </div>
     <div id="surveyDetails" class="space-y-2"></div>
   </section>
 
-  <section class="card rounded-3xl p-4">
+  <section data-pane="overview" class="card rounded-3xl p-4">
     <div class="flex items-center justify-between mb-3"><div><h3 class="text-xs font-black text-white">👥 وضعیت دستیاران گروه</h3><p class="text-[9px] text-slate-400 mt-1">براساس آرشیو فعلی دستیاران</p></div><div id="residentTotal" class="text-xl font-black text-white">0</div></div>
     <div id="residentYears" class="grid grid-cols-2 gap-2"></div>
   </section>
 
-  <section class="card rounded-3xl p-4">
+  <section data-pane="overview" class="card rounded-3xl p-4">
     <div class="flex items-center justify-between mb-3"><div><h3 class="text-xs font-black text-white">⏳ کارهای باز گروه</h3><p class="text-[9px] text-slate-400 mt-1">موارد منقضی در ابتدای فهرست قرار می‌گیرند</p></div><span id="pendingBadge" class="badge rounded-full px-2.5 py-1 text-[9px]">0 مورد</span></div>
     <div id="pendingList" class="space-y-2"></div>
   </section>
 
-  <section class="card rounded-3xl p-4">
+  <section data-pane="overview" class="card rounded-3xl p-4">
     <div class="mb-3"><h3 class="text-xs font-black text-white">✅ آخرین اقدامات تکمیل‌شده</h3><p class="text-[9px] text-slate-400 mt-1">آخرین فعالیت‌های ثبت‌شده برای این گروه</p></div>
     <div id="recentList" class="space-y-2"></div>
   </section>
@@ -90,7 +96,18 @@ function pct(done,total){return total>0?Math.max(0,Math.min(100,(done*100/total)
 function faNum(v){return String(v??0).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[+d])}
 function load(){
   try{const p=new URLSearchParams(location.search).get('d');if(p){const b=atob(p.replace(/-/g,'+').replace(/_/g,'/'));const a=Uint8Array.from(b,c=>c.charCodeAt(0));DATA=JSON.parse(pako.inflate(a,{to:'string'}));}}catch(e){console.error(e)}
-  render();try{window.Bale.WebApp.ready()}catch(e){}
+  render();
+  document.getElementById('tabOverviewBtn').addEventListener('click',()=>switchTab('overview'));
+  document.getElementById('tabSurveysBtn').addEventListener('click',()=>switchTab('surveys'));
+  switchTab('overview');
+  try{window.Bale.WebApp.ready()}catch(e){}
+}
+function switchTab(tab){
+  document.querySelectorAll('[data-pane]').forEach(el=>el.classList.toggle('hidden',el.getAttribute('data-pane')!==tab));
+  const ob=document.getElementById('tabOverviewBtn'), sb=document.getElementById('tabSurveysBtn');
+  const survey=tab==='surveys';
+  ob.classList.toggle('active',!survey); sb.classList.toggle('active',survey);
+  ob.setAttribute('aria-selected',String(!survey)); sb.setAttribute('aria-selected',String(survey));
 }
 function render(){
   const m=DATA.metrics||{}, s=DATA.status||{};
@@ -111,6 +128,8 @@ function render(){
 }
 function renderSurveyStats(){
   const s=DATA.survey_stats||{}, edo=s.edo||{}, grad=s.graduate_education||{};
+  const totalSurveys=Number(edo.survey_count||0)+Number(grad.survey_count||0);
+  document.getElementById('surveyTabBadge').innerText=totalSurveys?`(${faNum(totalSurveys)})`:'';
   document.getElementById('surveyEdoRate').innerText=`${faNum(edo.rate||0)}٪`;
   document.getElementById('surveyEdoMeta').innerText=`${faNum(edo.responded||0)} پاسخ از ${faNum(edo.expected||0)} مخاطب • ${faNum(edo.survey_count||0)} نظرسنجی`;
   document.getElementById('surveyGradRate').innerText=`${faNum(grad.rate||0)}٪`;
