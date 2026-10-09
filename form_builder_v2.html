@@ -279,14 +279,34 @@ function fillDeadlines(){
 
 function renderGroupsInto(id){
   const box=document.getElementById(id); if(!box)return;
-  box.innerHTML='';
-  const all=['🌐 عمومی (همه کاربران مجاز)',...(cfg.groups||[])];
-  all.forEach((g,i)=>{
-    box.innerHTML+=`<label class="inp rounded-xl p-2.5 flex items-center gap-2 text-[10px] font-bold cursor-pointer">
-      <input class="grp" type="checkbox" value="${esc(g)}" ${i===0?'checked':''}>
+  const radioName=`groupMode_${id}`;
+  const groups=(cfg.groups||[]);
+  const items=groups.map(g=>`<label class="inp rounded-xl p-2.5 flex items-center gap-2 text-[10px] font-bold cursor-pointer">
+      <input class="grp-specific" type="checkbox" value="${esc(g)}">
       <span>${esc(g)}</span>
-    </label>`;
-  });
+    </label>`).join('');
+  box.innerHTML=`
+    <div class="col-span-full grid grid-cols-1 gap-2">
+      <label class="pill rounded-2xl p-3 flex items-center gap-3 cursor-pointer">
+        <input type="radio" name="${radioName}" value="all" checked onchange="switchGroupMode('${id}','all')">
+        <span><b class="text-xs text-white">همه گروه‌های دستیاری</b><small class="block text-[9px] text-slate-400 mt-1">فرم برای تمام گروه‌های دستیاری ارسال می‌شود.</small></span>
+      </label>
+      <label class="pill rounded-2xl p-3 flex items-center gap-3 cursor-pointer">
+        <input type="radio" name="${radioName}" value="specific" onchange="switchGroupMode('${id}','specific')">
+        <span><b class="text-xs text-white">انتخاب گروه‌های موردنظر</b><small class="block text-[9px] text-slate-400 mt-1">یک یا چند گروه مشخص را انتخاب کنید.</small></span>
+      </label>
+    </div>
+    <div id="${id}_specific" class="col-span-full hidden grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">${items}</div>`;
+}
+function switchGroupMode(id,mode){
+  const box=document.getElementById(id); if(!box)return;
+  const specific=document.getElementById(`${id}_specific`); if(!specific)return;
+  if(mode==='all'){
+    specific.querySelectorAll('.grp-specific').forEach(x=>x.checked=false);
+    specific.classList.add('hidden');
+  }else{
+    specific.classList.remove('hidden');
+  }
 }
 function renderAllGroups(){
   ['groupsStructured','groupsRepeatable','groupsChecklist','groupsSurvey','groupsBale'].forEach(renderGroupsInto);
@@ -403,11 +423,19 @@ function getBaseIds(){
   return{title:null,desc:null,deadline:'baleDeadline',groups:'groupsBale'};
 }
 
+function selectedGroupMode(){
+  const ids=getBaseIds(); const box=document.getElementById(ids.groups); if(!box)return'all';
+  return box.querySelector('input[type="radio"]:checked')?.value||'all';
+}
 function selectedGroups(){
   const ids=getBaseIds(); const box=document.getElementById(ids.groups); if(!box)return[];
-  const arr=[...box.querySelectorAll('.grp:checked')].map(x=>x.value);
-  if(arr.includes('🌐 عمومی (همه کاربران مجاز)'))return['🌐 عمومی (همه کاربران مجاز)'];
-  return arr;
+  const mode=selectedGroupMode();
+  if(mode==='all')return [...(cfg.groups||[])];
+  return [...box.querySelectorAll('.grp-specific:checked')].map(x=>x.value);
+}
+function selectedGroupsDisplay(){
+  if(selectedGroupMode()==='all')return 'همه گروه‌های دستیاری';
+  return selectedGroups().join('، ');
 }
 
 function typeOptions(){
@@ -497,7 +525,7 @@ function renderReview(){
   html+=reviewRow('نوع فرم',formLabel(),'🧩');
   html+=reviewRow('عنوان',title,'📝');
   if(desc)html+=reviewRow('توضیحات',desc,'💬');
-  html+=reviewRow('گروه‌های هدف',groups.join('، '),'👥');
+  html+=reviewRow('گروه‌های هدف',selectedGroupsDisplay(),'👥');
   html+=reviewRow('مهلت',deadlineText(deadline),'⏳');
 
   if(kind==='structured'){
