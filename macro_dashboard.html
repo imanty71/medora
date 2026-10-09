@@ -60,6 +60,14 @@
                 </div>
             </div>
 
+            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-4 space-y-3">
+                <div><h2 class="text-xs font-black text-slate-700">📊 مشارکت در نظرسنجی‌ها و ارزشیابی‌ها</h2><p class="text-[9px] text-slate-400 mt-1">فقط آمار پاسخ‌دهی نمایش داده می‌شود؛ سؤال‌ها، جواب‌ها و تحلیل محتوایی در این داشبورد وجود ندارند.</p></div>
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div class="bg-violet-50 border border-violet-100 rounded-2xl p-3"><div class="text-[9px] font-bold text-violet-500">EDO</div><div id="surveyOverallEdo" class="text-lg font-black text-violet-700 mt-1">۰٪</div><div id="surveyOverallEdoMeta" class="text-[8px] text-violet-500 mt-1">—</div></div>
+                    <div class="bg-sky-50 border border-sky-100 rounded-2xl p-3"><div class="text-[9px] font-bold text-sky-500">تحصیلات تکمیلی</div><div id="surveyOverallGrad" class="text-lg font-black text-sky-700 mt-1">۰٪</div><div id="surveyOverallGradMeta" class="text-[8px] text-sky-500 mt-1">—</div></div>
+                </div>
+            </div>
+
             <!-- بازه زمانی -->
             <div>
                 <h2 class="text-xs font-black text-slate-700 mb-2.5 flex items-center gap-2">
@@ -136,6 +144,12 @@
                     <p class="text-[10px] font-bold text-slate-400">🎖 مدال سازمانی</p>
                     <p class="text-xs font-black text-slate-800" id="deptBadgeText">⭐️ دپارتمان پیشرو</p>
                 </div>
+            </div>
+
+            <!-- آمار پاسخ‌دهی نظرسنجی‌ها؛ بدون محتوای سؤال/جواب -->
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-3.5 space-y-3">
+                <div><h3 class="text-xs font-black text-slate-700">📊 مشارکت در نظرسنجی‌ها و ارزشیابی‌ها</h3><p class="text-[9px] text-slate-400 mt-1">تفکیک‌شده بر اساس واحد صادرکننده؛ فقط آمار مشارکت.</p></div>
+                <div id="deptSurveyStats" class="space-y-2"></div>
             </div>
 
             <!-- ویجت سریع دستیاران شاغل این رشته -->
@@ -241,6 +255,7 @@
                     document.getElementById('stat_users').innerText = dashboardData.u || 0;
                     document.getElementById('stat_files').innerText = dashboardData.f || 0;
                     document.getElementById('stat_forms').innerText = dashboardData.frm || 0;
+                    renderSurveyOverall();
 
                     loadTimeframe('0');
                     renderDossierCards();
@@ -270,6 +285,30 @@
                 document.getElementById('view_dossier_list').classList.remove('hidden');
                 document.getElementById('tab_btn_dossier').className = "flex-1 py-2.5 text-xs font-black rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-200 transition-all";
                 document.getElementById('mainHeaderTitle').innerText = "🏛 شناسنامه و پرونده دپارتمان‌ها";
+            }
+        }
+
+        function renderSurveyOverall() {
+            const x = dashboardData.survey_overall || {};
+            const edo = x.edo || {rate:0,responded:0,expected:0,survey_count:0};
+            const grad = x.graduate_education || {rate:0,responded:0,expected:0,survey_count:0};
+            document.getElementById('surveyOverallEdo').innerText = `${edo.rate || 0}٪`;
+            document.getElementById('surveyOverallEdoMeta').innerText = `${edo.responded || 0} پاسخ از ${edo.expected || 0} مخاطب • ${edo.survey_count || 0} نظرسنجی`;
+            document.getElementById('surveyOverallGrad').innerText = `${grad.rate || 0}٪`;
+            document.getElementById('surveyOverallGradMeta').innerText = `${grad.responded || 0} پاسخ از ${grad.expected || 0} مخاطب • ${grad.survey_count || 0} نظرسنجی`;
+        }
+
+        function renderDeptSurveyStats(dept) {
+            const box = document.getElementById('deptSurveyStats');
+            const s = (dept && dept.survey_stats) || {};
+            const domains = [
+                ['EDO', s.edo || {rate:0,responded:0,expected:0,survey_count:0}, 'text-violet-600'],
+                ['تحصیلات تکمیلی', s.graduate_education || {rate:0,responded:0,expected:0,survey_count:0}, 'text-sky-600']
+            ];
+            box.innerHTML = domains.map(([label,x,toneClass]) => `<div class="bg-slate-50 border border-slate-100 rounded-xl p-3"><div class="flex items-center justify-between"><b class="text-[10px] text-slate-700">${label}</b><span class="text-[10px] font-black ${toneClass}">${x.rate || 0}٪</span></div><div class="text-[8px] text-slate-400 mt-1">${x.responded || 0} پاسخ از ${x.expected || 0} مخاطب • ${x.survey_count || 0} نظرسنجی</div></div>`).join('');
+            const details = s.details || [];
+            if (details.length) {
+                box.innerHTML += `<div class="space-y-1.5 pt-1">${details.slice(0,12).map(d => `<div class="border-t border-slate-100 pt-2 text-[9px]"><div class="flex justify-between gap-2"><span class="font-bold text-slate-700">${d.source} — ${d.title}</span><span class="text-indigo-600 font-black">${d.rate || 0}٪</span></div><div class="text-slate-400 mt-0.5">${d.audience} • ${d.responded || 0} از ${d.expected || 0} • ${d.status}</div></div>`).join('')}</div>`;
             }
         }
 
@@ -397,6 +436,7 @@
             
             document.getElementById('deptComplianceRate').innerText = `${d.compliance_rate}٪`;
             document.getElementById('deptBadgeText').innerText = d.badge;
+            renderDeptSurveyStats(d);
 
             // Residents
             document.getElementById('deptResidentCount').innerText = d.residents ? d.residents.length : 0;

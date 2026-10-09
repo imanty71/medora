@@ -146,9 +146,20 @@ body{font-family:Vazirmatn,sans-serif;background:#020617;color:#e2e8f0;-webkit-f
     <div><label class="text-[10px] font-black text-slate-300">عنوان نظرسنجی</label><input id="surveyTitle" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold" placeholder="مثلاً: ارزشیابی کیفیت آموزش بالینی"></div>
     <div><label class="text-[10px] font-black text-slate-300">توضیحات برای پاسخ‌دهنده</label><textarea id="surveyDesc" rows="3" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold resize-none" placeholder="هدف نظرسنجی و نحوه استفاده از نتایج"></textarea></div>
     <div><label class="text-[10px] font-black text-slate-300">گروه‌های هدف</label><div id="groupsSurvey" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2"></div></div>
-    <div class="grid grid-cols-2 gap-2">
-      <div><label class="text-[10px] font-black text-slate-300">مهلت پاسخ</label><select id="surveyDeadline" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold deadline-select"></select></div>
-      <div><label class="text-[10px] font-black text-slate-300">مخاطب</label><select id="targetRole" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold"><option value="دستیار">دستیاران</option><option value="کارشناس گروه">کارشناسان گروه</option><option value="همه">همه کاربران مجاز</option></select></div>
+    <div><label class="text-[10px] font-black text-slate-300">مهلت پاسخ</label><select id="surveyDeadline" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold deadline-select"></select></div>
+    <div>
+      <label class="text-[10px] font-black text-slate-300">مخاطب نظرسنجی</label>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+        <label class="pill rounded-2xl p-3 flex items-center gap-3 cursor-pointer">
+          <input type="radio" name="targetRole" value="دستیار" checked>
+          <span><b class="text-xs text-white">🎓 فقط دستیاران</b><small class="block text-[9px] text-slate-400 mt-1 leading-5">کاملاً محرمانه؛ هیچ اطلاع‌رسانی در کانال منتشر نمی‌شود.</small></span>
+        </label>
+        <label class="pill rounded-2xl p-3 flex items-center gap-3 cursor-pointer">
+          <input type="radio" name="targetRole" value="کارشناس گروه">
+          <span><b class="text-xs text-white">👤 فقط کارشناسان گروه</b><small class="block text-[9px] text-slate-400 mt-1 leading-5">فقط یک اطلاع‌رسانی کوتاه در کانال قرار می‌گیرد؛ سؤال‌ها و جواب‌ها داخل ربات می‌مانند.</small></span>
+        </label>
+      </div>
+      <div class="mt-2 text-[9px] text-amber-200/80 leading-5">⚠️ مخاطب ترکیبی وجود ندارد؛ هر نظرسنجی فقط برای یکی از این دو گروه ساخته می‌شود.</div>
     </div>
   </div>
   <div class="card rounded-3xl p-4 space-y-3">
@@ -269,7 +280,7 @@ function init(){
     kind='survey'; fields=[];
     const notice=document.getElementById('reviewNotice');
     if(notice) notice.innerText = cfg.mode==='survey_direct'
-      ? 'این نظرسنجی پس از تأیید نهایی شما مستقیماً در مرکز نظرسنجی سامانه منتشر می‌شود و پست جداگانه‌ای در کانال ایجاد نمی‌کند.'
+      ? 'انتشار براساس مخاطب انجام می‌شود: دستیاران کاملاً محرمانه داخل ربات؛ کارشناسان گروه با یک اطلاع‌رسانی کوتاه در کانال.'
       : 'این فقط پیش‌نویس است. پس از ارسال، مدیر ارشد باید آن را تأیید کند؛ تا آن زمان هیچ نظرسنجی ساخته یا در کانال منتشر نمی‌شود.';
     showPage('survey-base');
   }else{
@@ -517,6 +528,8 @@ function deadlineText(v){
   return n>0?`${n} روز`:'بدون مهلت';
 }
 function yesNo(v){return v?'بله':'خیر'}
+function selectedSurveyAudience(){return document.querySelector('input[name="targetRole"]:checked')?.value||'دستیار'}
+function selectedSurveyAudienceLabel(){return selectedSurveyAudience()==='دستیار'?'فقط دستیاران':'فقط کارشناسان گروه'}
 function reviewRow(label,value,icon='•'){
   return `<div class="card rounded-2xl p-3"><div class="flex items-start gap-2"><span>${icon}</span><div class="min-w-0"><div class="text-[9px] text-slate-400">${esc(label)}</div><div class="text-xs font-black text-white mt-1 break-words">${esc(value||'—')}</div></div></div></div>`;
 }
@@ -547,9 +560,9 @@ function renderReview(){
     html+=reviewRow('به‌روزرسانی آرشیو اصلی',yesNo(document.getElementById('rosterUpdate').checked),'🔄');
     html+=reviewRow('سؤال اضافی','ندارد','🚫');
   }else if(kind==='survey'){
-    const role=document.getElementById('targetRole');
     html+=reviewRow('تعداد سؤال‌ها',String(fields.length),'❓');
-    html+=reviewRow('مخاطب',role.options[role.selectedIndex]?.text||role.value,'🎯');
+    html+=reviewRow('مخاطب',selectedSurveyAudienceLabel(),'🎯');
+    html+=reviewRow('نحوه اطلاع‌رسانی',selectedSurveyAudience()==='دستیار'?'محرمانه در ربات + اعلان خصوصی و یادآوری':'مرکز نظرسنجی + اطلاع‌رسانی کوتاه در کانال','🔔');
     html+=reviewRow('پاسخ ناشناس',yesNo(document.getElementById('anonymous').checked),'🔒');
     html+=reviewRow('پاسخ چندباره',yesNo(document.getElementById('multiSubmit').checked),'🔁');
     html+=reviewRow('نمایش نتیجه به پاسخ‌دهنده',yesNo(document.getElementById('showResults').checked),'📊');
@@ -568,7 +581,9 @@ function openPublishConfirm(){
   const isDraft=cfg.mode==='survey_draft';
   const isDirect=cfg.mode==='survey_direct';
   document.getElementById('publishConfirmTitle').innerText=isDraft?'آیا پیش‌نویس برای تأیید مدیر ارسال شود؟':(isDirect?'آیا نظرسنجی در سامانه منتشر شود؟':'آیا از ساخت و انتشار مطمئن هستید؟');
-  document.getElementById('publishConfirmText').innerText=isDraft?`پیش‌نویس «${title}» برای مدیر ارشد ارسال می‌شود. تا قبل از تأیید مدیر هیچ چیزی ساخته یا منتشر نمی‌شود.`:(isDirect?`نظرسنجی «${title}» مستقیماً در مرکز نظرسنجی مخاطبان قرار می‌گیرد. پست جداگانه‌ای در کانال ساخته نمی‌شود.`:`${formLabel()} «${title}» بعد از تأیید ساخته و در کانال منتشر می‌شود. این آخرین مرحله قبل از انتشار است.`);
+  const aud=(kind==='survey'?selectedSurveyAudience():'');
+  const surveyPolicy=aud==='دستیار'?'برای دستیاران به‌صورت محرمانه داخل ربات منتشر می‌شود و هیچ اثری در کانال نخواهد داشت.':'برای کارشناسان گروه منتشر می‌شود و فقط یک اطلاع‌رسانی کوتاه در کانال قرار می‌گیرد.';
+  document.getElementById('publishConfirmText').innerText=isDraft?`پیش‌نویس «${title}» برای مدیر ارشد ارسال می‌شود. تا قبل از تأیید مدیر هیچ چیزی ساخته یا منتشر نمی‌شود.`:((isDirect||kind==='survey')?`نظرسنجی «${title}» ${surveyPolicy}`:`${formLabel()} «${title}» بعد از تأیید ساخته و در کانال منتشر می‌شود. این آخرین مرحله قبل از انتشار است.`);
   document.getElementById('confirmPublishBtn').innerText=isDraft?'✅ بله، ارسال شود':(isDirect?'✅ بله، منتشر شود':'✅ بله، منتشر شود');
   const modal=document.getElementById('publishConfirmModal');
   modal.classList.remove('hidden'); modal.classList.add('flex');
@@ -624,7 +639,7 @@ function saveForm(){
   };
 
   if(kind==='survey'){
-    settings.target_role=document.getElementById('targetRole').value;
+    settings.target_role=selectedSurveyAudience();
     settings.is_anonymous=document.getElementById('anonymous').checked?1:0;
     settings.allow_multiple=document.getElementById('multiSubmit').checked?1:0;
     settings.show_results=document.getElementById('showResults').checked?1:0;
