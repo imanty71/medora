@@ -60,6 +60,11 @@ body{font-family:Vazirmatn,sans-serif;background:#020617;color:#e2e8f0;-webkit-f
       <div class="flex items-center justify-between"><div><h3 class="text-xs font-black text-white">🔒 ساختار فرم</h3><p class="text-[9px] text-slate-400 mt-1">برای حفظ پاسخ‌های قبلی، این بخش فقط خواندنی است.</p></div><span id="responseBadge" class="text-[9px] rounded-xl bg-slate-800 px-2 py-1 text-slate-300">۰ پاسخ</span></div>
       <div id="structureSummary" class="space-y-2"></div>
     </div>
+
+    <div class="card rounded-3xl p-4 space-y-3 border border-rose-500/25 bg-rose-500/[.05]">
+      <div><h3 class="text-xs font-black text-rose-300">⚠️ منطقه خطر</h3><p class="text-[9px] text-rose-200/70 leading-5 mt-1">حذف کامل، پست کانال، پاسخ‌ها، جواب‌ها، تمدیدها و اثر این فرم در آمار و یادآورها را پاک می‌کند و قابل بازگشت نیست.</p></div>
+      <button type="button" onclick="openDeleteModal()" class="w-full bg-rose-600 hover:bg-rose-500 text-white rounded-2xl p-3 text-xs font-black">🗑 حذف کامل فرم از سامانه</button>
+    </div>
   </section>
 
   <section id="reviewPage" class="hidden space-y-3 fade">
@@ -79,6 +84,17 @@ body{font-family:Vazirmatn,sans-serif;background:#020617;color:#e2e8f0;-webkit-f
 
 <div id="confirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
   <div class="card w-full max-w-sm rounded-3xl p-5 fade"><div class="text-3xl text-center">⚠️</div><h3 class="text-sm font-black text-white text-center mt-3">آیا تغییرات این فرم اعمال شود؟</h3><p class="text-[10px] text-slate-400 text-center leading-6 mt-2">پس از تأیید، اطلاعات فرم در دیتابیس و پست منتشرشده در کانال بروزرسانی می‌شود.</p><div class="grid grid-cols-2 gap-2 mt-5"><button onclick="closeConfirm()" class="bg-white/[.07] text-slate-200 rounded-2xl p-3 text-xs font-black">❌ خیر</button><button onclick="submitEdit()" class="bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl p-3 text-xs font-black">✅ بله، اعمال شود</button></div></div>
+</div>
+
+<div id="deleteModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4">
+  <div class="card w-full max-w-sm rounded-3xl p-5 fade border border-rose-500/25">
+    <div class="text-3xl text-center">🗑</div>
+    <h3 class="text-sm font-black text-white text-center mt-3">حذف کامل و غیرقابل‌بازگشت</h3>
+    <p class="text-[10px] text-slate-400 text-center leading-6 mt-2">برای تأیید، کد رهگیری همین فرم را وارد کنید. تمام پاسخ‌ها و سوابق عملیاتی این فرم از دیتابیس حذف می‌شوند.</p>
+    <input id="deleteCode" inputmode="numeric" class="inp w-full rounded-2xl p-3 mt-4 text-center text-xs font-black text-rose-200" placeholder="کد رهگیری فرم">
+    <label class="pill rounded-2xl p-3 flex items-start gap-2 mt-3 cursor-pointer"><input id="channelAlreadyDeleted" type="checkbox" class="mt-0.5"><span class="text-[9px] leading-5 text-amber-100">پست این فرم را قبلاً خودم از کانال حذف کرده‌ام.</span></label>
+    <div class="grid grid-cols-2 gap-2 mt-5"><button onclick="closeDeleteModal()" class="bg-white/[.07] text-slate-200 rounded-2xl p-3 text-xs font-black">انصراف</button><button id="hardDeleteBtn" onclick="submitHardDelete()" class="bg-rose-600 text-white rounded-2xl p-3 text-xs font-black">حذف کامل</button></div>
+  </div>
 </div>
 
 <script>
@@ -128,6 +144,10 @@ function goBack(){if(currentPage==='review'){currentPage='edit';document.getElem
 function openConfirm(){document.getElementById('confirmModal').classList.remove('hidden');document.getElementById('confirmModal').classList.add('flex')}
 function closeConfirm(){document.getElementById('confirmModal').classList.add('hidden');document.getElementById('confirmModal').classList.remove('flex')}
 function submitEdit(){if(!validate())return;closeConfirm();const dl=readDeadline();const payload={action:'submit_v2_form_meta_edit',f_id:cfg.f_id,title:document.getElementById('title').value.trim(),desc:document.getElementById('desc').value.trim(),groups_changed:groupsTouched?1:0,groups:selectedGroups(),deadline_days:dl};try{window.Bale.WebApp.sendData(JSON.stringify(payload));document.getElementById('applyBtn').disabled=true;document.getElementById('applyBtn').innerText='⏳ در حال اعمال...';setTimeout(()=>{try{window.Bale.WebApp.close()}catch(e){}},250)}catch(e){showAlert('خطا در ارسال تغییرات به ربات.')}}
+function openDeleteModal(){document.getElementById('deleteCode').value='';document.getElementById('channelAlreadyDeleted').checked=false;const m=document.getElementById('deleteModal');m.classList.remove('hidden');m.classList.add('flex')}
+function closeDeleteModal(){const m=document.getElementById('deleteModal');m.classList.add('hidden');m.classList.remove('flex')}
+function normalizeDigits(v){return String(v||'').replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).trim()}
+function submitHardDelete(){const entered=normalizeDigits(document.getElementById('deleteCode').value),code=normalizeDigits(cfg.code);if(!code||entered!==code){showAlert('کد رهگیری واردشده با این فرم مطابقت ندارد.');return}const btn=document.getElementById('hardDeleteBtn');btn.disabled=true;btn.innerText='⏳ در حال حذف کامل...';const payload={action:'hard_delete_form',f_id:cfg.f_id,tracking_code:code,channel_already_deleted:document.getElementById('channelAlreadyDeleted').checked?1:0};try{window.Bale.WebApp.sendData(JSON.stringify(payload));setTimeout(()=>{try{window.Bale.WebApp.close()}catch(e){}},250)}catch(e){btn.disabled=false;btn.innerText='حذف کامل';showAlert('خطا در ارسال درخواست حذف به ربات.')}}
 function showAlert(t){try{window.Bale.WebApp.showAlert(t)}catch(e){alert(t)}}
 init();
 </script>

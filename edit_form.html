@@ -107,6 +107,14 @@
             </button>
         </div>
 
+        <div class="bg-rose-50 p-5 rounded-3xl border border-rose-200 space-y-3 slide-up" style="animation-delay: 0.25s;">
+            <div>
+                <h2 class="text-xs font-black text-rose-700">⚠️ منطقه خطر</h2>
+                <p class="text-[10px] text-rose-600 mt-1 leading-5">حذف کامل، پست کانال، پاسخ‌ها، جواب فیلدها، تمدیدها و اثر این فرم در آمار و یادآورها را پاک می‌کند و قابل بازگشت نیست.</p>
+            </div>
+            <button type="button" onclick="openDeleteModal()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-black p-3.5 rounded-2xl text-sm active:scale-[0.98]">🗑 حذف کامل فرم از سامانه</button>
+        </div>
+
     </div>
 
     <div class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg p-4 border-t border-slate-200/60 pb-safe z-40">
@@ -117,8 +125,26 @@
         </div>
     </div>
 
+    <div id="deleteModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4">
+        <div class="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl border border-rose-100">
+            <div class="text-3xl text-center">🗑</div>
+            <h3 class="text-sm font-black text-slate-800 text-center mt-2">حذف کامل و غیرقابل‌بازگشت</h3>
+            <p class="text-[10px] text-slate-500 text-center leading-6 mt-2">برای جلوگیری از حذف اشتباهی، کد رهگیری همین فرم را وارد کنید. تمام پاسخ‌ها و سوابق عملیاتی این فرم حذف می‌شوند.</p>
+            <input id="deleteCode" inputmode="numeric" class="mt-4 w-full p-3 bg-slate-50 border border-rose-200 rounded-xl text-center font-black text-rose-700 outline-none" placeholder="کد رهگیری فرم">
+            <label class="mt-3 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3 cursor-pointer">
+                <input id="channelAlreadyDeleted" type="checkbox" class="mt-0.5">
+                <span class="text-[10px] leading-5 text-amber-800">پست این فرم را قبلاً خودم از کانال حذف کرده‌ام.</span>
+            </label>
+            <div class="grid grid-cols-2 gap-2 mt-4">
+                <button type="button" onclick="closeDeleteModal()" class="bg-slate-100 text-slate-600 font-black p-3 rounded-xl text-xs">انصراف</button>
+                <button id="hardDeleteBtn" type="button" onclick="submitHardDelete()" class="bg-rose-600 text-white font-black p-3 rounded-xl text-xs">حذف کامل</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let f_id = "";
+        let tracking_code = "";
         let resp_count = 0;
         let questions = []; 
         let newQCounter = 1;
@@ -135,6 +161,7 @@
                 const data = JSON.parse(decompressed);
                 
                 f_id = data.f_id;
+                tracking_code = String(data.code ?? "");
                 resp_count = parseInt(data.rc) || 0;
                 
                 document.getElementById('headerSubtitle').innerText = `کد فرم: ${f_id.replace('frm_', '')}`;
@@ -143,7 +170,7 @@
                 document.getElementById('tglRoster').checked = data.ru === 1;
 
                 let allGroups = data.all_groups || [];
-                let selectedGroups = (data.g || "").split(",").map(s => s.trim());
+                let selectedGroups = Array.isArray(data.g) ? data.g.map(x => String(x).trim()) : String(data.g || "").split(",").map(s => s.trim()).filter(Boolean);
                 
                 let groupsHtml = `
                     <label class="flex items-center gap-3 p-2 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors">
@@ -161,6 +188,12 @@
                     `;
                 });
                 document.getElementById('groupsContainer').innerHTML = groupsHtml;
+                const groupBoxes = Array.from(document.querySelectorAll('.grp-checkbox'));
+                const publicBox = groupBoxes.find(x => x.value === '🌐 عمومی (همه کاربران مجاز)');
+                groupBoxes.forEach(cb => cb.addEventListener('change', () => {
+                    if (cb === publicBox && cb.checked) groupBoxes.forEach(x => { if (x !== publicBox) x.checked = false; });
+                    if (cb !== publicBox && cb.checked && publicBox) publicBox.checked = false;
+                }));
 
                 if (resp_count > 0) document.getElementById('lockBadge').classList.remove('hidden');
 
@@ -312,6 +345,33 @@
                 alert("خطا در ارتباط با سرور.");
                 btn.innerHTML = '💾 اعمال تغییرات و بروزرسانی فرم';
                 btn.classList.remove('opacity-90', 'cursor-wait');
+            }
+        }
+
+        function openDeleteModal() {
+            document.getElementById('deleteCode').value = '';
+            document.getElementById('channelAlreadyDeleted').checked = false;
+            const m = document.getElementById('deleteModal');
+            m.classList.remove('hidden'); m.classList.add('flex');
+        }
+        function closeDeleteModal() {
+            const m = document.getElementById('deleteModal');
+            m.classList.add('hidden'); m.classList.remove('flex');
+        }
+        function submitHardDelete() {
+            const entered = document.getElementById('deleteCode').value.trim().replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+            if (!tracking_code || entered !== String(tracking_code)) { alert('کد رهگیری واردشده با این فرم مطابقت ندارد.'); return; }
+            const btn = document.getElementById('hardDeleteBtn');
+            btn.disabled = true; btn.innerText = '⏳ در حال حذف کامل...';
+            const payload = {
+                action: 'hard_delete_form', f_id: f_id, tracking_code: tracking_code,
+                channel_already_deleted: document.getElementById('channelAlreadyDeleted').checked ? 1 : 0
+            };
+            try {
+                window.Bale.WebApp.sendData(JSON.stringify(payload));
+                setTimeout(() => window.Bale.WebApp.close(), 250);
+            } catch (e) {
+                btn.disabled = false; btn.innerText = 'حذف کامل'; alert('خطا در ارسال درخواست حذف به ربات.');
             }
         }
 
