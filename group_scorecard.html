@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>کارنامه عملکرد گروه</title>
+<link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.0.0/Vazirmatn-font-face.css" rel="stylesheet">
+<script src="https://tapi.bale.ai/miniapp.js?3"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+<style>
+body{font-family:Vazirmatn,sans-serif;background:#020617;color:#e2e8f0;-webkit-font-smoothing:antialiased}
+.card{background:linear-gradient(145deg,rgba(15,23,42,.92),rgba(2,6,23,.94));border:1px solid rgba(148,163,184,.13);box-shadow:0 18px 50px rgba(0,0,0,.25);backdrop-filter:blur(18px)}
+.soft{background:rgba(15,23,42,.62);border:1px solid rgba(148,163,184,.12)}
+.progress{height:7px;background:rgba(148,163,184,.12);border-radius:999px;overflow:hidden}.progress>i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#2563eb,#22c55e)}
+.ring{width:104px;height:104px;border-radius:999px;display:grid;place-items:center;background:conic-gradient(#22c55e calc(var(--p)*1%),rgba(148,163,184,.12) 0)}
+.ring:after{content:"";position:absolute;width:82px;height:82px;border-radius:999px;background:#07101f;border:1px solid rgba(148,163,184,.1)}
+.fade{animation:fade .25s ease}@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.badge{border:1px solid rgba(148,163,184,.13);background:rgba(15,23,42,.72)}
+</style>
+</head>
+<body class="min-h-screen overflow-x-hidden">
+<div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none"><div class="absolute -top-24 -right-16 w-80 h-80 rounded-full bg-blue-600/20 blur-[100px]"></div><div class="absolute bottom-0 -left-20 w-96 h-96 rounded-full bg-emerald-500/10 blur-[120px]"></div></div>
+
+<header class="sticky top-0 z-30 bg-slate-950/88 backdrop-blur-2xl border-b border-white/[.06] px-4 py-3">
+  <div class="max-w-2xl mx-auto flex items-center justify-between gap-3">
+    <div><h1 class="text-sm font-black text-white">📊 کارنامه عملکرد گروه</h1><p id="generated" class="text-[9px] text-slate-400 mt-1">در حال بارگذاری...</p></div>
+    <span class="badge text-[9px] font-black text-slate-300 px-3 py-1.5 rounded-full">داده واقعی سامانه</span>
+  </div>
+</header>
+
+<main class="max-w-2xl mx-auto p-4 pb-10 space-y-4 fade">
+  <section class="card rounded-[28px] p-5 overflow-hidden relative">
+    <div class="absolute -left-10 -top-10 w-36 h-36 bg-blue-500/10 blur-3xl rounded-full"></div>
+    <div class="relative flex items-center justify-between gap-4">
+      <div class="min-w-0">
+        <div class="text-[10px] text-slate-400">دپارتمان آموزشی</div>
+        <h2 id="groupName" class="text-lg font-black text-white mt-1 truncate">—</h2>
+        <div class="mt-3 flex flex-wrap gap-2"><span id="statusBadge" class="badge rounded-full px-3 py-1.5 text-[10px] font-black">—</span><span id="expertNames" class="badge rounded-full px-3 py-1.5 text-[9px] text-slate-300">—</span></div>
+      </div>
+      <div class="relative ring shrink-0" id="rateRing" style="--p:0"><div class="relative z-10 text-center"><div id="rateValue" class="text-xl font-black text-white">۰٪</div><div class="text-[8px] text-slate-400">نرخ انجام</div></div></div>
+    </div>
+  </section>
+
+  <section class="grid grid-cols-2 gap-3">
+    <div class="card rounded-3xl p-4"><div class="text-[9px] text-slate-400">کل وظایف محوله</div><div id="assigned" class="text-2xl font-black text-white mt-1">0</div></div>
+    <div class="card rounded-3xl p-4"><div class="text-[9px] text-slate-400">انجام‌شده</div><div id="completed" class="text-2xl font-black text-emerald-300 mt-1">0</div></div>
+    <div class="card rounded-3xl p-4"><div class="text-[9px] text-slate-400">در انتظار اقدام</div><div id="pendingCount" class="text-2xl font-black text-amber-300 mt-1">0</div></div>
+    <div class="card rounded-3xl p-4"><div class="text-[9px] text-slate-400">گذشته از مهلت</div><div id="overdue" class="text-2xl font-black text-rose-300 mt-1">0</div></div>
+  </section>
+
+  <section class="card rounded-3xl p-4 space-y-4">
+    <div class="flex items-center justify-between"><div><h3 class="text-xs font-black text-white">تفکیک عملکرد</h3><p class="text-[9px] text-slate-400 mt-1">محاسبه در سطح کل گروه و بدون حساب‌های Ghost</p></div><div id="punctuality" class="badge rounded-full px-3 py-1.5 text-[9px]">وقت‌شناسی: —</div></div>
+    <div><div class="flex justify-between text-[10px] mb-2"><span>📄 اسناد نیازمند اقدام</span><b id="filesText">0 از 0</b></div><div class="progress"><i id="filesBar" style="width:0%"></i></div></div>
+    <div><div class="flex justify-between text-[10px] mb-2"><span>📋 فرم‌ها</span><b id="formsText">0 از 0</b></div><div class="progress"><i id="formsBar" style="width:0%"></i></div></div>
+    <div><div class="flex justify-between text-[10px] mb-2"><span>👁 اسناد صرفاً جهت مشاهده</span><b id="obsText">0 از 0</b></div><div class="progress"><i id="obsBar" style="width:0%"></i></div></div>
+  </section>
+
+  <section class="card rounded-3xl p-4">
+    <div class="flex items-center justify-between mb-3"><div><h3 class="text-xs font-black text-white">👥 وضعیت دستیاران گروه</h3><p class="text-[9px] text-slate-400 mt-1">براساس آرشیو فعلی دستیاران</p></div><div id="residentTotal" class="text-xl font-black text-white">0</div></div>
+    <div id="residentYears" class="grid grid-cols-2 gap-2"></div>
+  </section>
+
+  <section class="card rounded-3xl p-4">
+    <div class="flex items-center justify-between mb-3"><div><h3 class="text-xs font-black text-white">⏳ کارهای باز گروه</h3><p class="text-[9px] text-slate-400 mt-1">موارد منقضی در ابتدای فهرست قرار می‌گیرند</p></div><span id="pendingBadge" class="badge rounded-full px-2.5 py-1 text-[9px]">0 مورد</span></div>
+    <div id="pendingList" class="space-y-2"></div>
+  </section>
+
+  <section class="card rounded-3xl p-4">
+    <div class="mb-3"><h3 class="text-xs font-black text-white">✅ آخرین اقدامات تکمیل‌شده</h3><p class="text-[9px] text-slate-400 mt-1">آخرین فعالیت‌های ثبت‌شده برای این گروه</p></div>
+    <div id="recentList" class="space-y-2"></div>
+  </section>
+
+  <div class="text-center text-[9px] text-slate-500 leading-5 px-4">این کارنامه از اطلاعات واقعی اسناد، فرم‌ها، مهلت‌ها و آرشیو گروه محاسبه می‌شود. حساب‌های تستر نامرئی در آمار رسمی لحاظ نمی‌شوند.</div>
+</main>
+
+<script>
+let DATA={};
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function pct(done,total){return total>0?Math.max(0,Math.min(100,(done*100/total))):0}
+function faNum(v){return String(v??0).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[+d])}
+function load(){
+  try{const p=new URLSearchParams(location.search).get('d');if(p){const b=atob(p.replace(/-/g,'+').replace(/_/g,'/'));const a=Uint8Array.from(b,c=>c.charCodeAt(0));DATA=JSON.parse(pako.inflate(a,{to:'string'}));}}catch(e){console.error(e)}
+  render();try{window.Bale.WebApp.ready()}catch(e){}
+}
+function render(){
+  const m=DATA.metrics||{}, s=DATA.status||{};
+  document.getElementById('generated').innerText=`به‌روزرسانی: ${DATA.generated_at||'—'}`;
+  document.getElementById('groupName').innerText=DATA.group||'—';
+  document.getElementById('statusBadge').innerText=`${s.icon||'⚪️'} ${s.label||'نامشخص'}`;
+  const experts=(DATA.experts||[]); document.getElementById('expertNames').innerText=experts.length?`کارشناس: ${experts.join('، ')}`:'فاقد کارشناس فعال';
+  const rate=Number(m.completion_rate||0); document.getElementById('rateRing').style.setProperty('--p',rate);document.getElementById('rateValue').innerText=`${faNum(rate)}٪`;
+  [['assigned','assigned'],['completed','completed'],['pendingCount','pending'],['overdue','overdue']].forEach(([id,k])=>document.getElementById(id).innerText=faNum(m[k]||0));
+  document.getElementById('punctuality').innerText=m.punctuality_rate==null?'وقت‌شناسی: داده کافی نیست':`وقت‌شناسی: ${faNum(m.punctuality_rate)}٪`;
+  setBar('files',m.files_done||0,m.files_total||0);setBar('forms',m.forms_done||0,m.forms_total||0);setBar('obs',m.observation_seen||0,m.observation_total||0);
+  document.getElementById('residentTotal').innerText=faNum(m.residents_total||0);
+  const years=DATA.resident_years||{};const ybox=document.getElementById('residentYears');ybox.innerHTML='';const entries=Object.entries(years);
+  if(!entries.length)ybox.innerHTML='<div class="soft rounded-2xl p-3 col-span-2 text-[10px] text-slate-400 text-center">دستیاری در آرشیو این گروه ثبت نشده است.</div>';
+  else entries.sort((a,b)=>a[0].localeCompare(b[0],'fa')).forEach(([y,c])=>ybox.innerHTML+=`<div class="soft rounded-2xl p-3 flex justify-between items-center text-[10px]"><span>${esc(y)}</span><b class="text-white">${faNum(c)} نفر</b></div>`);
+  renderPending();renderRecent();
+}
+function setBar(prefix,done,total){document.getElementById(prefix+'Text').innerText=`${faNum(done)} از ${faNum(total)}`;document.getElementById(prefix+'Bar').style.width=`${pct(done,total)}%`}
+function renderPending(){const list=DATA.pending_items||[],box=document.getElementById('pendingList');document.getElementById('pendingBadge').innerText=`${faNum((DATA.metrics||{}).pending||0)} مورد`;box.innerHTML='';if(!list.length){box.innerHTML='<div class="soft rounded-2xl p-4 text-center text-[10px] text-emerald-300">🎉 کار باز ثبت‌شده‌ای برای این گروه وجود ندارد.</div>';return}list.forEach(x=>{const overdue=x.overdue?'<span class="text-rose-300 font-black">منقضی</span>':'<span class="text-amber-300">باز</span>';box.innerHTML+=`<div class="soft rounded-2xl p-3"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="text-[9px] text-slate-400">${esc(x.type)} ${x.code?`• کد ${esc(x.code)}`:''}</div><div class="text-[11px] font-bold text-white mt-1 leading-5">${esc(x.title)}</div></div>${overdue}</div><div class="text-[9px] text-slate-400 mt-2">مهلت: ${esc(x.deadline||'بدون مهلت')}</div></div>`})}
+function renderRecent(){const list=DATA.recent_done||[],box=document.getElementById('recentList');box.innerHTML='';if(!list.length){box.innerHTML='<div class="soft rounded-2xl p-4 text-center text-[10px] text-slate-400">هنوز اقدام تکمیل‌شده‌ای برای این گروه ثبت نشده است.</div>';return}list.forEach(x=>box.innerHTML+=`<div class="soft rounded-2xl p-3 flex items-start justify-between gap-3"><div class="min-w-0"><div class="text-[9px] text-slate-400">${esc(x.type)} ${x.code?`• کد ${esc(x.code)}`:''}</div><div class="text-[11px] font-bold text-white mt-1 leading-5">${esc(x.title)}</div></div><div class="text-[8px] text-emerald-300 whitespace-nowrap">${esc(x.at||'')}</div></div>`)}
+load();
+</script>
+</body>
+</html>
