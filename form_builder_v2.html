@@ -143,24 +143,46 @@ body{font-family:Vazirmatn,sans-serif;background:#020617;color:#e2e8f0;-webkit-f
     <div class="flex items-center gap-3"><span class="text-2xl">📊</span><div><h2 class="text-xs font-black text-white">تنظیمات نظرسنجی / ارزشیابی</h2><p class="text-[10px] text-slate-400 mt-1">مخاطب، محرمانگی و نحوه پاسخ فقط برای همین نظرسنجی تنظیم می‌شود.</p></div></div>
   </div>
   <div class="card rounded-3xl p-4 space-y-4">
-    <div><label class="text-[10px] font-black text-slate-300">عنوان نظرسنجی</label><input id="surveyTitle" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold" placeholder="مثلاً: ارزشیابی کیفیت آموزش بالینی"></div>
-    <div><label class="text-[10px] font-black text-slate-300">توضیحات برای پاسخ‌دهنده</label><textarea id="surveyDesc" rows="3" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold resize-none" placeholder="هدف نظرسنجی و نحوه استفاده از نتایج"></textarea></div>
-    <div><label class="text-[10px] font-black text-slate-300">گروه‌های هدف</label><div id="groupsSurvey" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2"></div></div>
-    <div><label class="text-[10px] font-black text-slate-300">مهلت پاسخ</label><select id="surveyDeadline" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold deadline-select"></select></div>
     <div>
-      <label class="text-[10px] font-black text-slate-300">مخاطب نظرسنجی</label>
+      <label class="text-[10px] font-black text-slate-300">۱) مخاطب نظرسنجی</label>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
         <label class="pill rounded-2xl p-3 flex items-center gap-3 cursor-pointer">
-          <input type="radio" name="targetRole" value="دستیار" checked>
-          <span><b class="text-xs text-white">🎓 فقط دستیاران</b><small class="block text-[9px] text-slate-400 mt-1 leading-5">کاملاً محرمانه؛ هیچ اطلاع‌رسانی در کانال منتشر نمی‌شود.</small></span>
+          <input type="radio" name="targetRole" value="دستیار" checked onchange="syncSurveyAudienceUI()">
+          <span><b class="text-xs text-white">🎓 فقط دستیاران</b><small class="block text-[9px] text-slate-400 mt-1 leading-5">برای همه دستیاران دانشکده؛ کاملاً محرمانه و بدون اطلاع‌رسانی کانال.</small></span>
         </label>
         <label class="pill rounded-2xl p-3 flex items-center gap-3 cursor-pointer">
-          <input type="radio" name="targetRole" value="کارشناس گروه">
-          <span><b class="text-xs text-white">👤 فقط کارشناسان گروه</b><small class="block text-[9px] text-slate-400 mt-1 leading-5">فقط یک اطلاع‌رسانی کوتاه در کانال قرار می‌گیرد؛ سؤال‌ها و جواب‌ها داخل ربات می‌مانند.</small></span>
+          <input type="radio" name="targetRole" value="کارشناس گروه" onchange="syncSurveyAudienceUI()">
+          <span><b class="text-xs text-white">👤 فقط کارشناسان گروه</b><small class="block text-[9px] text-slate-400 mt-1 leading-5">پس از انتخاب، بخش «گروه‌های هدف» برای شما باز می‌شود.</small></span>
         </label>
       </div>
       <div class="mt-2 text-[9px] text-amber-200/80 leading-5">⚠️ مخاطب ترکیبی وجود ندارد؛ هر نظرسنجی فقط برای یکی از این دو گروه ساخته می‌شود.</div>
     </div>
+    <div><label class="text-[10px] font-black text-slate-300">عنوان نظرسنجی</label><input id="surveyTitle" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold" placeholder="مثلاً: ارزشیابی کیفیت آموزش بالینی"></div>
+    <div><label class="text-[10px] font-black text-slate-300">توضیحات برای پاسخ‌دهنده</label><textarea id="surveyDesc" rows="3" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold resize-none" placeholder="هدف نظرسنجی و نحوه استفاده از نتایج"></textarea></div>
+    <div id="surveyResidentFilterWrap">
+      <label class="text-[10px] font-black text-slate-300">۲) محدوده دستیاران</label>
+      <div class="grid grid-cols-1 gap-2 mt-2">
+        <label class="pill rounded-2xl p-3 flex items-center gap-3 cursor-pointer">
+          <input type="radio" name="residentFilterMode" value="all" checked onchange="syncResidentFilterUI()">
+          <span><b class="text-xs text-white">همه دستیاران دانشکده</b><small class="block text-[9px] text-slate-400 mt-1">تمام دستیاران فعال که حسابشان به آرشیو متصل است.</small></span>
+        </label>
+        <label class="pill rounded-2xl p-3 flex items-center gap-3 cursor-pointer">
+          <input type="radio" name="residentFilterMode" value="groups" onchange="syncResidentFilterUI()">
+          <span><b class="text-xs text-white">دستیاران با فیلتر گروه آموزشی</b><small class="block text-[9px] text-slate-400 mt-1">یک یا چند گروه آموزشی را انتخاب کنید.</small></span>
+        </label>
+        <label class="pill rounded-2xl p-3 flex items-center gap-3 cursor-pointer">
+          <input type="radio" name="residentFilterMode" value="years" onchange="syncResidentFilterUI()">
+          <span><b class="text-xs text-white">دستیاران با فیلتر سال دستیاری</b><small class="block text-[9px] text-slate-400 mt-1">یک یا چند سال دستیاری را انتخاب کنید.</small></span>
+        </label>
+      </div>
+      <div id="residentGroupFilterBox" class="hidden mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+      <div id="residentYearFilterBox" class="hidden mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+    </div>
+    <div id="surveyGroupsWrap" class="hidden">
+      <label class="text-[10px] font-black text-slate-300">۲) گروه‌های کارشناسی هدف</label>
+      <div id="groupsSurvey" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2"></div>
+    </div>
+    <div><label class="text-[10px] font-black text-slate-300">مهلت پاسخ</label><select id="surveyDeadline" class="inp w-full rounded-2xl p-3 mt-1 text-xs font-bold deadline-select"></select></div>
   </div>
   <div class="card rounded-3xl p-4 space-y-3">
     <h3 class="text-xs font-black text-white">تنظیمات پاسخ‌گویی</h3>
@@ -239,7 +261,7 @@ body{font-family:Vazirmatn,sans-serif;background:#020617;color:#e2e8f0;-webkit-f
 </footer>
 
 <script>
-let cfg={groups:[]}, kind='', currentPage='home', fields=[];
+let cfg={groups:[],resident_years:[]}, kind='', currentPage='home', fields=[];
 
 const KIND_META={
   structured:{title:'📄 فرم اطلاعات ثابت',base:'structured-base',design:'structured-design',steps:3},
@@ -276,6 +298,7 @@ function init(){
   }catch(e){console.error(e)}
   renderAllGroups();
   fillDeadlines();
+  syncSurveyAudienceUI();
   if(cfg.mode==='survey_draft' || cfg.mode==='survey_direct'){
     kind='survey'; fields=[];
     const notice=document.getElementById('reviewNotice');
@@ -301,6 +324,9 @@ function renderGroupsInto(id){
   const box=document.getElementById(id); if(!box)return;
   const radioName=`groupMode_${id}`;
   const groups=(cfg.groups||[]);
+  const isSurvey=id==='groupsSurvey';
+  const allLabel=isSurvey?'همه گروه‌های آموزشی':'همه گروه‌های دستیاری';
+  const allHint=isSurvey?'نظرسنجی برای کارشناسان همه گروه‌ها ارسال می‌شود.':'فرم برای تمام گروه‌های دستیاری ارسال می‌شود.';
   const items=groups.map(g=>`<label class="inp rounded-xl p-2.5 flex items-center gap-2 text-[10px] font-bold cursor-pointer">
       <input class="grp-specific" type="checkbox" value="${esc(g)}">
       <span>${esc(g)}</span>
@@ -309,7 +335,7 @@ function renderGroupsInto(id){
     <div class="col-span-full grid grid-cols-1 gap-2">
       <label class="pill rounded-2xl p-3 flex items-center gap-3 cursor-pointer">
         <input type="radio" name="${radioName}" value="all" checked onchange="switchGroupMode('${id}','all')">
-        <span><b class="text-xs text-white">همه گروه‌های دستیاری</b><small class="block text-[9px] text-slate-400 mt-1">فرم برای تمام گروه‌های دستیاری ارسال می‌شود.</small></span>
+        <span><b class="text-xs text-white">${allLabel}</b><small class="block text-[9px] text-slate-400 mt-1">${allHint}</small></span>
       </label>
       <label class="pill rounded-2xl p-3 flex items-center gap-3 cursor-pointer">
         <input type="radio" name="${radioName}" value="specific" onchange="switchGroupMode('${id}','specific')">
@@ -330,6 +356,15 @@ function switchGroupMode(id,mode){
 }
 function renderAllGroups(){
   ['groupsStructured','groupsRepeatable','groupsChecklist','groupsSurvey','groupsBale'].forEach(renderGroupsInto);
+  const gbox=document.getElementById('residentGroupFilterBox');
+  if(gbox){
+    gbox.innerHTML=(cfg.groups||[]).map(g=>`<label class="inp rounded-xl p-2.5 flex items-center gap-2 text-[10px] font-bold cursor-pointer"><input class="resident-group-option" type="checkbox" value="${esc(g)}"><span>${esc(g)}</span></label>`).join('');
+  }
+  const ybox=document.getElementById('residentYearFilterBox');
+  if(ybox){
+    const years=(cfg.resident_years&&cfg.resident_years.length)?cfg.resident_years:['سال ۱','سال ۲','سال ۳','سال ۴','سال ۵'];
+    ybox.innerHTML=years.map(y=>`<label class="inp rounded-xl p-2.5 flex items-center gap-2 text-[10px] font-bold cursor-pointer"><input class="resident-year-option" type="checkbox" value="${esc(y)}"><span>${esc(y)}</span></label>`).join('');
+  }
 }
 
 function chooseKind(k){
@@ -410,7 +445,15 @@ function validateBase(){
   const ids=getBaseIds();
   const title=(document.getElementById(ids.title)?.value||'').trim();
   if(!title){toast(kind==='survey'?'عنوان نظرسنجی را وارد کنید':'عنوان فرم را وارد کنید');return false}
-  if(!selectedGroups().length){toast('حداقل یک گروه هدف انتخاب کنید');return false}
+  if(kind==='survey'){
+    if(selectedSurveyAudience()==='کارشناس گروه' && !selectedGroups().length){toast('حداقل یک گروه کارشناسی هدف انتخاب کنید');return false}
+    if(selectedSurveyAudience()==='دستیار'){
+      const mode=selectedResidentFilterMode();
+      if(mode==='groups' && !selectedResidentFilterValues().length){toast('حداقل یک گروه آموزشی برای دستیاران انتخاب کنید');return false}
+      if(mode==='years' && !selectedResidentFilterValues().length){toast('حداقل یک سال دستیاری انتخاب کنید');return false}
+    }
+  }
+  if(kind!=='survey' && !selectedGroups().length){toast('حداقل یک گروه هدف انتخاب کنید');return false}
   return true;
 }
 
@@ -445,15 +488,36 @@ function getBaseIds(){
   return{title:null,desc:null,deadline:'baleDeadline',groups:'groupsBale'};
 }
 
+function selectedResidentFilterMode(){return document.querySelector('input[name="residentFilterMode"]:checked')?.value||'all'}
+function selectedResidentFilterValues(){
+  const mode=selectedResidentFilterMode();
+  if(mode==='groups')return [...document.querySelectorAll('.resident-group-option:checked')].map(x=>x.value);
+  if(mode==='years')return [...document.querySelectorAll('.resident-year-option:checked')].map(x=>x.value);
+  return [];
+}
+function syncResidentFilterUI(){
+  const mode=selectedResidentFilterMode();
+  document.getElementById('residentGroupFilterBox')?.classList.toggle('hidden',mode!=='groups');
+  document.getElementById('residentYearFilterBox')?.classList.toggle('hidden',mode!=='years');
+}
 function selectedGroups(){
+  if(kind==='survey' && selectedSurveyAudience()==='دستیار'){
+    return selectedResidentFilterMode()==='groups' ? selectedResidentFilterValues() : ['همه گروه‌ها'];
+  }
   const ids=getBaseIds(); const box=document.getElementById(ids.groups); if(!box)return[];
   const mode=box.querySelector('input[type="radio"]:checked')?.value||'all';
   if(mode==='all')return['🌐 عمومی (همه کاربران مجاز)'];
   return [...box.querySelectorAll('.grp-specific:checked')].map(x=>x.value);
 }
 function selectedGroupsDisplay(){
+  if(kind==='survey' && selectedSurveyAudience()==='دستیار'){
+    const mode=selectedResidentFilterMode(), vals=selectedResidentFilterValues();
+    if(mode==='all')return 'همه دستیاران دانشکده';
+    if(mode==='groups')return `دستیاران گروه‌های: ${vals.join('، ')}`;
+    return `دستیاران سال‌های: ${vals.join('، ')}`;
+  }
   const groups=selectedGroups();
-  if(groups.length===1 && groups[0]==='🌐 عمومی (همه کاربران مجاز)')return 'همه گروه‌های دستیاری';
+  if(groups.length===1 && groups[0]==='🌐 عمومی (همه کاربران مجاز)')return kind==='survey'?'کارشناسان همه گروه‌های آموزشی':'همه گروه‌های دستیاری';
   return groups.join('، ');
 }
 
@@ -530,6 +594,20 @@ function deadlineText(v){
 function yesNo(v){return v?'بله':'خیر'}
 function selectedSurveyAudience(){return document.querySelector('input[name="targetRole"]:checked')?.value||'دستیار'}
 function selectedSurveyAudienceLabel(){return selectedSurveyAudience()==='دستیار'?'فقط دستیاران':'فقط کارشناسان گروه'}
+function syncSurveyAudienceUI(){
+  const expertWrap=document.getElementById('surveyGroupsWrap');
+  const residentWrap=document.getElementById('surveyResidentFilterWrap');
+  const expertMode=selectedSurveyAudience()==='کارشناس گروه';
+  expertWrap?.classList.toggle('hidden',!expertMode);
+  residentWrap?.classList.toggle('hidden',expertMode);
+  if(!expertMode){
+    const box=document.getElementById('groupsSurvey');
+    const all=box?.querySelector('input[type="radio"][value="all"]');
+    if(all)all.checked=true;
+    switchGroupMode('groupsSurvey','all');
+    syncResidentFilterUI();
+  }
+}
 function reviewRow(label,value,icon='•'){
   return `<div class="card rounded-2xl p-3"><div class="flex items-start gap-2"><span>${icon}</span><div class="min-w-0"><div class="text-[9px] text-slate-400">${esc(label)}</div><div class="text-xs font-black text-white mt-1 break-words">${esc(value||'—')}</div></div></div></div>`;
 }
@@ -546,7 +624,7 @@ function renderReview(){
   html+=reviewRow('نوع فرم',formLabel(),'🧩');
   html+=reviewRow('عنوان',title,'📝');
   if(desc)html+=reviewRow('توضیحات',desc,'💬');
-  html+=reviewRow('گروه‌های هدف',selectedGroupsDisplay(),'👥');
+  if(kind!=='survey')html+=reviewRow('گروه‌های هدف',selectedGroupsDisplay(),'👥');
   html+=reviewRow('مهلت',deadlineText(deadline),'⏳');
 
   if(kind==='structured'){
@@ -562,6 +640,7 @@ function renderReview(){
   }else if(kind==='survey'){
     html+=reviewRow('تعداد سؤال‌ها',String(fields.length),'❓');
     html+=reviewRow('مخاطب',selectedSurveyAudienceLabel(),'🎯');
+    html+=reviewRow(selectedSurveyAudience()==='دستیار'?'محدوده دستیاران':'گروه‌های کارشناسی هدف',selectedGroupsDisplay(),'👥');
     html+=reviewRow('نحوه اطلاع‌رسانی',selectedSurveyAudience()==='دستیار'?'محرمانه در ربات + اعلان خصوصی و یادآوری':'مرکز نظرسنجی + اطلاع‌رسانی کوتاه در کانال','🔔');
     html+=reviewRow('پاسخ ناشناس',yesNo(document.getElementById('anonymous').checked),'🔒');
     html+=reviewRow('پاسخ چندباره',yesNo(document.getElementById('multiSubmit').checked),'🔁');
@@ -640,6 +719,8 @@ function saveForm(){
 
   if(kind==='survey'){
     settings.target_role=selectedSurveyAudience();
+    settings.resident_filter_mode=selectedSurveyAudience()==='دستیار'?selectedResidentFilterMode():'';
+    settings.resident_filter_values=selectedSurveyAudience()==='دستیار'?selectedResidentFilterValues():[];
     settings.is_anonymous=document.getElementById('anonymous').checked?1:0;
     settings.allow_multiple=document.getElementById('multiSubmit').checked?1:0;
     settings.show_results=document.getElementById('showResults').checked?1:0;
