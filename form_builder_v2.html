@@ -199,7 +199,7 @@ body{font-family:Vazirmatn,sans-serif;background:#020617;color:#e2e8f0;-webkit-f
   </div>
   <div id="reviewBody" class="space-y-3"></div>
   <div class="card rounded-3xl p-4 border border-amber-400/20 bg-amber-500/[.04]">
-    <div class="flex gap-3"><span>⚠️</span><p class="text-[10px] leading-6 text-amber-100/80">در این مرحله هنوز هیچ فرم یا پستی ساخته نشده است. انتشار فقط بعد از تأیید نهایی شما انجام می‌شود.</p></div>
+    <div class="flex gap-3"><span>⚠️</span><p id="reviewNotice" class="text-[10px] leading-6 text-amber-100/80">در این مرحله هنوز هیچ فرم یا پستی ساخته نشده است. انتشار فقط بعد از تأیید نهایی شما انجام می‌شود.</p></div>
   </div>
 </section>
 
@@ -210,7 +210,7 @@ body{font-family:Vazirmatn,sans-serif;background:#020617;color:#e2e8f0;-webkit-f
 <div id="publishConfirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
   <div class="card w-full max-w-sm rounded-3xl p-5 fade border border-amber-400/20">
     <div class="text-3xl text-center mb-3">⚠️</div>
-    <h3 class="text-sm font-black text-white text-center">آیا از ساخت و انتشار مطمئن هستید؟</h3>
+    <h3 id="publishConfirmTitle" class="text-sm font-black text-white text-center">آیا از ساخت و انتشار مطمئن هستید؟</h3>
     <p id="publishConfirmText" class="text-[11px] text-slate-400 text-center leading-6 mt-2"></p>
     <div class="grid grid-cols-2 gap-2 mt-5">
       <button type="button" onclick="closePublishConfirm()" class="bg-white/[.07] text-slate-200 rounded-2xl p-3 text-xs font-black">❌ خیر، برگرد</button>
@@ -265,7 +265,16 @@ function init(){
   }catch(e){console.error(e)}
   renderAllGroups();
   fillDeadlines();
-  showPage('home');
+  if(cfg.mode==='survey_draft' || cfg.mode==='survey_direct'){
+    kind='survey'; fields=[];
+    const notice=document.getElementById('reviewNotice');
+    if(notice) notice.innerText = cfg.mode==='survey_direct'
+      ? 'این نظرسنجی پس از تأیید نهایی شما مستقیماً در مرکز نظرسنجی سامانه منتشر می‌شود و پست جداگانه‌ای در کانال ایجاد نمی‌کند.'
+      : 'این فقط پیش‌نویس است. پس از ارسال، مدیر ارشد باید آن را تأیید کند؛ تا آن زمان هیچ نظرسنجی ساخته یا در کانال منتشر نمی‌شود.';
+    showPage('survey-base');
+  }else{
+    showPage('home');
+  }
   try{window.Bale.WebApp.ready()}catch(e){}
 }
 
@@ -313,6 +322,7 @@ function renderAllGroups(){
 }
 
 function chooseKind(k){
+  if((cfg.mode==='survey_draft' || cfg.mode==='survey_direct') && k!=='survey')return;
   kind=k; fields=[];
   const meta=KIND_META[k]; if(!meta)return;
   if(k==='member_checklist'){
@@ -349,7 +359,7 @@ function updateChrome(){
 
   footer.classList.remove('hidden');
   const meta=KIND_META[kind];
-  title.innerText=meta.title;
+  title.innerText=((cfg.mode==='survey_draft' || cfg.mode==='survey_direct') && kind==='survey')?'📊 استودیوی طراحی ارزشیابی EDO':meta.title;
   back.classList.remove('hidden');
   save.classList.add('hidden');
   next.classList.add('hidden');
@@ -371,13 +381,13 @@ function updateChrome(){
     next.innerText='بررسی نهایی';
   }else if(onReview){
     save.classList.remove('hidden');
-    save.innerText='✅ ساخت و انتشار';
+    save.innerText=cfg.mode==='survey_draft'?'📨 ارسال برای تأیید مدیر':(cfg.mode==='survey_direct'?'✅ انتشار در سامانه':'✅ ساخت و انتشار');
   }
 
   if(kind==='structured') hint.innerText=onBase?'مشخصات پایه فرم':onDesign?'فیلدهای موردنیاز را طراحی کنید':'مرور نهایی فرم اطلاعات ثابت';
   if(kind==='repeatable') hint.innerText=onBase?'مشخصات پایه لیست':onDesign?'ستون‌های هر ردیف را طراحی کنید':'مرور نهایی فرم لیستی';
   if(kind==='member_checklist') hint.innerText=onReview?'مرور نهایی چک‌لیست دستیاران':'فقط تنظیمات مربوط به چک‌لیست دستیاران';
-  if(kind==='survey') hint.innerText=onBase?'تنظیمات نظرسنجی':onDesign?'سؤال‌های ارزشیابی را طراحی کنید':'مرور نهایی نظرسنجی';
+  if(kind==='survey') hint.innerText=cfg.mode==='survey_draft'?(onBase?'تنظیمات پیش‌نویس ارزشیابی':onDesign?'سؤال‌های ارزشیابی را طراحی کنید':'مرور پیش‌نویس قبل از ارسال برای مدیر'):(cfg.mode==='survey_direct'?(onBase?'تنظیمات نظرسنجی EDO':onDesign?'سؤال‌های ارزشیابی را طراحی کنید':'مرور نهایی قبل از انتشار در سامانه'):(onBase?'تنظیمات نظرسنجی':onDesign?'سؤال‌های ارزشیابی را طراحی کنید':'مرور نهایی نظرسنجی'));
   if(kind==='system_bale_phone') hint.innerText=onReview?'مرور نهایی فرم اتصال':'فرم سیستمی آماده؛ فقط مخاطبان و مهلت را تعیین کنید';
 }
 
@@ -412,6 +422,7 @@ function backStep(){
     return;
   }
   if(meta.design && currentPage===meta.design){showPage(meta.base);return}
+  if(cfg.mode==='survey_draft' || cfg.mode==='survey_direct'){try{window.Bale.WebApp.close()}catch(e){history.back()}return}
   showPage('home');
 }
 
@@ -423,19 +434,16 @@ function getBaseIds(){
   return{title:null,desc:null,deadline:'baleDeadline',groups:'groupsBale'};
 }
 
-function selectedGroupMode(){
-  const ids=getBaseIds(); const box=document.getElementById(ids.groups); if(!box)return'all';
-  return box.querySelector('input[type="radio"]:checked')?.value||'all';
-}
 function selectedGroups(){
   const ids=getBaseIds(); const box=document.getElementById(ids.groups); if(!box)return[];
-  const mode=selectedGroupMode();
-  if(mode==='all')return [...(cfg.groups||[])];
+  const mode=box.querySelector('input[type="radio"]:checked')?.value||'all';
+  if(mode==='all')return['🌐 عمومی (همه کاربران مجاز)'];
   return [...box.querySelectorAll('.grp-specific:checked')].map(x=>x.value);
 }
 function selectedGroupsDisplay(){
-  if(selectedGroupMode()==='all')return 'همه گروه‌های دستیاری';
-  return selectedGroups().join('، ');
+  const groups=selectedGroups();
+  if(groups.length===1 && groups[0]==='🌐 عمومی (همه کاربران مجاز)')return 'همه گروه‌های دستیاری';
+  return groups.join('، ');
 }
 
 function typeOptions(){
@@ -557,7 +565,11 @@ let publishLocked=false;
 function openPublishConfirm(){
   const ids=getBaseIds();
   const title=kind==='system_bale_phone'?'فرم راستی‌آزمایی و ثبت شماره تماس بله دستیاران':(document.getElementById(ids.title)?.value||'').trim();
-  document.getElementById('publishConfirmText').innerText=`${formLabel()} «${title}» بعد از تأیید ساخته و در کانال منتشر می‌شود. این آخرین مرحله قبل از انتشار است.`;
+  const isDraft=cfg.mode==='survey_draft';
+  const isDirect=cfg.mode==='survey_direct';
+  document.getElementById('publishConfirmTitle').innerText=isDraft?'آیا پیش‌نویس برای تأیید مدیر ارسال شود؟':(isDirect?'آیا نظرسنجی در سامانه منتشر شود؟':'آیا از ساخت و انتشار مطمئن هستید؟');
+  document.getElementById('publishConfirmText').innerText=isDraft?`پیش‌نویس «${title}» برای مدیر ارشد ارسال می‌شود. تا قبل از تأیید مدیر هیچ چیزی ساخته یا منتشر نمی‌شود.`:(isDirect?`نظرسنجی «${title}» مستقیماً در مرکز نظرسنجی مخاطبان قرار می‌گیرد. پست جداگانه‌ای در کانال ساخته نمی‌شود.`:`${formLabel()} «${title}» بعد از تأیید ساخته و در کانال منتشر می‌شود. این آخرین مرحله قبل از انتشار است.`);
+  document.getElementById('confirmPublishBtn').innerText=isDraft?'✅ بله، ارسال شود':(isDirect?'✅ بله، منتشر شود':'✅ بله، منتشر شود');
   const modal=document.getElementById('publishConfirmModal');
   modal.classList.remove('hidden'); modal.classList.add('flex');
 }
@@ -572,7 +584,7 @@ function confirmPublishNow(){
   const btn=document.getElementById('confirmPublishBtn');
   btn.disabled=true; btn.innerText='در حال ارسال...'; btn.classList.add('opacity-60');
   try{saveForm()}catch(e){
-    publishLocked=false; btn.disabled=false; btn.innerText='✅ بله، منتشر شود'; btn.classList.remove('opacity-60');
+    publishLocked=false; btn.disabled=false; btn.innerText=(cfg.mode==='survey_draft'?'✅ بله، ارسال شود':'✅ بله، منتشر شود'); btn.classList.remove('opacity-60');
     toast('خطا در ارسال فرم. دوباره تلاش کنید.'); console.error(e);
   }
 }
@@ -630,7 +642,8 @@ function saveForm(){
     target_groups:groups,
     deadline_days:deadline,
     fields,
-    settings
+    settings,
+    request_mode:cfg.mode||''
   };
   window.Bale.WebApp.sendData(JSON.stringify(payload));
 }

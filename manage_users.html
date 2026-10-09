@@ -207,7 +207,7 @@
         let db_permissions = [];
         let db_roles = [];
         const legacyRoles = new Set([
-            'کارشناس گروه','کارشناس آموزش','کارشناس پژوهش','کارشناس تحصیلات تکمیلی','کارشناس تحصیلات تکمیلی بالینی','دستیار',
+            'کارشناس گروه','کارشناس آموزش','کارشناس پژوهش','کارشناس EDO','کارشناس تحصیلات تکمیلی','کارشناس تحصیلات تکمیلی بالینی','دستیار',
             'مدیر آموزش','معاون آموزش دانشکده','معاونت آموزش','ریاست دانشکده','مقام ارشد (ریاست/مدیر)','مدیر ارشد سامانه'
         ]);
         let new_users = []; 
@@ -265,19 +265,33 @@
             select.innerHTML = '';
             // فقط سمت‌هایی که خود مدیر از قبل برای سامانه تعریف کرده است.
             // سمت‌های سفارشی قبلی عمداً به این فهرست اضافه نمی‌شوند؛ هنگام ویرایش همان کاربر در کادر «سمت جدید / سفارشی» نمایش داده می‌شوند.
-            const roles = [
-                'کارشناس گروه',
-                'کارشناس پژوهش',
-                'مدیر آموزش',
-                'معاون آموزش دانشکده',
-                'ریاست دانشکده',
-                'مدیر ارشد سامانه'
+            const groups = [
+                ['کارشناسان تخصصی و اجرایی', [
+                    ['کارشناس گروه','کارشناس گروه'],
+                    ['کارشناس آموزش','کارشناس آموزش'],
+                    ['کارشناس پژوهش','کارشناس پژوهش'],
+                    ['کارشناس EDO','کارشناس EDO'],
+                    ['کارشناس تحصیلات تکمیلی','کارشناس تحصیلات تکمیلی']
+                ]],
+                ['مقامات دانشکده', [
+                    ['مدیر آموزش','مدیر آموزش دانشکده پزشکی'],
+                    ['معاون آموزش دانشکده','معاون آموزش دانشکده پزشکی'],
+                    ['ریاست دانشکده','ریاست دانشکده پزشکی']
+                ]],
+                ['کاربر نهایی', [
+                    ['دستیار','دستیار']
+                ]]
             ];
-            roles.forEach(role => {
-                const o = document.createElement('option');
-                o.value = role;
-                o.textContent = role;
-                select.appendChild(o);
+            groups.forEach(([label, roles]) => {
+                const og = document.createElement('optgroup');
+                og.label = label;
+                roles.forEach(([value, text]) => {
+                    const o = document.createElement('option');
+                    o.value = value;
+                    o.textContent = text;
+                    og.appendChild(o);
+                });
+                select.appendChild(og);
             });
             const custom = document.createElement('option');
             custom.value = '__custom__';
@@ -548,7 +562,7 @@
 
                 let permissionsEnabled = document.getElementById('m_permissions_enabled').checked ? 1 : 0;
                 let permissions = permissionsEnabled ? selectedPermissionKeys() : [];
-                if (role === 'کارشناس پژوهش') { permissionsEnabled = 0; permissions = []; }
+                if (role === 'کارشناس پژوهش' || role === 'کارشناس EDO') { permissionsEnabled = 0; permissions = []; }
                 if (!legacyRoles.has(role) && permissionsEnabled !== 1) { showAlert("برای سمت جدید باید «دسترسی سفارشی» روشن باشد."); return; }
 
                 let groups = "همه گروه‌ها";
