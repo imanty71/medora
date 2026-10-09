@@ -191,7 +191,33 @@ body{font-family:Vazirmatn,sans-serif;background:#020617;color:#e2e8f0;-webkit-f
   </div>
 </section>
 
+
+<!-- بررسی نهایی؛ محتوای این صفحه بر اساس نوع فرم ساخته می‌شود -->
+<section id="page-review" class="page hidden space-y-3 fade">
+  <div class="card rounded-3xl p-4">
+    <div class="flex items-center gap-3"><span class="text-2xl">🔎</span><div><h2 class="text-xs font-black text-white">بررسی نهایی قبل از انتشار</h2><p id="reviewIntro" class="text-[10px] text-slate-400 mt-1">اطلاعات همین فرم را یک بار نهایی بررسی کنید.</p></div></div>
+  </div>
+  <div id="reviewBody" class="space-y-3"></div>
+  <div class="card rounded-3xl p-4 border border-amber-400/20 bg-amber-500/[.04]">
+    <div class="flex gap-3"><span>⚠️</span><p class="text-[10px] leading-6 text-amber-100/80">در این مرحله هنوز هیچ فرم یا پستی ساخته نشده است. انتشار فقط بعد از تأیید نهایی شما انجام می‌شود.</p></div>
+  </div>
+</section>
+
 </main>
+
+
+<!-- پاپ‌آپ قطعی قبل از ساخت و انتشار -->
+<div id="publishConfirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+  <div class="card w-full max-w-sm rounded-3xl p-5 fade border border-amber-400/20">
+    <div class="text-3xl text-center mb-3">⚠️</div>
+    <h3 class="text-sm font-black text-white text-center">آیا از ساخت و انتشار مطمئن هستید؟</h3>
+    <p id="publishConfirmText" class="text-[11px] text-slate-400 text-center leading-6 mt-2"></p>
+    <div class="grid grid-cols-2 gap-2 mt-5">
+      <button type="button" onclick="closePublishConfirm()" class="bg-white/[.07] text-slate-200 rounded-2xl p-3 text-xs font-black">❌ خیر، برگرد</button>
+      <button id="confirmPublishBtn" type="button" onclick="confirmPublishNow()" class="bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl p-3 text-xs font-black">✅ بله، منتشر شود</button>
+    </div>
+  </div>
+</div>
 
 <footer id="footerBar" class="fixed bottom-0 left-0 right-0 z-30 bg-slate-950/92 backdrop-blur-2xl border-t border-white/[.06] p-3 hidden">
   <div class="max-w-2xl mx-auto flex gap-2">
@@ -305,33 +331,34 @@ function updateChrome(){
   const meta=KIND_META[kind];
   title.innerText=meta.title;
   back.classList.remove('hidden');
-
-  const onBase=currentPage===meta.base;
-  const onDesign=meta.design && currentPage===meta.design;
-  const stepNo=onBase?2:3;
-  badge.innerText=`مرحله ${stepNo} از ${meta.steps}`;
-
   save.classList.add('hidden');
   next.classList.add('hidden');
 
+  const onBase=currentPage===meta.base;
+  const onDesign=meta.design && currentPage===meta.design;
+  const onReview=currentPage==='review';
+
+  let stepNo=1;
+  if(onDesign) stepNo=2;
+  if(onReview) stepNo=meta.steps;
+  badge.innerText=`مرحله ${stepNo} از ${meta.steps}`;
+
   if(onBase){
-    if(meta.steps===2){
-      save.classList.remove('hidden');
-      save.innerText=kind==='member_checklist'?'✅ بررسی نهایی و انتشار چک‌لیست':'✅ بررسی نهایی و انتشار فرم اتصال';
-    }else{
-      next.classList.remove('hidden');
-      next.innerText=kind==='survey'?'طراحی سؤال‌ها':'مرحله طراحی';
-    }
+    next.classList.remove('hidden');
+    next.innerText=meta.design ? (kind==='survey'?'طراحی سؤال‌ها':kind==='repeatable'?'طراحی ستون‌ها':'طراحی فیلدها') : 'بررسی نهایی';
   }else if(onDesign){
+    next.classList.remove('hidden');
+    next.innerText='بررسی نهایی';
+  }else if(onReview){
     save.classList.remove('hidden');
-    save.innerText=kind==='survey'?'✅ بررسی نهایی و انتشار نظرسنجی':'✅ بررسی نهایی و انتشار فرم';
+    save.innerText='✅ ساخت و انتشار';
   }
 
-  if(kind==='structured') hint.innerText=onBase?'مشخصات پایه فرم':'فیلدهای موردنیاز را طراحی کنید';
-  if(kind==='repeatable') hint.innerText=onBase?'مشخصات پایه لیست':'ستون‌های هر ردیف را طراحی کنید';
-  if(kind==='member_checklist') hint.innerText='فقط تنظیمات مربوط به چک‌لیست دستیاران';
-  if(kind==='survey') hint.innerText=onBase?'تنظیمات نظرسنجی':'سؤال‌های ارزشیابی را طراحی کنید';
-  if(kind==='system_bale_phone') hint.innerText='فرم سیستمی آماده؛ فقط مخاطبان و مهلت را تعیین کنید';
+  if(kind==='structured') hint.innerText=onBase?'مشخصات پایه فرم':onDesign?'فیلدهای موردنیاز را طراحی کنید':'مرور نهایی فرم اطلاعات ثابت';
+  if(kind==='repeatable') hint.innerText=onBase?'مشخصات پایه لیست':onDesign?'ستون‌های هر ردیف را طراحی کنید':'مرور نهایی فرم لیستی';
+  if(kind==='member_checklist') hint.innerText=onReview?'مرور نهایی چک‌لیست دستیاران':'فقط تنظیمات مربوط به چک‌لیست دستیاران';
+  if(kind==='survey') hint.innerText=onBase?'تنظیمات نظرسنجی':onDesign?'سؤال‌های ارزشیابی را طراحی کنید':'مرور نهایی نظرسنجی';
+  if(kind==='system_bale_phone') hint.innerText=onReview?'مرور نهایی فرم اتصال':'فرم سیستمی آماده؛ فقط مخاطبان و مهلت را تعیین کنید';
 }
 
 function validateBase(){
@@ -349,12 +376,21 @@ function validateBase(){
 function nextStep(){
   if(!validateBase())return;
   const meta=KIND_META[kind];
-  if(meta.design)showPage(meta.design);
+  if(currentPage===meta.base && meta.design){showPage(meta.design);return}
+  if((currentPage===meta.base && !meta.design) || currentPage===meta.design){
+    if(!validateDesign())return;
+    renderReview();
+    showPage('review');
+  }
 }
 
 function backStep(){
   const meta=KIND_META[kind];
   if(!meta){showPage('home');return}
+  if(currentPage==='review'){
+    if(meta.design)showPage(meta.design); else showPage(meta.base);
+    return;
+  }
   if(meta.design && currentPage===meta.design){showPage(meta.base);return}
   showPage('home');
 }
@@ -440,14 +476,87 @@ function formLabel(){
   return'فرم اتصال دستیاران به بله';
 }
 
-function askConfirmSave(){
-  if(!validateBase()||!validateDesign())return;
+function deadlineText(v){
+  const n=Number(v||0);
+  return n>0?`${n} روز`:'بدون مهلت';
+}
+function yesNo(v){return v?'بله':'خیر'}
+function reviewRow(label,value,icon='•'){
+  return `<div class="card rounded-2xl p-3"><div class="flex items-start gap-2"><span>${icon}</span><div class="min-w-0"><div class="text-[9px] text-slate-400">${esc(label)}</div><div class="text-xs font-black text-white mt-1 break-words">${esc(value||'—')}</div></div></div></div>`;
+}
+function renderReview(){
+  const ids=getBaseIds();
+  const groups=selectedGroups();
+  const deadline=+(document.getElementById(ids.deadline)?.value||0);
+  const title=kind==='system_bale_phone'?'فرم راستی‌آزمایی و ثبت شماره تماس بله دستیاران':(document.getElementById(ids.title)?.value||'').trim();
+  const desc=kind==='system_bale_phone'?'جمع‌آوری شماره موبایل فعال دستیاران برای اتصال به سامانه.':(document.getElementById(ids.desc)?.value||'').trim();
+  const body=document.getElementById('reviewBody');
+  const intro=document.getElementById('reviewIntro');
+  let html='';
+  intro.innerText=`فقط اطلاعات مربوط به ${formLabel()} نمایش داده شده است.`;
+  html+=reviewRow('نوع فرم',formLabel(),'🧩');
+  html+=reviewRow('عنوان',title,'📝');
+  if(desc)html+=reviewRow('توضیحات',desc,'💬');
+  html+=reviewRow('گروه‌های هدف',groups.join('، '),'👥');
+  html+=reviewRow('مهلت',deadlineText(deadline),'⏳');
+
+  if(kind==='structured'){
+    html+=reviewRow('تعداد فیلدها',String(fields.filter(f=>f.type!=='section').length),'🧱');
+    html+=reviewRow('ساختار',fields.map(f=>f.label).filter(Boolean).join('، '),'📄');
+  }else if(kind==='repeatable'){
+    html+=reviewRow('تعداد ستون‌ها',String(fields.length),'📋');
+    html+=reviewRow('ستون‌های هر ردیف',fields.map(f=>f.label).filter(Boolean).join('، '),'🧾');
+  }else if(kind==='member_checklist'){
+    html+=reviewRow('منبع لیست','آرشیو دستیاران همان گروه','👥');
+    html+=reviewRow('به‌روزرسانی آرشیو اصلی',yesNo(document.getElementById('rosterUpdate').checked),'🔄');
+    html+=reviewRow('سؤال اضافی','ندارد','🚫');
+  }else if(kind==='survey'){
+    const role=document.getElementById('targetRole');
+    html+=reviewRow('تعداد سؤال‌ها',String(fields.length),'❓');
+    html+=reviewRow('مخاطب',role.options[role.selectedIndex]?.text||role.value,'🎯');
+    html+=reviewRow('پاسخ ناشناس',yesNo(document.getElementById('anonymous').checked),'🔒');
+    html+=reviewRow('پاسخ چندباره',yesNo(document.getElementById('multiSubmit').checked),'🔁');
+    html+=reviewRow('نمایش نتیجه به پاسخ‌دهنده',yesNo(document.getElementById('showResults').checked),'📊');
+  }else if(kind==='system_bale_phone'){
+    html+=reviewRow('ساختار فرم','ثابت و قفل‌شده','🔐');
+    html+=reviewRow('اطلاعات دریافتی','نام و نام خانوادگی، شماره فعال بله، کد ملی اختیاری','📱');
+    html+=reviewRow('سؤال یا ستون دستی','ندارد','🚫');
+  }
+  body.innerHTML=html;
+}
+
+let publishLocked=false;
+function openPublishConfirm(){
   const ids=getBaseIds();
   const title=kind==='system_bale_phone'?'فرم راستی‌آزمایی و ثبت شماره تماس بله دستیاران':(document.getElementById(ids.title)?.value||'').trim();
-  const groups=selectedGroups();
-  const ok=window.confirm(`آیا مطمئن هستید می‌خواهید ${formLabel()} «${title}» ساخته و در کانال منتشر شود؟\n\nگروه هدف: ${groups.join('، ')}\n\nتا قبل از تأیید، هیچ فرم یا پستی ساخته نمی‌شود.`);
-  if(!ok)return;
-  saveForm();
+  document.getElementById('publishConfirmText').innerText=`${formLabel()} «${title}» بعد از تأیید ساخته و در کانال منتشر می‌شود. این آخرین مرحله قبل از انتشار است.`;
+  const modal=document.getElementById('publishConfirmModal');
+  modal.classList.remove('hidden'); modal.classList.add('flex');
+}
+function closePublishConfirm(){
+  if(publishLocked)return;
+  const modal=document.getElementById('publishConfirmModal');
+  modal.classList.add('hidden'); modal.classList.remove('flex');
+}
+function confirmPublishNow(){
+  if(publishLocked)return;
+  publishLocked=true;
+  const btn=document.getElementById('confirmPublishBtn');
+  btn.disabled=true; btn.innerText='در حال ارسال...'; btn.classList.add('opacity-60');
+  try{saveForm()}catch(e){
+    publishLocked=false; btn.disabled=false; btn.innerText='✅ بله، منتشر شود'; btn.classList.remove('opacity-60');
+    toast('خطا در ارسال فرم. دوباره تلاش کنید.'); console.error(e);
+  }
+}
+
+function askConfirmSave(){
+  if(currentPage!=='review'){
+    if(!validateBase()||!validateDesign())return;
+    renderReview();
+    showPage('review');
+    return;
+  }
+  openPublishConfirm();
 }
 
 function saveForm(){
