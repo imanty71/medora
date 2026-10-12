@@ -55,6 +55,23 @@
         </div>
     </div>
 
+    <!-- پاپ‌آپ اشتراک‌گذاری اکسل با مقامات -->
+    <div id="shareModal" class="hidden fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm p-4 items-center justify-center fade-in">
+        <div class="bg-white rounded-3xl w-full max-w-sm p-5 shadow-2xl space-y-3">
+            <div class="text-center text-3xl">📤</div>
+            <h3 class="text-sm font-black text-slate-800 text-center">تأیید اشتراک Excel</h3>
+            <p id="shareModalText" class="text-xs text-slate-500 text-center leading-relaxed">فایل اکسل نتایج برای مقام انتخاب‌شده ارسال شود؟</p>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 mb-1">انتخاب مقام دریافت‌کننده:</label>
+                <select id="shareRecipientSelect" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none"></select>
+            </div>
+            <div class="grid grid-cols-2 gap-2 pt-2">
+                <button onclick="closeShareModal()" type="button" class="bg-slate-100 text-slate-600 rounded-xl p-3 text-xs font-black active:scale-95">انصراف</button>
+                <button onclick="confirmShareExcel()" type="button" class="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl p-3 text-xs font-black active:scale-95">✅ ارسال فایل</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let reportData = {};
 
@@ -136,7 +153,8 @@
             btnContainer.innerHTML += `<button onclick="sendAction('new_search')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-xl text-[10px] font-black active:scale-95 transition-all flex justify-center items-center gap-1 shadow-md shadow-indigo-200"><span>🔍</span> استعلام کد دیگر</button>`;
 
             if(reportData.ty === 'frm') {
-                btnContainer.innerHTML += `<button onclick="sendAction('excel')" class="w-full bg-emerald-100 text-emerald-700 p-3 rounded-xl text-[10px] font-black active:scale-95 transition-all flex justify-center items-center gap-1"><span>📊</span> خروجی اکسل</button>`;
+                btnContainer.innerHTML += `<button onclick="sendAction('excel')" class="w-full bg-emerald-100 text-emerald-700 p-3 rounded-xl text-[10px] font-black active:scale-95 transition-all flex justify-center items-center gap-1"><span>📊</span> خروجی اکسل (شخصی)</button>`;
+                btnContainer.innerHTML += `<button onclick="openShareModal()" class="w-full bg-blue-100 text-blue-700 p-3 rounded-xl text-[10px] font-black active:scale-95 transition-all flex justify-center items-center gap-1"><span>📤</span> ارسال اکسل به مقامات</button>`;
                 btnContainer.innerHTML += `<button onclick="sendAction('view_all')" class="w-full bg-indigo-100 text-indigo-700 p-3 rounded-xl text-[10px] font-black active:scale-95 transition-all flex justify-center items-center gap-1"><span>📋</span> پاسخ کل کاربران</button>`;
             }
             
@@ -156,6 +174,42 @@
 
         function closeAnswers() {
             document.getElementById('answerModal').classList.add('hidden');
+        }
+
+        function openShareModal() {
+            const select = document.getElementById('shareRecipientSelect');
+            select.innerHTML = '';
+            const officials = reportData.officials || [];
+            if (officials.length === 0) {
+                alert("مقام دیگری برای ارسال فایل در سامانه یافت نشد.");
+                return;
+            }
+            officials.forEach(o => {
+                select.innerHTML += `<option value="${o.id}">${o.name} (${o.role})</option>`;
+            });
+            document.getElementById('shareModalText').innerText = `خروجی کامل فرم «${reportData.ti}» برای مقام انتخاب‌شده ارسال شود؟`;
+            const modal = document.getElementById('shareModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeShareModal() {
+            const modal = document.getElementById('shareModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function confirmShareExcel() {
+            const sel = document.getElementById('shareRecipientSelect');
+            if (!sel || !sel.value) return;
+            closeShareModal();
+            window.Bale.WebApp.sendData(JSON.stringify({
+                action: 'report_share_excel',
+                id: reportData.id,
+                ty: reportData.ty,
+                recipient_id: sel.value
+            }));
+            setTimeout(() => window.Bale.WebApp.close(), 150);
         }
         
         window.Bale.WebApp.ready();
