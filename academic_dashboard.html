@@ -516,20 +516,27 @@
             document.getElementById('listView').classList.remove('hidden');
         }
 
-        // نقشه راه دوره دستیاری تخصصی
+        // نقشه راه دوره دستیاری تخصصی (همگام‌سازی کامل با سال تحصیلی دستیار)
         function renderRoadmap(r) {
             const container = document.getElementById('roadmapContainer');
             container.innerHTML = '';
             
+            // استخراج سال تحصیلی دستیار به صورت عدد (مثلاً از «سال ۲» عدد ۲ استخراج می‌شود)
+            const cleanYearStr = String(r.year || 'سال ۱')
+                .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+                .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+            const yearMatch = cleanYearStr.match(/\d+/);
+            const currentYearNum = yearMatch ? parseInt(yearMatch[0], 10) : 1;
+
             // مراحل استاندارد کوریکولوم تخصصی
             const stages = [
-                { id: 'R1', label: 'سال اول' },
-                { id: '1 به 2', label: 'ارتقا ۱ به ۲' },
-                { id: '2 به 3', label: 'ارتقا ۲ به ۳' },
-                { id: '3 به 4', label: 'ارتقا ۳ به ۴' },
-                { id: 'گواهینامه', label: 'گواهینامه تخصصی' },
-                { id: 'دانشنامه کتبی', label: 'دانشنامه کتبی' },
-                { id: 'دانشنامه شفاهی', label: 'دانشنامه شفاهی' }
+                { id: 'R1', label: 'سال اول', minYear: 1 },
+                { id: '1 به 2', label: 'ارتقا ۱ به ۲', minYear: 2 },
+                { id: '2 به 3', label: 'ارتقا ۲ به ۳', minYear: 3 },
+                { id: '3 به 4', label: 'ارتقا ۳ به ۴', minYear: 4 },
+                { id: 'گواهینامه', label: 'گواهینامه تخصصی', minYear: 5 },
+                { id: 'دانشنامه کتبی', label: 'دانشنامه کتبی', minYear: 99 },
+                { id: 'دانشنامه شفاهی', label: 'دانشنامه شفاهی', minYear: 99 }
             ];
 
             const grades = r.grades || [];
@@ -540,7 +547,12 @@
                 let icon = "⚪️";
                 let stagePassed = false;
 
-                // بررسی سوابق آزمون برای روشن شدن ایستگاه
+                // ۱. بررسی بر اساس سال تحصیلی جاری دستیار (هماهنگی کامل با مدیریت اعضای گروه)
+                if (currentYearNum >= st.minYear) {
+                    stagePassed = true;
+                }
+
+                // ۲. بررسی تکمیلی بر اساس سوابق آزمون‌های ثبت‌شده در کارنامه
                 grades.forEach(g => {
                     const stg = g.exam_stage || '';
                     if (stg.includes(st.id) || (st.id === 'دانشنامه کتبی' && Number(g.board_written) >= 105)) {
@@ -551,11 +563,15 @@
                     }
                 });
 
-                if (i === 0) stagePassed = true; // سال اول همیشه گذرانده شده است
+                // ۳. وضعیت ایستگاه جاری (دستیار هم‌اکنون برای کدام مقطع می‌خواند)
+                const isCurrentActive = (currentYearNum === st.minYear - 1);
 
                 if (stagePassed) {
                     statusColor = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
                     icon = "✅";
+                } else if (isCurrentActive) {
+                    statusColor = "bg-blue-500/15 text-blue-300 border-blue-400/40";
+                    icon = "⏳";
                 }
 
                 html += `
