@@ -35,6 +35,31 @@
         .gauge-svg text { font-family: 'Vazirmatn', sans-serif; font-weight: 900; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* نوار اسکرول محوشونده مخصوص دسکتاپ و وب */
+        .roadmap-scroll {
+            overflow-x: auto;
+            scrollbar-width: thin;
+            scrollbar-color: transparent transparent;
+            transition: scrollbar-color 0.3s ease;
+        }
+        .roadmap-scroll:hover {
+            scrollbar-color: rgba(99, 102, 241, 0.35) transparent;
+        }
+        .roadmap-scroll::-webkit-scrollbar {
+            height: 4px;
+        }
+        .roadmap-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .roadmap-scroll::-webkit-scrollbar-thumb {
+            background: transparent;
+            border-radius: 999px;
+            transition: background 0.3s ease;
+        }
+        .roadmap-scroll:hover::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.35);
+        }
     </style>
 </head>
 <body class="flex flex-col h-screen">
@@ -123,16 +148,15 @@
                 </div>
             </div>
 
-            <!-- ۲. نقشه پرواز تحصیلی (Career Progression Roadmap) -->
+            <!-- ۲. نقشه راه دوره دستیاری تخصصی -->
             <div class="aurora-card p-4 rounded-3xl space-y-3">
                 <div class="flex justify-between items-center">
                     <h3 class="text-xs font-black text-slate-200 flex items-center gap-1.5">
-                        <span class="text-blue-400">🛫</span> نقشه پرواز تحصیلی و آزمون‌ها
+                        <span class="text-blue-400">🧭</span> نقشه راه دوره دستیاری تخصصی
                     </h3>
-                    <span class="text-[9px] font-bold text-slate-400" id="roadmapSubtitle">مسیر صلاحیت بالینی</span>
                 </div>
-                <div class="overflow-x-auto no-scrollbar py-2" id="roadmapContainer">
-                    <!-- ایستگاه‌های پرواز به صورت پویا رندر می‌شوند -->
+                <div class="roadmap-scroll py-2.5 cursor-grab active:cursor-grabbing select-none" id="roadmapContainer">
+                    <!-- ایستگاه‌ها به صورت پویا رندر می‌شوند -->
                 </div>
             </div>
 
@@ -492,14 +516,14 @@
             document.getElementById('listView').classList.remove('hidden');
         }
 
-        // نقشه پرواز تحصیلی دستیار (Roadmap Timeline)
+        // نقشه راه دوره دستیاری تخصصی
         function renderRoadmap(r) {
             const container = document.getElementById('roadmapContainer');
             container.innerHTML = '';
             
             // مراحل استاندارد کوریکولوم تخصصی
             const stages = [
-                { id: 'R1', label: 'ورود (R1)' },
+                { id: 'R1', label: 'سال اول' },
                 { id: '1 به 2', label: 'ارتقا ۱ به ۲' },
                 { id: '2 به 3', label: 'ارتقا ۲ به ۳' },
                 { id: '3 به 4', label: 'ارتقا ۳ به ۴' },
@@ -512,7 +536,7 @@
             let html = '<div class="flex items-center gap-2 min-w-max px-1 py-1">';
 
             stages.forEach((st, i) => {
-                let statusColor = "bg-slate-800 text-slate-500 border-slate-700";
+                let statusColor = "bg-slate-800/80 text-slate-500 border-slate-700/80";
                 let icon = "⚪️";
                 let stagePassed = false;
 
@@ -527,7 +551,7 @@
                     }
                 });
 
-                if (i === 0) stagePassed = true; // ورود همیشه پاس شده است
+                if (i === 0) stagePassed = true; // سال اول همیشه گذرانده شده است
 
                 if (stagePassed) {
                     statusColor = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
@@ -536,17 +560,42 @@
 
                 html += `
                     <div class="flex items-center gap-2">
-                        <div class="px-3 py-1.5 rounded-2xl border ${statusColor} text-[10px] font-black flex items-center gap-1.5 shrink-0 shadow-sm">
+                        <div class="px-3.5 py-1.5 rounded-2xl border ${statusColor} text-[10px] font-black flex items-center gap-1.5 shrink-0 shadow-sm">
                             <span>${icon}</span>
                             <span>${st.label}</span>
                         </div>
-                        ${i < stages.length - 1 ? '<span class="text-slate-600 text-xs">➔</span>' : ''}
+                        ${i < stages.length - 1 ? '<span class="text-slate-500 text-xs px-0.5">←</span>' : ''}
                     </div>
                 `;
             });
 
             html += '</div>';
             container.innerHTML = html;
+
+            // فعال‌سازی کشیدن نقشه راه با ماوس در نسخه وب و دسکتاپ (Drag to scroll)
+            setupMouseDragScroll(container);
+        }
+
+        // تابع فعال‌ساز درگ با ماوس در نسخه ویندوز و مرورگر
+        function setupMouseDragScroll(el) {
+            let isDown = false;
+            let startX;
+            let scrollLeft;
+
+            el.onmousedown = (e) => {
+                isDown = true;
+                startX = e.pageX - el.offsetLeft;
+                scrollLeft = el.scrollLeft;
+            };
+            el.onmouseleave = () => { isDown = false; };
+            el.onmouseup = () => { isDown = false; };
+            el.onmousemove = (e) => {
+                if (!isDown) return;
+                e.preventDefault();
+                const x = e.pageX - el.offsetLeft;
+                const walk = (x - startX) * 1.5;
+                el.scrollLeft = scrollLeft - walk;
+            };
         }
 
         // سنجه گیج داینامیک درون‌بخشی (0 تا 150)
