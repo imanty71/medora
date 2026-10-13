@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>پورتال پایش تحصیلی و افتخارات دستیاران</title>
+    <title>پورتال پایش تحصیلی و تالار افتخارات دستیاران</title>
     
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.0.0/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
     <script src="https://tapi.bale.ai/miniapp.js?3"></script>
@@ -15,7 +15,7 @@
         body { 
             font-family: 'Vazirmatn', sans-serif; 
             -webkit-font-smoothing: antialiased; 
-            background-color: #030712;
+            background-color: #020617;
             color: #f8fafc;
             user-select: none;
             overflow-x: hidden;
@@ -24,24 +24,34 @@
         .slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-        .chart-glow { filter: drop-shadow(0px 8px 18px rgba(79, 70, 229, 0.4)); }
+        
+        .aurora-card {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.75) 0%, rgba(2, 6, 23, 0.85) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(20px);
+        }
+        
+        .gauge-svg text { font-family: 'Vazirmatn', sans-serif; font-weight: 900; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="flex flex-col h-screen">
 
     <!-- لایه‌های نوری امبینت -->
-    <div class="fixed top-[-10%] right-[-10%] w-[380px] h-[380px] rounded-full bg-gradient-to-br from-blue-600/30 via-indigo-600/20 to-transparent blur-[110px] pointer-events-none -z-10 animate-pulse" style="animation-duration: 8s;"></div>
-    <div class="fixed bottom-[-10%] left-[-15%] w-[420px] h-[420px] rounded-full bg-gradient-to-tr from-cyan-600/25 via-blue-600/15 to-transparent blur-[120px] pointer-events-none -z-10"></div>
+    <div class="fixed top-[-10%] right-[-10%] w-[380px] h-[380px] rounded-full bg-gradient-to-br from-blue-600/25 via-indigo-600/15 to-transparent blur-[110px] pointer-events-none -z-10 animate-pulse" style="animation-duration: 8s;"></div>
+    <div class="fixed bottom-[-10%] left-[-15%] w-[420px] h-[420px] rounded-full bg-gradient-to-tr from-cyan-600/20 via-blue-600/10 to-transparent blur-[120px] pointer-events-none -z-10"></div>
 
-    <!-- VIEW 1: لیست دستیاران -->
+    <!-- VIEW 1: فهرست دستیاران -->
     <div id="listView" class="flex flex-col h-full fade-in">
-        <div class="sticky top-0 z-20 bg-[#030712]/80 backdrop-blur-2xl border-b border-white/[0.06] p-4 space-y-3 shadow-lg">
+        <div class="sticky top-0 z-20 bg-slate-950/85 backdrop-blur-2xl border-b border-white/[0.06] p-4 space-y-3 shadow-lg">
             <div class="flex justify-between items-center">
                 <div class="flex items-center gap-2.5">
                     <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/10 border border-blue-400/30 text-blue-400 flex items-center justify-center text-xl font-black shadow-inner">🎓</div>
                     <div>
-                        <h1 class="text-xs font-black text-white">پایش تحصیلی و تالار افتخارات</h1>
-                        <p class="text-[10px] text-blue-300/70 font-bold mt-0.5" id="headerSubtitle">آزمون‌های ارتقا، رتبه‌ها و نمرات درون‌بخشی</p>
+                        <h1 class="text-xs font-black text-white">پایش تحصیلی و دانشنامه دستیاران</h1>
+                        <p class="text-[10px] text-blue-300/70 font-bold mt-0.5" id="headerSubtitle">سوابق ارتقا، درون‌بخشی و تالار افتخارات</p>
                     </div>
                 </div>
                 <span class="text-[10px] font-black text-indigo-400 bg-indigo-950/80 px-2.5 py-1 rounded-xl border border-indigo-800" id="totalCountBadge">0 نفر</span>
@@ -50,20 +60,20 @@
             <div class="space-y-2">
                 <div class="relative">
                     <span class="absolute inset-y-0 right-3 flex items-center text-slate-500 text-xs">🔍</span>
-                    <input type="text" id="searchInput" onkeyup="renderResidentCards()" class="w-full bg-slate-900/60 border border-white/[0.08] rounded-2xl py-2.5 pr-8 pl-3 text-xs font-bold text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none placeholder-slate-500" placeholder="جستجوی دستیار یا رتبه...">
+                    <input type="text" id="searchInput" onkeyup="renderResidentCards()" class="w-full bg-slate-900/70 border border-white/[0.08] rounded-2xl py-2.5 pr-8 pl-3 text-xs font-bold text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none placeholder-slate-500" placeholder="جستجوی نام یا افتخار دستیار...">
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
-                    <select id="groupFilter" onchange="renderResidentCards()" class="bg-slate-900/60 border border-white/[0.08] rounded-2xl p-2.5 text-[11px] font-bold text-indigo-300 outline-none cursor-pointer">
+                    <select id="groupFilter" onchange="renderResidentCards()" class="bg-slate-900/70 border border-white/[0.08] rounded-2xl p-2.5 text-[11px] font-bold text-indigo-300 outline-none cursor-pointer truncate">
                         <option value="all">🌐 تمام دپارتمان‌ها</option>
                     </select>
-                    <select id="yearFilter" onchange="renderResidentCards()" class="bg-slate-900/60 border border-white/[0.08] rounded-2xl p-2.5 text-[11px] font-bold text-indigo-300 outline-none cursor-pointer">
+                    <select id="yearFilter" onchange="renderResidentCards()" class="bg-slate-900/70 border border-white/[0.08] rounded-2xl p-2.5 text-[11px] font-bold text-indigo-300 outline-none cursor-pointer">
                         <option value="all">🎓 همه دوره‌ها</option>
-                        <option value="سال ۱">سال ۱</option>
-                        <option value="سال ۲">سال ۲</option>
-                        <option value="سال ۳">سال ۳</option>
-                        <option value="سال ۴">سال ۴</option>
-                        <option value="سال ۵">سال ۵</option>
+                        <option value="سال ۱">سال ۱ (R1)</option>
+                        <option value="سال ۲">سال ۲ (R2)</option>
+                        <option value="سال ۳">سال ۳ (R3)</option>
+                        <option value="سال ۴">سال ۴ (R4)</option>
+                        <option value="سال ۵">سال ۵ (R5)</option>
                     </select>
                 </div>
             </div>
@@ -71,16 +81,16 @@
 
         <div class="flex-grow overflow-y-auto p-4 pb-28 space-y-2.5" id="residentsContainer"></div>
 
-        <div class="fixed bottom-0 left-0 right-0 bg-[#030712]/80 backdrop-blur-xl p-3.5 border-t border-white/[0.07] shadow-2xl z-20">
+        <div class="fixed bottom-0 left-0 right-0 bg-slate-950/85 backdrop-blur-xl p-3.5 border-t border-white/[0.07] shadow-2xl z-20">
             <button onclick="closeApp()" class="w-full bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 font-black p-3.5 rounded-full text-xs transition-all active:scale-[0.98] border border-white/[0.06] flex justify-center items-center gap-2">
                 🔙 بازگشت به ربات
             </button>
         </div>
     </div>
 
-    <!-- VIEW 2: کارنامه، تالار افتخارات و نمودار زنده -->
-    <div id="detailView" class="hidden flex flex-col h-full bg-[#030712] fade-in">
-        <div class="sticky top-0 z-20 bg-[#030712]/80 backdrop-blur-2xl border-b border-white/[0.06] p-4 flex items-center justify-between shadow-lg">
+    <!-- VIEW 2: کارنامه، نقشه مسیر، گیج نمره و افتخارات -->
+    <div id="detailView" class="hidden flex flex-col h-full bg-[#020617] fade-in">
+        <div class="sticky top-0 z-20 bg-slate-950/85 backdrop-blur-2xl border-b border-white/[0.06] p-4 flex items-center justify-between shadow-lg">
             <div class="flex items-center gap-2.5">
                 <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center text-lg font-black shadow-md">👨‍⚕️</div>
                 <div>
@@ -88,151 +98,275 @@
                     <p class="text-[10px] font-bold text-blue-400 mt-0.5" id="detDept">دپارتمان</p>
                 </div>
             </div>
-            <button onclick="backToList()" class="bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 text-xs font-bold px-3 py-2 rounded-2xl transition-all border border-white/[0.08] active:scale-95">
-                🔙 بازگشت
-            </button>
+            <div class="flex items-center gap-2">
+                <button onclick="openPassModal()" class="bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 text-[10px] font-black px-3 py-2 rounded-2xl transition-all active:scale-95 flex items-center gap-1">
+                    🪪 کارت دیجیتال
+                </button>
+                <button onclick="backToList()" class="bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 text-xs font-bold px-3 py-2 rounded-2xl transition-all border border-white/[0.08] active:scale-95">
+                    🔙 بازگشت
+                </button>
+            </div>
         </div>
 
         <div class="flex-grow overflow-y-auto p-4 pb-32 space-y-4">
-            <!-- کارت کلی وضعیت -->
-            <div class="bg-slate-900/60 p-4 rounded-3xl border border-white/[0.08] space-y-3 shadow-lg">
+            
+            <!-- ۱. وضعیت تحصیلی پایه -->
+            <div class="aurora-card p-4 rounded-3xl space-y-3">
                 <div class="flex justify-between items-center">
                     <div>
-                        <p class="text-[10px] font-bold text-slate-400">وضعیت تحصیلی:</p>
+                        <p class="text-[10px] font-bold text-slate-400">وضعیت تحصیلی جاری:</p>
                         <p class="text-sm font-black text-emerald-400 mt-0.5 flex items-center gap-1.5" id="detStatus">
-                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> فعال
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> شاغل به تحصیل
                         </p>
                     </div>
                     <span class="text-[10px] font-black text-purple-300 bg-purple-500/15 border border-purple-500/30 px-3 py-1.5 rounded-xl" id="detYear">سال ۱</span>
                 </div>
-                <div class="flex justify-between items-center pt-2.5 border-t border-white/[0.06] text-[10px] font-bold">
-                    <span class="text-slate-400">روند عملکردی:</span>
-                    <span id="detTrendBadge" class="text-emerald-400 font-black">-</span>
+            </div>
+
+            <!-- ۲. نقشه پرواز تحصیلی (Career Progression Roadmap) -->
+            <div class="aurora-card p-4 rounded-3xl space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xs font-black text-slate-200 flex items-center gap-1.5">
+                        <span class="text-blue-400">🛫</span> نقشه پرواز تحصیلی و آزمون‌ها
+                    </h3>
+                    <span class="text-[9px] font-bold text-slate-400" id="roadmapSubtitle">مسیر صلاحیت بالینی</span>
+                </div>
+                <div class="overflow-x-auto no-scrollbar py-2" id="roadmapContainer">
+                    <!-- ایستگاه‌های پرواز به صورت پویا رندر می‌شوند -->
                 </div>
             </div>
 
-            <!-- بخش جدید: 🏅 تالار افتخارات و رتبه‌های برتر -->
-            <div class="bg-gradient-to-br from-amber-500/10 via-slate-900/60 to-purple-500/10 p-4 rounded-3xl border border-amber-500/25 space-y-3 shadow-lg">
+            <!-- ۳. گیج دینامیک نمره ارزیابی درون‌بخشی (۰ تا ۱۵۰) -->
+            <div class="aurora-card p-4 rounded-3xl space-y-3 text-center">
+                <div class="flex justify-between items-center px-1">
+                    <h3 class="text-xs font-black text-slate-200 flex items-center gap-1.5">
+                        <span class="text-emerald-400">⏱</span> ارزیابی درون‌بخشی سال جاری
+                    </h3>
+                    <span class="text-[10px] font-black" id="gaugeScoreText">۰ از ۱۵۰</span>
+                </div>
+
+                <!-- نیم‌دایره گیج با SVG -->
+                <div class="relative flex justify-center items-center my-2">
+                    <svg class="w-48 h-28 gauge-svg" viewBox="0 0 200 110">
+                        <!-- مسیر پس‌زمینه خاکستری -->
+                        <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="16" stroke-linecap="round"/>
+                        <!-- مسیر پویای گیج -->
+                        <path id="gaugePath" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#10b981" stroke-width="16" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="251.2" style="transition: stroke-dashoffset 1.2s ease, stroke 0.5s ease;"/>
+                        <!-- متن نمره وسط -->
+                        <text x="100" y="88" text-anchor="middle" fill="#ffffff" font-size="28" id="gaugeCenterVal">۰</text>
+                        <text x="100" y="104" text-anchor="middle" fill="#94a3b8" font-size="10">از ۱۵۰ نمره</text>
+                    </svg>
+                </div>
+
+                <!-- کادر هوشمند توضیح وضعیت درون‌بخشی -->
+                <div id="gaugeNoticeBox" class="p-3 rounded-2xl text-[10px] font-bold leading-relaxed border transition-all">
+                    در حال محاسبه وضعیت...
+                </div>
+            </div>
+
+            <!-- ۴. تالار افتخارات دو سطحی (دانشگاهی و کشوری) -->
+            <div class="aurora-card p-4 rounded-3xl space-y-3">
                 <div class="flex justify-between items-center">
                     <h3 class="text-xs font-black text-amber-300 flex items-center gap-1.5">
                         <span>🏅</span> تالار افتخارات و رتبه‌های برتر
                     </h3>
-                    <button id="btnAddHonor" onclick="openHonorModal()" class="text-[9px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-1 rounded-xl transition-all active:scale-95">
-                        ➕ ثبت افتخار جدید
+                    <button id="btnAddHonor" onclick="openHonorModal()" class="hidden text-[9px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-1 rounded-xl transition-all active:scale-95">
+                        ➕ ثبت رتبه برتر
                     </button>
                 </div>
-                <div id="honorsContainer" class="space-y-1.5"></div>
+
+                <!-- تب‌های سوئیچ افتخارات -->
+                <div class="flex bg-slate-900/80 p-1 rounded-2xl border border-white/[0.06] gap-1">
+                    <button onclick="switchHonorTab('university')" id="htab_uni" class="flex-1 py-1.5 text-[10px] font-black rounded-xl bg-indigo-600 text-white shadow transition-all">
+                        🏛 افتخارات دانشگاهی
+                    </button>
+                    <button onclick="switchHonorTab('national')" id="htab_nat" class="flex-1 py-1.5 text-[10px] font-bold rounded-xl text-slate-400 hover:text-white transition-all">
+                        🌍 افتخارات کشوری (بورد)
+                    </button>
+                </div>
+
+                <div id="honorsContent" class="space-y-2 pt-1"></div>
             </div>
 
-            <!-- نمودار متحرک و تکرارشونده -->
-            <div class="bg-slate-900/60 p-4 rounded-3xl border border-white/[0.08] space-y-3 shadow-lg">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-xs font-black text-slate-200 flex items-center gap-1.5">
-                        <span class="text-indigo-400">📈</span> نمودار رشد تحصیلی
-                    </h3>
-                    <div class="flex items-center gap-2 text-[9px] text-slate-400">
-                        <span class="w-2 h-2 rounded-full bg-indigo-500"></span> ارتقا
-                        <span class="w-2 h-2 rounded-full bg-purple-400"></span> درون‌بخشی
-                    </div>
-                </div>
-                <div class="relative h-48 w-full chart-glow">
-                    <canvas id="trendChart"></canvas>
-                </div>
-            </div>
-
-            <!-- لیست نمرات بدون محدودیت تعداد دوره -->
+            <!-- ۵. سوابق تفصیلی کلیه آزمون‌ها (ارتقا، گواهینامه و دانشنامه) -->
             <div class="space-y-2.5">
                 <div class="flex justify-between items-center px-1">
                     <h3 class="text-xs font-black text-slate-300 flex items-center gap-1.5">
                         <span>📑</span> کلیه سوابق آزمون‌های ثبت‌شده
                     </h3>
-                    <button id="btnAddGrade" onclick="openGradeModal()" class="text-[10px] font-black bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3 py-1.5 rounded-full transition-all active:scale-95 shadow-md shadow-indigo-600/30 flex items-center gap-1">
-                        ➕ ثبت آزمون جدید
+                    <button id="btnAddGrade" onclick="openGradeModal()" class="hidden text-[10px] font-black bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3 py-1.5 rounded-full transition-all active:scale-95 shadow-md flex items-center gap-1">
+                        ➕ ثبت کارنامه جدید
                     </button>
                 </div>
-                <div id="gradesTableContainer" class="space-y-2"></div>
+                <div id="gradesCardsContainer" class="space-y-2.5"></div>
             </div>
+
+            <!-- ۶. نمودار روند عملکرد تحصیلی -->
+            <div class="aurora-card p-4 rounded-3xl space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xs font-black text-slate-200 flex items-center gap-1.5">
+                        <span class="text-indigo-400">📈</span> نمودار روند نمره درون‌بخشی
+                    </h3>
+                    <span class="text-[9px] text-slate-400">سیر تحصیلی دستیار</span>
+                </div>
+                <div class="relative h-44 w-full">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+
         </div>
     </div>
 
-    <!-- MODAL 1: ثبت آزمون جدید (بدون محدودیت دوره‌ها) -->
-    <div id="gradeModal" class="fixed inset-0 bg-[#030712]/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 fade-in">
-        <div class="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-sm p-5 shadow-2xl space-y-4">
-            <h3 class="text-xs font-black text-indigo-400 flex items-center gap-1.5">
-                <span>✏️</span> ثبت نمره آزمون جدید
+    <!-- MODAL 1: ثبت آزمون جدید (Admin) -->
+    <div id="gradeModal" class="fixed inset-0 bg-[#020617]/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 fade-in">
+        <div class="aurora-card rounded-3xl w-full max-w-sm p-5 shadow-2xl space-y-3.5 max-h-[90vh] overflow-y-auto">
+            <h3 class="text-xs font-black text-blue-300 flex items-center gap-1.5">
+                <span>✏️</span> ثبت کارنامه و نمرات آزمون دستیار
             </h3>
-            <div class="space-y-3 text-xs">
+            <div class="space-y-2.5 text-xs">
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 mb-1">دوره تحصیلی:</label>
+                        <input type="text" id="m_grade_year" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-100 outline-none" placeholder="سال ۲">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 mb-1">سال برگزاری آزمون:</label>
+                        <input type="text" id="m_exam_year" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-100 outline-none" placeholder="۱۴۰۴">
+                    </div>
+                </div>
                 <div>
-                    <label class="block text-[10px] font-bold text-slate-400 mb-1">دوره تحصیلی (آزاد):</label>
-                    <input type="text" id="modalYearInput" class="w-full bg-slate-800 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-100 outline-none" placeholder="مثلاً: سال ۱، سال ۵، تکرار دوره و...">
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">مقطع آزمون:</label>
+                    <input type="text" id="m_exam_stage" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-100 outline-none" placeholder="۱ به ۲">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">نمره درون‌بخشی (از ۱۵۰):</label>
+                    <input type="number" id="m_internal" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-black text-slate-100 outline-none" placeholder="130">
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-400 mb-1">درون‌بخشی (از ۱۵۰):</label>
-                        <input type="number" id="modalInternal" class="w-full bg-slate-800 border border-white/10 rounded-xl p-2.5 text-xs font-black text-slate-100 outline-none" placeholder="135">
+                        <label class="block text-[10px] font-bold text-slate-400 mb-1">نمره ارتقاء کتبی:</label>
+                        <input type="number" id="m_promotion" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-black text-slate-100 outline-none" placeholder="115">
                     </div>
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-400 mb-1">ارتقا (از ۱۵۰):</label>
-                        <input type="number" id="modalPromotion" class="w-full bg-slate-800 border border-white/10 rounded-xl p-2.5 text-xs font-black text-slate-100 outline-none" placeholder="125">
+                        <label class="block text-[10px] font-bold text-slate-400 mb-1">گواهینامه تخصصی:</label>
+                        <input type="number" id="m_certificate" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-black text-slate-100 outline-none" placeholder="0">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 mb-1">دانشنامه کتبی:</label>
+                        <input type="number" id="m_bw" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-black text-slate-100 outline-none" placeholder="0">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 mb-1">دانشنامه شفاهی:</label>
+                        <input type="number" id="m_bo" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-black text-slate-100 outline-none" placeholder="0">
                     </div>
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold text-slate-400 mb-1">نتیجه آزمون:</label>
-                    <select id="modalResult" class="w-full bg-slate-800 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-200 outline-none">
-                        <option value="قبول">✅ قبول قطعی</option>
-                        <option value="مشروط">🟡 مشروط</option>
-                        <option value="مردود">🔴 تجدید دوره / مردود</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-400 mb-1">وضعیت تحصیلی دستیار:</label>
-                    <select id="modalAcademicStatus" class="w-full bg-slate-800 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-200 outline-none">
-                        <option value="فعال">🟢 فعال و شاغل به تحصیل</option>
-                        <option value="مرخصی">🟡 مرخصی تحصیلی</option>
-                        <option value="فارغ‌التحصیل">🎓 فارغ‌التحصیل</option>
-                        <option value="تمدید دوره">⏳ تمدید دوره</option>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">نتیجه نهایی دانشنامه تخصصی:</label>
+                    <select id="m_board_result" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-200 outline-none">
+                        <option value="">نامشخص / شرکت نکرده</option>
+                        <option value="قبول کتبی و شفاهی">قبول کتبی و شفاهی</option>
+                        <option value="قبول کتبی و مردود شفاهی">قبول کتبی و مردود شفاهی</option>
+                        <option value="مردود">مردود</option>
                     </select>
                 </div>
             </div>
             <div class="flex gap-2 pt-2">
-                <button onclick="closeGradeModal()" class="w-1/3 bg-slate-800 text-slate-400 py-2.5 rounded-full text-xs font-bold">انصراف</button>
-                <button onclick="saveGradeLocally()" class="w-2/3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2.5 rounded-full text-xs font-black">💾 ذخیره آزمون</button>
+                <button onclick="closeGradeModal()" class="w-1/3 bg-white/[0.05] text-slate-400 py-2.5 rounded-full text-xs font-bold">انصراف</button>
+                <button onclick="saveGradeLocally()" class="w-2/3 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-full text-xs font-black">💾 ذخیره کارنامه</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL 2: ثبت افتخار و رتبه برتر -->
-    <div id="honorModal" class="fixed inset-0 bg-[#030712]/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 fade-in">
-        <div class="bg-slate-900 border border-amber-500/30 rounded-3xl w-full max-w-sm p-5 shadow-2xl space-y-4">
+    <!-- MODAL 2: ثبت رتبه برتر و افتخار دستیار -->
+    <div id="honorModal" class="fixed inset-0 bg-[#020617]/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 fade-in">
+        <div class="aurora-card rounded-3xl w-full max-w-sm p-5 shadow-2xl space-y-3.5 border border-amber-500/30">
             <h3 class="text-xs font-black text-amber-300 flex items-center gap-1.5">
-                <span>🏅</span> ثبت رتبه برتر یا افتخار آموزشی
+                <span>🏅</span> ثبت رتبه برتر یا افتخار علمی
             </h3>
-            <div class="space-y-3 text-xs">
+            <div class="space-y-2.5 text-xs">
                 <div>
-                    <label class="block text-[10px] font-bold text-slate-400 mb-1">عنوان افتخار یا رتبه:</label>
-                    <input type="text" id="modalHonorTitle" class="w-full bg-slate-800 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-100 outline-none" placeholder="مثلاً: رتبه ۱ آزمون ارتقا کل دانشکده">
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">سطح افتخار:</label>
+                    <select id="m_honor_cat" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-amber-300 outline-none">
+                        <option value="university">🏛 افتخار دانشگاهی و دپارتمانی</option>
+                        <option value="national">🌍 افتخار کشوری (بورد ملی)</option>
+                    </select>
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold text-slate-400 mb-1">دوره تحصیلی:</label>
-                    <input type="text" id="modalHonorYear" class="w-full bg-slate-800 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-100 outline-none" placeholder="مثلاً: سال ۳ (۱۴۰۴)">
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">عنوان افتخار:</label>
+                    <input type="text" id="m_honor_title" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-100 outline-none" placeholder="مثلاً: رتبه ۵ درصد برتر آزمون دانشنامه تخصصی کشور">
                 </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-400 mb-1">نمره یا توضیحات تکمیلی:</label>
-                    <input type="text" id="modalHonorRank" class="w-full bg-slate-800 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-100 outline-none" placeholder="مثلاً: نمره ۱۴۶ از ۱۵۰">
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 mb-1">سال آزمون:</label>
+                        <input type="text" id="m_honor_year" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-100 outline-none" placeholder="۱۴۰۴">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 mb-1">نمره / رتبه:</label>
+                        <input type="text" id="m_honor_rank" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-100 outline-none" placeholder="رتبه ۲ کشوری">
+                    </div>
                 </div>
             </div>
             <div class="flex gap-2 pt-2">
-                <button onclick="closeHonorModal()" class="w-1/3 bg-slate-800 text-slate-400 py-2.5 rounded-full text-xs font-bold">انصراف</button>
+                <button onclick="closeHonorModal()" class="w-1/3 bg-white/[0.05] text-slate-400 py-2.5 rounded-full text-xs font-bold">انصراف</button>
                 <button onclick="saveHonorLocally()" class="w-2/3 bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 py-2.5 rounded-full text-xs font-black">🏅 ثبت در تالار افتخارات</button>
             </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: کارت دیجیتال شیشه‌ای دستیار با QR Code -->
+    <div id="passModal" class="fixed inset-0 bg-[#020617]/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 fade-in">
+        <div class="w-full max-w-xs space-y-4 text-center">
+            <div class="aurora-card p-5 rounded-[28px] border border-blue-400/30 text-right space-y-4 shadow-2xl relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-[9px] font-black text-blue-400 tracking-wider">MEDORA ACADEMIC PASS</p>
+                        <h4 class="text-sm font-black text-white mt-1" id="passName">دکتر ...</h4>
+                        <p class="text-[10px] text-slate-400 font-bold mt-0.5" id="passDept">دپارتمان</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-2xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-lg">👨‍⚕️</div>
+                </div>
+                <div class="pt-2 border-t border-white/[0.06] grid grid-cols-2 gap-2 text-[10px]">
+                    <div>
+                        <span class="text-slate-500 block">دوره دستیاری:</span>
+                        <b class="text-white" id="passYear">سال ۱</b>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 block">آخرین درون‌بخشی:</span>
+                        <b class="text-emerald-400" id="passInternal">-</b>
+                    </div>
+                </div>
+                <div class="pt-2 border-t border-white/[0.06] flex items-center justify-between">
+                    <div class="text-[9px] text-slate-400 font-bold leading-relaxed">
+                        سامانه هوشمند آموزش دانشکده پزشکی<br>
+                        <span class="text-emerald-400">شناسه معتبر دانشگاهی</span>
+                    </div>
+                    <div class="w-12 h-12 bg-white p-1 rounded-xl flex items-center justify-center shrink-0">
+                        <!-- QR Code شبیه‌سازی شده و تمیز -->
+                        <svg class="w-full h-full text-slate-900" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm10-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm14 0h4v4h-4v-4zm-4 0h2v2h-2v-2zm2 4h2v2h-2v-2zm2-2h2v2h-2v-2zm-4 2h2v2h-2v-2z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <button onclick="closePassModal()" class="w-full bg-white/[0.06] hover:bg-white/[0.1] text-slate-300 py-3 rounded-full text-xs font-black border border-white/10">
+                بستن کارت
+            </button>
         </div>
     </div>
 
     <script>
         let dashboardPayload = { residents: [], groups: [], is_admin: 0, can_edit: 0, access_scope: "group", viewer_role: "", local_group: "" };
         let activeResidentIndex = null;
+        let activeHonorTab = 'university';
         let chartInstance = null;
-        let animationTimer = null;
+
+        function toFa(num) {
+            if (num === null || num === undefined) return '';
+            const faDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+            return String(num).replace(/[0-9]/g, d => faDigits[parseInt(d)]);
+        }
 
         function init() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -259,41 +393,14 @@
                     }
 
                     const canEdit = Number(dashboardPayload.can_edit) === 1;
-                    const scope = String(dashboardPayload.access_scope || 'group');
-                    const addGradeBtn = document.getElementById('btnAddGrade');
-                    const addHonorBtn = document.getElementById('btnAddHonor');
-                    if (!canEdit) {
-                        if (addGradeBtn) addGradeBtn.classList.add('hidden');
-                        if (addHonorBtn) addHonorBtn.classList.add('hidden');
-                    }
-
-                    const subtitle = document.getElementById('headerSubtitle');
-                    if (subtitle) {
-                        if (scope === 'self') {
-                            subtitle.innerText = 'پرونده تحصیلی شخصی شما • فقط مشاهده';
-                        } else if (scope === 'group') {
-                            subtitle.innerText = `پایش دستیاران گروه ${dashboardPayload.local_group || ''} • فقط مشاهده`;
-                        } else if (canEdit) {
-                            subtitle.innerText = 'کل دانشکده • دسترسی مشاهده و ویرایش';
-                        } else {
-                            subtitle.innerText = 'کل دانشکده • فقط مشاهده';
-                        }
+                    if (canEdit) {
+                        document.getElementById('btnAddGrade').classList.remove('hidden');
+                        document.getElementById('btnAddHonor').classList.remove('hidden');
                     }
 
                     renderResidentCards();
                 }
-            } catch(e) { console.error(e); }
-        }
-
-        function calculateTrend(grades) {
-            if (!grades || grades.length === 0) return { label: "⚪️ بدون آزمون ثبت‌شده", color: "text-slate-400" };
-            if (grades.length === 1) return { label: "⚪️ سال اول (پایه)", color: "text-slate-300" };
-            const last = grades[grades.length - 1];
-            const prev = grades[grades.length - 2];
-            const diff = ((last.internal || 0) + (last.promotion || 0)) - ((prev.internal || 0) + (prev.promotion || 0));
-            if (diff > 0) return { label: `🟢 صعودی (+${diff} نمره)`, color: "text-emerald-400" };
-            if (diff < 0) return { label: `🔴 نزولی (${diff} نمره)`, color: "text-rose-400" };
-            return { label: "⚪️ عملکرد یکنواخت", color: "text-slate-300" };
+            } catch(e) { console.error("Init Error:", e); }
         }
 
         function renderResidentCards() {
@@ -312,11 +419,29 @@
                 if (yearVal !== 'all' && r.year !== yearVal) return;
 
                 count++;
-                const trend = calculateTrend(r.grades);
-                const honorBadge = (r.honors && r.honors.length > 0) ? `<span class="text-[9px] font-black text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">🏅 ${r.honors[0].title.slice(0, 18)}...</span>` : '';
+                
+                // آخرین نمره درون‌بخشی
+                const lastGrade = (r.grades && r.grades.length > 0) ? r.grades[r.grades.length - 1] : null;
+                const intScore = lastGrade ? Number(lastGrade.internal || 0) : null;
+                
+                let scoreBadge = `<span class="text-[9px] font-bold text-slate-500 bg-slate-800 px-2.5 py-1 rounded-xl">بدون آزمون</span>`;
+                if (intScore !== null) {
+                    if (intScore < 105) {
+                        scoreBadge = `<span class="text-[9px] font-black text-rose-400 bg-rose-500/15 border border-rose-500/30 px-2 py-0.5 rounded-lg">درون‌بخشی: ${toFa(intScore)} (نقص حدنصاب)</span>`;
+                    } else if (intScore < 120) {
+                        scoreBadge = `<span class="text-[9px] font-black text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-lg">درون‌بخشی: ${toFa(intScore)} (مرز مشروط)</span>`;
+                    } else {
+                        scoreBadge = `<span class="text-[9px] font-black text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-lg">درون‌بخشی: ${toFa(intScore)} (مطلوب)</span>`;
+                    }
+                }
+
+                const natHonors = (r.honors || []).filter(h => h.category === 'national');
+                const honorTag = natHonors.length > 0
+                    ? `<span class="text-[8px] font-black text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">🌟 رتبه برتر کشوری</span>`
+                    : '';
 
                 const card = document.createElement('div');
-                card.className = "bg-slate-900/60 border border-white/[0.08] hover:border-blue-500/50 p-3.5 rounded-3xl cursor-pointer transition-all active:scale-[0.99] space-y-2 slide-up";
+                card.className = "aurora-card hover:border-blue-500/40 p-3.5 rounded-2xl cursor-pointer transition-all active:scale-[0.99] space-y-2 slide-up";
                 card.onclick = () => openResidentDetail(idx);
 
                 card.innerHTML = `
@@ -325,38 +450,36 @@
                             <div class="w-9 h-9 rounded-2xl bg-white/[0.05] text-slate-300 flex items-center justify-center text-sm font-black">👨‍⚕️</div>
                             <div>
                                 <p class="text-xs font-black text-slate-100">${r.name}</p>
-                                <p class="text-[10px] font-bold text-slate-400 mt-0.5">📚 ${r.group} | 🎓 ${r.year}</p>
+                                <p class="text-[10px] font-bold text-slate-400 mt-0.5">📚 ${r.group} | 🎓 ${toFa(r.year)}</p>
                             </div>
                         </div>
-                        <div class="flex items-center gap-1.5">${honorBadge}</div>
+                        <div class="flex items-center gap-1.5">${honorTag}</div>
                     </div>
-                    <div class="flex justify-between items-center pt-1 border-t border-white/[0.04] text-[10px] font-bold">
-                        <span class="${trend.color}">${trend.label}</span>
-                        <span class="text-blue-400">کارنامه و افتخارات ➔</span>
+                    <div class="flex justify-between items-center pt-1.5 border-t border-white/[0.04] text-[10px]">
+                        ${scoreBadge}
+                        <span class="text-blue-400 font-bold">کارنامه و نقشه تحصیلی ➔</span>
                     </div>
                 `;
                 container.appendChild(card);
             });
-            document.getElementById('totalCountBadge').innerText = `${count} نفر`;
+
+            document.getElementById('totalCountBadge').innerText = `${toFa(count)} نفر`;
         }
 
         function openResidentDetail(idx) {
             activeResidentIndex = idx;
             const r = dashboardPayload.residents[idx];
 
-            document.getElementById('detName').innerText = r.name;
+            document.getElementById('detName').innerText = `دکتر ${r.name}`;
             document.getElementById('detDept').innerText = `دپارتمان ${r.group}`;
-            document.getElementById('detYear').innerText = r.year;
-            document.getElementById('detStatus').innerText = r.status || 'فعال';
+            document.getElementById('detYear').innerText = toFa(r.year);
+            document.getElementById('detStatus').innerText = r.status || 'شاغل به تحصیل';
 
-            const trend = calculateTrend(r.grades);
-            const trendBadge = document.getElementById('detTrendBadge');
-            trendBadge.innerText = trend.label;
-            trendBadge.className = `${trend.color} font-black`;
-
-            renderHonorsList(r.honors || []);
-            renderGradesList(r.grades || []);
-            initAnimatedChart(r.grades || []);
+            renderRoadmap(r);
+            renderGauge(r);
+            renderHonors(r.honors || []);
+            renderGradesCards(r.grades || []);
+            initTrendChart(r.grades || []);
 
             document.getElementById('listView').classList.add('hidden');
             document.getElementById('detailView').classList.remove('hidden');
@@ -364,150 +487,297 @@
         }
 
         function backToList() {
-            if (animationTimer) clearInterval(animationTimer);
             if (chartInstance) chartInstance.destroy();
             document.getElementById('detailView').classList.add('hidden');
             document.getElementById('listView').classList.remove('hidden');
         }
 
-        function renderHonorsList(honors) {
-            const container = document.getElementById('honorsContainer');
+        // نقشه پرواز تحصیلی دستیار (Roadmap Timeline)
+        function renderRoadmap(r) {
+            const container = document.getElementById('roadmapContainer');
             container.innerHTML = '';
-            if (honors.length === 0) {
-                container.innerHTML = `<div class="text-[10px] text-slate-400 font-bold py-1">افتخار یا رتبه برتری ثبت نشده است.</div>`;
+            
+            // مراحل استاندارد کوریکولوم تخصصی
+            const stages = [
+                { id: 'R1', label: 'ورود (R1)' },
+                { id: '1 به 2', label: 'ارتقا ۱ به ۲' },
+                { id: '2 به 3', label: 'ارتقا ۲ به ۳' },
+                { id: '3 به 4', label: 'ارتقا ۳ به ۴' },
+                { id: 'گواهینامه', label: 'گواهینامه تخصصی' },
+                { id: 'دانشنامه کتبی', label: 'دانشنامه کتبی' },
+                { id: 'دانشنامه شفاهی', label: 'دانشنامه شفاهی' }
+            ];
+
+            const grades = r.grades || [];
+            let html = '<div class="flex items-center gap-2 min-w-max px-1 py-1">';
+
+            stages.forEach((st, i) => {
+                let statusColor = "bg-slate-800 text-slate-500 border-slate-700";
+                let icon = "⚪️";
+                let stagePassed = false;
+
+                // بررسی سوابق آزمون برای روشن شدن ایستگاه
+                grades.forEach(g => {
+                    const stg = g.exam_stage || '';
+                    if (stg.includes(st.id) || (st.id === 'دانشنامه کتبی' && Number(g.board_written) >= 105)) {
+                        stagePassed = true;
+                    }
+                    if (st.id === 'دانشنامه شفاهی' && String(g.board_result).includes('قبول کتبی و شفاهی')) {
+                        stagePassed = true;
+                    }
+                });
+
+                if (i === 0) stagePassed = true; // ورود همیشه پاس شده است
+
+                if (stagePassed) {
+                    statusColor = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+                    icon = "✅";
+                }
+
+                html += `
+                    <div class="flex items-center gap-2">
+                        <div class="px-3 py-1.5 rounded-2xl border ${statusColor} text-[10px] font-black flex items-center gap-1.5 shrink-0 shadow-sm">
+                            <span>${icon}</span>
+                            <span>${st.label}</span>
+                        </div>
+                        ${i < stages.length - 1 ? '<span class="text-slate-600 text-xs">➔</span>' : ''}
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // سنجه گیج داینامیک درون‌بخشی (0 تا 150)
+        function renderGauge(r) {
+            const lastGrade = (r.grades && r.grades.length > 0) ? r.grades[r.grades.length - 1] : null;
+            const score = lastGrade ? Number(lastGrade.internal || 0) : 0;
+
+            document.getElementById('gaugeScoreText').innerText = `${toFa(score)} از ۱۵۰`;
+            document.getElementById('gaugeCenterVal').innerText = toFa(score);
+
+            const path = document.getElementById('gaugePath');
+            const box = document.getElementById('gaugeNoticeBox');
+
+            // محاسبه درصد پیشرفت روی محیط نیم‌دایره (251.2)
+            const maxScore = 150;
+            const pct = Math.min(Math.max(score / maxScore, 0), 1);
+            const offset = 251.2 - (pct * 251.2);
+            path.style.strokeDashoffset = offset;
+
+            if (score < 105) {
+                path.style.stroke = "#ef4444"; // قرمز
+                box.className = "p-3 rounded-2xl text-[10px] font-bold leading-relaxed border bg-rose-500/10 border-rose-500/30 text-rose-300";
+                box.innerHTML = `⚠️ <b>عدم احراز حد نصاب:</b> به دلیل عدم کسب حد نصاب نمره درون‌بخشی (حداقل ۱۰۵)، طبق آیین‌نامه مجاز به شرکت در آزمون ارتقای دستیاری نمی‌باشید.`;
+            } else if (score < 120) {
+                path.style.stroke = "#f59e0b"; // کهربایی/زرد
+                box.className = "p-3 rounded-2xl text-[10px] font-bold leading-relaxed border bg-amber-500/10 border-amber-500/30 text-amber-200";
+                box.innerHTML = `🟡 <b>مرز قبولی مشروط:</b> نمره درون‌بخشی در منطقه مرزی است؛ دستیار نیازمند توجه و تقویت آموزش بالینی دپارتمان می‌باشد.`;
+            } else {
+                path.style.stroke = "#10b981"; // سبز زمردی
+                box.className = "p-3 rounded-2xl text-[10px] font-bold leading-relaxed border bg-emerald-500/10 border-emerald-500/30 text-emerald-200";
+                box.innerHTML = `🟢 <b>عملکرد مطلوب:</b> نمره ارزیابی درون‌بخشی بالاتر از ۱۲۰ و در تراز ممتاز دپارتمان ثبت شده است.`;
+            }
+        }
+
+        // تالار افتخارات دو سطحی (دانشگاهی و کشوری)
+        function switchHonorTab(tab) {
+            activeHonorTab = tab;
+            const btnUni = document.getElementById('htab_uni');
+            const btnNat = document.getElementById('htab_nat');
+
+            if (tab === 'university') {
+                btnUni.className = "flex-1 py-1.5 text-[10px] font-black rounded-xl bg-indigo-600 text-white shadow transition-all";
+                btnNat.className = "flex-1 py-1.5 text-[10px] font-bold rounded-xl text-slate-400 hover:text-white transition-all";
+            } else {
+                btnNat.className = "flex-1 py-1.5 text-[10px] font-black rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow transition-all";
+                btnUni.className = "flex-1 py-1.5 text-[10px] font-bold rounded-xl text-slate-400 hover:text-white transition-all";
+            }
+
+            if (activeResidentIndex !== null) {
+                renderHonors(dashboardPayload.residents[activeResidentIndex].honors || []);
+            }
+        }
+
+        function renderHonors(allHonors) {
+            const container = document.getElementById('honorsContent');
+            container.innerHTML = '';
+
+            const filtered = allHonors.filter(h => (h.category || 'university') === activeHonorTab);
+
+            if (filtered.length === 0) {
+                const emptyLabel = activeHonorTab === 'university'
+                    ? 'رتبه یا مدال دانشگاهی برای این دستیار ثبت نشده است.'
+                    : 'افتخار بورد کشوری (۵٪ یا ۱۰٪ یا رتبه اول) ثبت نشده است.';
+                container.innerHTML = `<div class="text-[10px] text-slate-500 font-bold py-3 text-center">${emptyLabel}</div>`;
                 return;
             }
-            honors.forEach(h => {
+
+            filtered.forEach(h => {
+                const isNat = h.category === 'national';
+                const borderClass = isNat ? 'border-amber-500/30 bg-amber-500/10' : 'border-indigo-500/25 bg-slate-900/80';
+                const icon = isNat ? '🌟' : '🎖';
+                const tagColor = isNat ? 'text-amber-300' : 'text-blue-300';
+
                 container.innerHTML += `
-                    <div class="bg-slate-900/80 border border-amber-500/20 p-2.5 rounded-2xl flex justify-between items-center text-xs">
-                        <div>
-                            <p class="font-extrabold text-amber-200">🎖 ${h.title}</p>
-                            <p class="text-[9px] text-slate-400 mt-0.5">${h.year} | ${h.rank || ''}</p>
+                    <div class="p-3 rounded-2xl border ${borderClass} flex justify-between items-center text-xs slide-up">
+                        <div class="min-w-0 pr-1">
+                            <p class="font-extrabold text-slate-100 truncate">${icon} ${h.title}</p>
+                            <p class="text-[9px] text-slate-400 mt-0.5">سال: ${toFa(h.year)} ${h.rank ? '| ' + toFa(h.rank) : ''}</p>
                         </div>
-                        <span class="text-[10px] text-amber-400 font-black">★ رتبه برتر</span>
+                        <span class="text-[9px] font-black ${tagColor} shrink-0 mr-2">${isNat ? 'بورد ملی' : 'دانشگاهی'}</span>
                     </div>
                 `;
             });
         }
 
-        function renderGradesList(grades) {
-            const container = document.getElementById('gradesTableContainer');
+        // سوابق آزمون‌ها
+        function renderGradesCards(grades) {
+            const container = document.getElementById('gradesCardsContainer');
             container.innerHTML = '';
+
             if (grades.length === 0) {
-                container.innerHTML = `<div class="text-center py-6 text-[10px] font-bold text-slate-500">سابقه‌ای ثبت نشده است.</div>`;
+                container.innerHTML = `<div class="text-center py-6 text-[10px] font-bold text-slate-500">هیچ سابقه آزمونی ثبت نشده است.</div>`;
                 return;
             }
+
             grades.forEach((g, i) => {
-                const total = (g.internal || 0) + (g.promotion || 0);
-                const passBadge = g.status === 'قبول' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-rose-500/15 text-rose-300 border-rose-500/30';
-                container.innerHTML += `
-                    <div class="bg-slate-900/60 border border-white/[0.08] p-3 rounded-2xl flex justify-between items-center slide-up">
-                        <div>
-                            <span class="text-[10px] font-black text-indigo-400 bg-indigo-950 px-2 py-0.5 rounded-md border border-indigo-800">${g.year}</span>
-                            <div class="flex gap-3 text-[10px] font-bold text-slate-300 mt-1.5">
-                                <span>ارتقا: <b class="text-white">${g.promotion || 0}</b></span>
-                                <span>درون‌بخشی: <b class="text-white">${g.internal || 0}</b></span>
-                                <span>مجموع: <b class="text-blue-300">${total}/300</b></span>
+                const intSc = Number(g.internal || 0);
+                const bwSc = Number(g.board_written || 0);
+                const boSc = Number(g.board_oral || 0);
+                const promSc = Number(g.promotion || 0);
+                const certSc = Number(g.certificate || 0);
+
+                let boardWarning = '';
+                if (bwSc > 0 && bwSc < 105) {
+                    boardWarning = `<div class="mt-2 p-2 bg-rose-500/10 border border-rose-500/25 rounded-xl text-[9px] font-bold text-rose-300">⚠️ به دلیل عدم کسب حد نصاب آزمون کتبی دانشنامه (۱۰۵)، مردود و به آزمون شفاهی معرفی نشدید.</div>`;
+                }
+
+                let boardSection = '';
+                if (bwSc > 0 || boSc > 0 || g.board_result) {
+                    boardSection = `
+                        <div class="mt-2 pt-2 border-t border-white/[0.06] text-[10px] space-y-1">
+                            <div class="flex justify-between text-slate-400 font-bold">
+                                <span>دانشنامه کتبی: <b class="${bwSc < 105 ? 'text-rose-400' : 'text-white'}">${toFa(bwSc)}</b></span>
+                                <span>دانشنامه شفاهی: <b class="text-white">${toFa(boSc)}</b></span>
                             </div>
+                            <div class="text-[9px] font-black text-amber-300">نتیجه دانشنامه: ${g.board_result || 'نامشخص'}</div>
+                            ${boardWarning}
                         </div>
-                        <span class="text-[9px] font-black px-2.5 py-1 rounded-xl border ${passBadge}">${g.status || 'قبول'}</span>
+                    `;
+                }
+
+                container.innerHTML += `
+                    <div class="aurora-card p-3.5 rounded-2xl border border-white/[0.08] slide-up space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] font-black text-blue-300 bg-blue-950 px-2.5 py-0.5 rounded-lg border border-blue-800">
+                                مقطع: ${toFa(g.exam_stage || g.year || 'سال ۱')} ${g.exam_year ? '(' + toFa(g.exam_year) + ')' : ''}
+                            </span>
+                            <span class="text-[9px] font-black px-2 py-0.5 rounded-lg ${intSc < 105 ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}">
+                                درون‌بخشی: ${toFa(intSc)} / ۱۵۰
+                            </span>
+                        </div>
+                        <div class="flex justify-between text-[10px] font-bold text-slate-300 pt-1">
+                            <span>ارتقاء کتبی: <b class="text-white">${toFa(promSc)}</b></span>
+                            <span>گواهینامه: <b class="text-white">${toFa(certSc)}</b></span>
+                        </div>
+                        ${boardSection}
                     </div>
                 `;
             });
         }
 
-        function initAnimatedChart(grades) {
+        // نمودار روند درون‌بخشی
+        function initTrendChart(grades) {
             const ctx = document.getElementById('trendChart').getContext('2d');
             if (chartInstance) chartInstance.destroy();
-            if (animationTimer) clearInterval(animationTimer);
 
-            const labels = (grades.length > 0) ? grades.map(g => g.year) : ['سال ۱', 'سال ۲', 'سال ۳'];
-            const promotionData = (grades.length > 0) ? grades.map(g => g.promotion || 0) : [100, 115, 125];
-            const internalData = (grades.length > 0) ? grades.map(g => g.internal || 0) : [110, 120, 130];
+            const labels = (grades.length > 0) ? grades.map(g => g.exam_stage || g.year) : ['سال ۱', 'سال ۲', 'سال ۳'];
+            const dataScores = (grades.length > 0) ? grades.map(g => Number(g.internal || 0)) : [110, 125, 138];
 
             chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [
-                        { label: 'ارتقا (۱۵۰)', data: promotionData, borderColor: '#6366f1', borderWidth: 3, fill: false, tension: 0.38, pointRadius: 5, pointBackgroundColor: '#818cf8' },
-                        { label: 'درون‌بخشی (۱۵۰)', data: internalData, borderColor: '#c084fc', borderWidth: 2.5, borderDash: [5, 4], fill: false, tension: 0.38, pointRadius: 4, pointBackgroundColor: '#c084fc' }
-                    ]
+                    datasets: [{
+                        label: 'نمره درون‌بخشی (از ۱۵۰)',
+                        data: dataScores,
+                        borderColor: '#10b981',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.35,
+                        pointRadius: 6,
+                        pointBackgroundColor: '#34d399'
+                    }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    animation: { duration: 1500, easing: 'easeOutQuart' },
                     plugins: { legend: { display: false } },
                     scales: {
-                        y: { min: 40, max: 150, grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8', font: { size: 9, family: 'Vazirmatn' } } },
-                        x: { grid: { display: false }, ticks: { color: '#cbd5e1', font: { size: 10, family: 'Vazirmatn', weight: 'bold' } } }
+                        y: { min: 80, max: 150, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { family: 'Vazirmatn', size: 9 } } },
+                        x: { grid: { display: false }, ticks: { color: '#cbd5e1', font: { family: 'Vazirmatn', size: 10, weight: 'bold' } } }
                     }
                 }
             });
-
-            animationTimer = setInterval(() => {
-                if (chartInstance) { chartInstance.reset(); chartInstance.update(); }
-            }, 4500);
         }
 
-        function openGradeModal() {
-            if (Number(dashboardPayload.can_edit) !== 1) return;
-            document.getElementById('modalYearInput').value = '';
-            document.getElementById('modalInternal').value = '';
-            document.getElementById('modalPromotion').value = '';
-            document.getElementById('gradeModal').classList.remove('hidden');
+        // مدال کارت پرواز دیجیتال دستیار
+        function openPassModal() {
+            if (activeResidentIndex === null) return;
+            const r = dashboardPayload.residents[activeResidentIndex];
+            document.getElementById('passName').innerText = `دکتر ${r.name}`;
+            document.getElementById('passDept').innerText = `دپارتمان ${r.group}`;
+            document.getElementById('passYear').innerText = toFa(r.year);
+            const lastG = r.grades && r.grades.length > 0 ? r.grades[r.grades.length - 1] : null;
+            document.getElementById('passInternal').innerText = lastG ? `${toFa(lastG.internal)} / ۱۵۰` : 'ثبت نشده';
+            document.getElementById('passModal').classList.remove('hidden');
         }
+        function closePassModal() { document.getElementById('passModal').classList.add('hidden'); }
+
+        // مدال‌های ادمین
+        function openGradeModal() { document.getElementById('gradeModal').classList.remove('hidden'); }
         function closeGradeModal() { document.getElementById('gradeModal').classList.add('hidden'); }
-
-        function openHonorModal() {
-            if (Number(dashboardPayload.can_edit) !== 1) return;
-            document.getElementById('modalHonorTitle').value = '';
-            document.getElementById('modalHonorYear').value = '';
-            document.getElementById('modalHonorRank').value = '';
-            document.getElementById('honorModal').classList.remove('hidden');
-        }
+        function openHonorModal() { document.getElementById('honorModal').classList.remove('hidden'); }
         function closeHonorModal() { document.getElementById('honorModal').classList.add('hidden'); }
 
         function saveGradeLocally() {
-            if (Number(dashboardPayload.can_edit) !== 1) return;
             if (activeResidentIndex === null) return;
             const r = dashboardPayload.residents[activeResidentIndex];
-            const year = document.getElementById('modalYearInput').value.trim() || 'سال ۱';
-            const internal = parseFloat(document.getElementById('modalInternal').value) || 0;
-            const promotion = parseFloat(document.getElementById('modalPromotion').value) || 0;
-            const res = document.getElementById('modalResult').value;
-            const acadStatus = document.getElementById('modalAcademicStatus').value;
-
-            window.Bale.WebApp.sendData(JSON.stringify({
+            const payload = {
                 action: "save_academic_grades",
                 member_id: r.id,
-                year: year,
-                internal: internal,
-                promotion: promotion,
-                result: res,
-                academic_status: acadStatus
-            }));
+                year: document.getElementById('m_grade_year').value.trim() || 'سال ۱',
+                exam_year: document.getElementById('m_exam_year').value.trim(),
+                exam_stage: document.getElementById('m_exam_stage').value.trim(),
+                internal: parseFloat(document.getElementById('m_internal').value) || 0,
+                promotion: parseFloat(document.getElementById('m_promotion').value) || 0,
+                certificate: parseFloat(document.getElementById('m_certificate').value) || 0,
+                board_written: parseFloat(document.getElementById('m_bw').value) || 0,
+                board_oral: parseFloat(document.getElementById('m_bo').value) || 0,
+                board_result: document.getElementById('m_board_result').value,
+                academic_status: 'فعال'
+            };
+            window.Bale.WebApp.sendData(JSON.stringify(payload));
             closeGradeModal();
             setTimeout(() => window.Bale.WebApp.close(), 150);
         }
 
         function saveHonorLocally() {
-            if (Number(dashboardPayload.can_edit) !== 1) return;
             if (activeResidentIndex === null) return;
             const r = dashboardPayload.residents[activeResidentIndex];
-            const title = document.getElementById('modalHonorTitle').value.trim();
-            const year = document.getElementById('modalHonorYear').value.trim() || 'عمومی';
-            const rank = document.getElementById('modalHonorRank').value.trim();
+            const title = document.getElementById('m_honor_title').value.trim();
             if (!title) return;
-
-            window.Bale.WebApp.sendData(JSON.stringify({
+            const payload = {
                 action: "save_resident_honor",
                 member_id: r.id,
+                category: document.getElementById('m_honor_cat').value,
                 title: title,
-                year: year,
-                rank: rank
-            }));
+                year: document.getElementById('m_honor_year').value.trim() || '۱۴۰۴',
+                rank: document.getElementById('m_honor_rank').value.trim()
+            };
+            window.Bale.WebApp.sendData(JSON.stringify(payload));
             closeHonorModal();
             setTimeout(() => window.Bale.WebApp.close(), 150);
         }
