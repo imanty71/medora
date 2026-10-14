@@ -720,12 +720,16 @@
                 }
 
                 let boardSection = '';
-                if (bwSc > 0 || boSc > 0 || g.board_result) {
+                // استخراج نمره یا وضعیت متنی در صورت خالی بودن نمره
+                const bwDisplay = bwSc > 0 ? toFa(bwSc) : (g.status && g.status.includes('کتبی:') ? g.status.split('کتبی:')[1].split('|')[0].trim() : '-');
+                const boDisplay = boSc > 0 ? toFa(boSc) : (g.status && g.status.includes('شفاهی:') ? g.status.split('شفاهی:')[1].trim() : '-');
+
+                if (bwSc > 0 || boSc > 0 || g.board_result || bwDisplay !== '-' || boDisplay !== '-') {
                     boardSection = `
                         <div class="mt-2 pt-2 border-t border-white/[0.06] text-[10px] space-y-1">
                             <div class="flex justify-between text-slate-400 font-bold">
-                                <span>دانشنامه کتبی: <b class="${bwSc < 105 ? 'text-rose-400' : 'text-white'}">${toFa(bwSc)}</b></span>
-                                <span>دانشنامه شفاهی: <b class="text-white">${toFa(boSc)}</b></span>
+                                <span>دانشنامه کتبی: <b class="${bwSc > 0 && bwSc < 105 ? 'text-rose-400' : 'text-white'}">${bwDisplay}</b></span>
+                                <span>دانشنامه شفاهی: <b class="text-white">${boDisplay}</b></span>
                             </div>
                             <div class="text-[9px] font-black text-amber-300">نتیجه دانشنامه: ${g.board_result || 'نامشخص'}</div>
                             ${boardWarning}
