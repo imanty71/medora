@@ -36,7 +36,6 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* نوار اسکرول محوشونده مخصوص دسکتاپ و وب */
         .roadmap-scroll {
             overflow-x: auto;
             scrollbar-width: thin;
@@ -46,20 +45,10 @@
         .roadmap-scroll:hover {
             scrollbar-color: rgba(99, 102, 241, 0.35) transparent;
         }
-        .roadmap-scroll::-webkit-scrollbar {
-            height: 4px;
-        }
-        .roadmap-scroll::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .roadmap-scroll::-webkit-scrollbar-thumb {
-            background: transparent;
-            border-radius: 999px;
-            transition: background 0.3s ease;
-        }
-        .roadmap-scroll:hover::-webkit-scrollbar-thumb {
-            background: rgba(99, 102, 241, 0.35);
-        }
+        .roadmap-scroll::-webkit-scrollbar { height: 4px; }
+        .roadmap-scroll::-webkit-scrollbar-track { background: transparent; }
+        .roadmap-scroll::-webkit-scrollbar-thumb { background: transparent; border-radius: 999px; transition: background 0.3s ease; }
+        .roadmap-scroll:hover::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.35); }
     </style>
 </head>
 <body class="flex flex-col h-screen">
@@ -85,20 +74,28 @@
             <div class="space-y-2">
                 <div class="relative">
                     <span class="absolute inset-y-0 right-3 flex items-center text-slate-500 text-xs">🔍</span>
-                    <input type="text" id="searchInput" onkeyup="renderResidentCards()" class="w-full bg-slate-900/70 border border-white/[0.08] rounded-2xl py-2.5 pr-8 pl-3 text-xs font-bold text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none placeholder-slate-500" placeholder="جستجوی نام یا افتخار دستیار...">
+                    <input type="text" id="searchInput" onkeyup="renderResidentCards()" class="w-full bg-slate-900/70 border border-white/[0.08] rounded-2xl py-2.5 pr-8 pl-3 text-xs font-bold text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none placeholder-slate-500" placeholder="جستجوی نام، کدملی یا افتخار دستیار...">
                 </div>
 
-                <div class="grid grid-cols-2 gap-2">
-                    <select id="groupFilter" onchange="renderResidentCards()" class="bg-slate-900/70 border border-white/[0.08] rounded-2xl p-2.5 text-[11px] font-bold text-indigo-300 outline-none cursor-pointer truncate">
+                <div class="grid grid-cols-3 gap-1.5">
+                    <select id="groupFilter" onchange="renderResidentCards()" class="bg-slate-900/70 border border-white/[0.08] rounded-xl p-2 text-[10px] font-bold text-indigo-300 outline-none cursor-pointer truncate">
                         <option value="all">🌐 تمام دپارتمان‌ها</option>
                     </select>
-                    <select id="yearFilter" onchange="renderResidentCards()" class="bg-slate-900/70 border border-white/[0.08] rounded-2xl p-2.5 text-[11px] font-bold text-indigo-300 outline-none cursor-pointer">
-                        <option value="all">🎓 همه دوره‌ها</option>
+                    
+                    <select id="yearFilter" onchange="renderResidentCards()" class="bg-slate-900/70 border border-white/[0.08] rounded-xl p-2 text-[10px] font-bold text-indigo-300 outline-none cursor-pointer">
+                        <option value="all">🎓 همه سال‌ها</option>
                         <option value="سال ۱">سال ۱ (R1)</option>
                         <option value="سال ۲">سال ۲ (R2)</option>
                         <option value="سال ۳">سال ۳ (R3)</option>
                         <option value="سال ۴">سال ۴ (R4)</option>
                         <option value="سال ۵">سال ۵ (R5)</option>
+                    </select>
+
+                    <select id="statusFilter" onchange="renderResidentCards()" class="bg-slate-900/70 border border-white/[0.08] rounded-xl p-2 text-[10px] font-bold text-emerald-400 outline-none cursor-pointer">
+                        <option value="active">🟢 در حال تحصیل</option>
+                        <option value="graduated">🎓 فارغ‌التحصیلان</option>
+                        <option value="special">⚠️ وضعیت‌های خاص</option>
+                        <option value="all">همه موارد</option>
                     </select>
                 </div>
             </div>
@@ -135,56 +132,56 @@
 
         <div class="flex-grow overflow-y-auto p-4 pb-32 space-y-4">
             
+            <!-- کادر هشدار وضعیت خاص (در صورت وجود) -->
+            <div id="specialStatusBanner" class="hidden p-3.5 rounded-2xl text-[10px] font-bold leading-relaxed border slide-up"></div>
+
             <!-- ۱. وضعیت تحصیلی پایه -->
             <div class="aurora-card p-4 rounded-3xl space-y-3">
                 <div class="flex justify-between items-center">
                     <div>
                         <p class="text-[10px] font-bold text-slate-400">وضعیت تحصیلی جاری:</p>
-                        <p class="text-sm font-black text-emerald-400 mt-0.5 flex items-center gap-1.5" id="detStatus">
-                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> شاغل به تحصیل
+                        <p class="text-sm font-black mt-0.5 flex items-center gap-1.5" id="detStatus">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> در حال تحصیل
                         </p>
                     </div>
-                    <span class="text-[10px] font-black text-purple-300 bg-purple-500/15 border border-purple-500/30 px-3 py-1.5 rounded-xl" id="detYear">سال ۱</span>
+                    <div class="text-left space-y-1">
+                        <span class="text-[10px] font-black text-purple-300 bg-purple-500/15 border border-purple-500/30 px-3 py-1 rounded-xl block text-center" id="detYear">سال ۱</span>
+                        <span class="text-[9px] text-slate-400 font-bold block" id="detDurationText">دوره ۴ ساله</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- ۲. نقشه راه دوره دستیاری تخصصی -->
+            <!-- ۲. نقشه راه دوره دستیاری تخصصی (متناسب با طول دوره) -->
             <div class="aurora-card p-4 rounded-3xl space-y-3">
                 <div class="flex justify-between items-center">
                     <h3 class="text-xs font-black text-slate-200 flex items-center gap-1.5">
                         <span class="text-blue-400">🧭</span> نقشه راه دوره دستیاری تخصصی
                     </h3>
+                    <span class="text-[9px] font-bold text-slate-400" id="detRoadmapInfo">سیر پیشرفت</span>
                 </div>
-                <div class="roadmap-scroll py-2.5 cursor-grab active:cursor-grabbing select-none" id="roadmapContainer">
-                    <!-- ایستگاه‌ها به صورت پویا رندر می‌شوند -->
-                </div>
+                <div class="roadmap-scroll py-2.5 cursor-grab active:cursor-grabbing select-none" id="roadmapContainer"></div>
             </div>
 
             <!-- ۳. گیج دینامیک نمره ارزیابی درون‌بخشی (۰ تا ۱۵۰) -->
             <div class="aurora-card p-4 rounded-3xl space-y-3 text-center">
                 <div class="flex justify-between items-center px-1">
                     <h3 class="text-xs font-black text-slate-200 flex items-center gap-1.5">
-                        <span class="text-emerald-400">⏱</span> ارزیابی درون‌بخشی سال جاری
+                        <span class="text-emerald-400">⏱</span> ارزیابی درون‌بخشی آخرین دوره
                     </h3>
                     <span class="text-[10px] font-black" id="gaugeScoreText">۰ از ۱۵۰</span>
                 </div>
 
-                <!-- نیم‌دایره گیج با SVG -->
                 <div class="relative flex justify-center items-center my-2">
                     <svg class="w-48 h-28 gauge-svg" viewBox="0 0 200 110">
-                        <!-- مسیر پس‌زمینه خاکستری -->
                         <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="16" stroke-linecap="round"/>
-                        <!-- مسیر پویای گیج -->
                         <path id="gaugePath" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#10b981" stroke-width="16" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="251.2" style="transition: stroke-dashoffset 1.2s ease, stroke 0.5s ease;"/>
-                        <!-- متن نمره وسط -->
                         <text x="100" y="88" text-anchor="middle" fill="#ffffff" font-size="28" id="gaugeCenterVal">۰</text>
                         <text x="100" y="104" text-anchor="middle" fill="#94a3b8" font-size="10">از ۱۵۰ نمره</text>
                     </svg>
                 </div>
 
-                <!-- کادر هوشمند توضیح وضعیت درون‌بخشی -->
                 <div id="gaugeNoticeBox" class="p-3 rounded-2xl text-[10px] font-bold leading-relaxed border transition-all">
-                    در حال محاسبه وضعیت...
+                    در حال بارگذاری وضعیت...
                 </div>
             </div>
 
@@ -194,12 +191,8 @@
                     <h3 class="text-xs font-black text-amber-300 flex items-center gap-1.5">
                         <span>🏅</span> تالار افتخارات و رتبه‌های برتر
                     </h3>
-                    <button id="btnAddHonor" onclick="openHonorModal()" class="hidden text-[9px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-1 rounded-xl transition-all active:scale-95">
-                        ➕ ثبت رتبه برتر
-                    </button>
                 </div>
 
-                <!-- تب‌های سوئیچ افتخارات -->
                 <div class="flex bg-slate-900/80 p-1 rounded-2xl border border-white/[0.06] gap-1">
                     <button onclick="switchHonorTab('university')" id="htab_uni" class="flex-1 py-1.5 text-[10px] font-black rounded-xl bg-indigo-600 text-white shadow transition-all">
                         🏛 افتخارات دانشگاهی
@@ -212,15 +205,12 @@
                 <div id="honorsContent" class="space-y-2 pt-1"></div>
             </div>
 
-            <!-- ۵. سوابق تفصیلی کلیه آزمون‌ها (ارتقا، گواهینامه و دانشنامه) -->
+            <!-- ۵. سوابق تفصیلی کلیه آزمون‌ها (شامل دلایل تکرار مقطع) -->
             <div class="space-y-2.5">
                 <div class="flex justify-between items-center px-1">
                     <h3 class="text-xs font-black text-slate-300 flex items-center gap-1.5">
                         <span>📑</span> کلیه سوابق آزمون‌های ثبت‌شده
                     </h3>
-                    <button id="btnAddGrade" onclick="openGradeModal()" class="hidden text-[10px] font-black bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3 py-1.5 rounded-full transition-all active:scale-95 shadow-md flex items-center gap-1">
-                        ➕ ثبت کارنامه جدید
-                    </button>
                 </div>
                 <div id="gradesCardsContainer" class="space-y-2.5"></div>
             </div>
@@ -229,9 +219,9 @@
             <div class="aurora-card p-4 rounded-3xl space-y-3">
                 <div class="flex justify-between items-center">
                     <h3 class="text-xs font-black text-slate-200 flex items-center gap-1.5">
-                        <span class="text-indigo-400">📈</span> نمودار روند نمره درون‌بخشی
+                        <span class="text-indigo-400">📈</span> سیر عملکرد نمرات درون‌بخشی
                     </h3>
-                    <span class="text-[9px] text-slate-400">سیر تحصیلی دستیار</span>
+                    <span class="text-[9px] text-slate-400">نمودار تاریخی</span>
                 </div>
                 <div class="relative h-44 w-full">
                     <canvas id="trendChart"></canvas>
@@ -241,105 +231,7 @@
         </div>
     </div>
 
-    <!-- MODAL 1: ثبت آزمون جدید (Admin) -->
-    <div id="gradeModal" class="fixed inset-0 bg-[#020617]/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 fade-in">
-        <div class="aurora-card rounded-3xl w-full max-w-sm p-5 shadow-2xl space-y-3.5 max-h-[90vh] overflow-y-auto">
-            <h3 class="text-xs font-black text-blue-300 flex items-center gap-1.5">
-                <span>✏️</span> ثبت کارنامه و نمرات آزمون دستیار
-            </h3>
-            <div class="space-y-2.5 text-xs">
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 mb-1">دوره تحصیلی:</label>
-                        <input type="text" id="m_grade_year" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-100 outline-none" placeholder="سال ۲">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 mb-1">سال برگزاری آزمون:</label>
-                        <input type="text" id="m_exam_year" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-100 outline-none" placeholder="۱۴۰۴">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-400 mb-1">مقطع آزمون:</label>
-                    <input type="text" id="m_exam_stage" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-100 outline-none" placeholder="۱ به ۲">
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-400 mb-1">نمره درون‌بخشی (از ۱۵۰):</label>
-                    <input type="number" id="m_internal" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-black text-slate-100 outline-none" placeholder="130">
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 mb-1">نمره ارتقاء کتبی:</label>
-                        <input type="number" id="m_promotion" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-black text-slate-100 outline-none" placeholder="115">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 mb-1">گواهینامه تخصصی:</label>
-                        <input type="number" id="m_certificate" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-black text-slate-100 outline-none" placeholder="0">
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 mb-1">دانشنامه کتبی:</label>
-                        <input type="number" id="m_bw" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-black text-slate-100 outline-none" placeholder="0">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 mb-1">دانشنامه شفاهی:</label>
-                        <input type="number" id="m_bo" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-black text-slate-100 outline-none" placeholder="0">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-400 mb-1">نتیجه نهایی دانشنامه تخصصی:</label>
-                    <select id="m_board_result" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-200 outline-none">
-                        <option value="">نامشخص / شرکت نکرده</option>
-                        <option value="قبول کتبی و شفاهی">قبول کتبی و شفاهی</option>
-                        <option value="قبول کتبی و مردود شفاهی">قبول کتبی و مردود شفاهی</option>
-                        <option value="مردود">مردود</option>
-                    </select>
-                </div>
-            </div>
-            <div class="flex gap-2 pt-2">
-                <button onclick="closeGradeModal()" class="w-1/3 bg-white/[0.05] text-slate-400 py-2.5 rounded-full text-xs font-bold">انصراف</button>
-                <button onclick="saveGradeLocally()" class="w-2/3 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-full text-xs font-black">💾 ذخیره کارنامه</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL 2: ثبت رتبه برتر و افتخار دستیار -->
-    <div id="honorModal" class="fixed inset-0 bg-[#020617]/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 fade-in">
-        <div class="aurora-card rounded-3xl w-full max-w-sm p-5 shadow-2xl space-y-3.5 border border-amber-500/30">
-            <h3 class="text-xs font-black text-amber-300 flex items-center gap-1.5">
-                <span>🏅</span> ثبت رتبه برتر یا افتخار علمی
-            </h3>
-            <div class="space-y-2.5 text-xs">
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-400 mb-1">سطح افتخار:</label>
-                    <select id="m_honor_cat" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-amber-300 outline-none">
-                        <option value="university">🏛 افتخار دانشگاهی و دپارتمانی</option>
-                        <option value="national">🌍 افتخار کشوری (بورد ملی)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-400 mb-1">عنوان افتخار:</label>
-                    <input type="text" id="m_honor_title" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-100 outline-none" placeholder="مثلاً: رتبه ۵ درصد برتر آزمون دانشنامه تخصصی کشور">
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 mb-1">سال آزمون:</label>
-                        <input type="text" id="m_honor_year" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-100 outline-none" placeholder="۱۴۰۴">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 mb-1">نمره / رتبه:</label>
-                        <input type="text" id="m_honor_rank" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-slate-100 outline-none" placeholder="رتبه ۲ کشوری">
-                    </div>
-                </div>
-            </div>
-            <div class="flex gap-2 pt-2">
-                <button onclick="closeHonorModal()" class="w-1/3 bg-white/[0.05] text-slate-400 py-2.5 rounded-full text-xs font-bold">انصراف</button>
-                <button onclick="saveHonorLocally()" class="w-2/3 bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 py-2.5 rounded-full text-xs font-black">🏅 ثبت در تالار افتخارات</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL 3: کارت دیجیتال شیشه‌ای دستیار با QR Code -->
+    <!-- MODAL: کارت دیجیتال شیشه‌ای دستیار با QR Code -->
     <div id="passModal" class="fixed inset-0 bg-[#020617]/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 fade-in">
         <div class="w-full max-w-xs space-y-4 text-center">
             <div class="aurora-card p-5 rounded-[28px] border border-blue-400/30 text-right space-y-4 shadow-2xl relative overflow-hidden">
@@ -353,7 +245,7 @@
                 </div>
                 <div class="pt-2 border-t border-white/[0.06] grid grid-cols-2 gap-2 text-[10px]">
                     <div>
-                        <span class="text-slate-500 block">دوره دستیاری:</span>
+                        <span class="text-slate-500 block">دوره تحصیلی:</span>
                         <b class="text-white" id="passYear">سال ۱</b>
                     </div>
                     <div>
@@ -363,11 +255,10 @@
                 </div>
                 <div class="pt-2 border-t border-white/[0.06] flex items-center justify-between">
                     <div class="text-[9px] text-slate-400 font-bold leading-relaxed">
-                        سامانه هوشمند آموزش دانشکده پزشکی<br>
-                        <span class="text-emerald-400">شناسه معتبر دانشگاهی</span>
+                        دانشکده پزشکی<br>
+                        <span class="text-emerald-400">شناسنامه دیجیتال رسمی</span>
                     </div>
                     <div class="w-12 h-12 bg-white p-1 rounded-xl flex items-center justify-center shrink-0">
-                        <!-- QR Code شبیه‌سازی شده و تمیز -->
                         <svg class="w-full h-full text-slate-900" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm10-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm14 0h4v4h-4v-4zm-4 0h2v2h-2v-2zm2 4h2v2h-2v-2zm2-2h2v2h-2v-2zm-4 2h2v2h-2v-2z"/>
                         </svg>
@@ -390,6 +281,19 @@
             if (num === null || num === undefined) return '';
             const faDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
             return String(num).replace(/[0-9]/g, d => faDigits[parseInt(d)]);
+        }
+
+        function getResidentYearNumber(yearStr) {
+            if (!yearStr) return 1;
+            const s = String(yearStr).trim();
+            if (s.includes('فارغ') || s.includes('متخصص')) return 6;
+            if (s.includes('۵') || s.includes('5') || s.includes('پنجم')) return 5;
+            if (s.includes('۴') || s.includes('4') || s.includes('چهارم')) return 4;
+            if (s.includes('۳') || s.includes('3') || s.includes('سوم')) return 3;
+            if (s.includes('۲') || s.includes('2') || s.includes('دوم')) return 2;
+            if (s.includes('۱') || s.includes('1') || s.includes('اول')) return 1;
+            const match = s.match(/\d+/);
+            return match ? parseInt(match[0], 10) : 1;
         }
 
         function init() {
@@ -416,12 +320,6 @@
                         grpSelect.disabled = true;
                     }
 
-                    const canEdit = Number(dashboardPayload.can_edit) === 1;
-                    if (canEdit) {
-                        document.getElementById('btnAddGrade').classList.remove('hidden');
-                        document.getElementById('btnAddHonor').classList.remove('hidden');
-                    }
-
                     renderResidentCards();
                 }
             } catch(e) { console.error("Init Error:", e); }
@@ -433,6 +331,7 @@
             const searchTxt = document.getElementById('searchInput').value.trim().toLowerCase();
             const groupVal = document.getElementById('groupFilter').value;
             const yearVal = document.getElementById('yearFilter').value;
+            const statusVal = document.getElementById('statusFilter').value;
 
             const list = dashboardPayload.residents || [];
             let count = 0;
@@ -442,8 +341,37 @@
                 if (groupVal !== 'all' && r.group !== groupVal) return;
                 if (yearVal !== 'all' && r.year !== yearVal) return;
 
+                // فیلتر هوشمند وضعیت (در حال تحصیل / فارغ‌التحصیل / وضعیت خاص)
+                const isGrad = String(r.status || '').includes('فارغ');
+                const hasSpecial = Boolean(r.special_status && r.special_status.trim() !== '');
+
+                if (statusVal === 'active' && (isGrad || hasSpecial)) return;
+                if (statusVal === 'graduated' && !isGrad) return;
+                if (statusVal === 'special' && !hasSpecial) return;
+
                 count++;
                 
+                // نشانگر رنگی وضعیت تحصیلی خاص (ستون N)
+                let statusBadge = '';
+                if (hasSpecial) {
+                    const ss = r.special_status;
+                    if (ss.includes('انتقال خروجی') || ss.includes('اخراج')) {
+                        statusBadge = `<span class="text-[8px] font-black px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30">🔴 ${ss}</span>`;
+                    } else if (ss.includes('انتقال ورودی')) {
+                        statusBadge = `<span class="text-[8px] font-black px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">🟢 ${ss}</span>`;
+                    } else if (ss.includes('مهمان خروجی')) {
+                        statusBadge = `<span class="text-[8px] font-black px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">🟡 ${ss}</span>`;
+                    } else if (ss.includes('مهمان ورودی')) {
+                        statusBadge = `<span class="text-[8px] font-black px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">🔵 ${ss}</span>`;
+                    } else if (ss.includes('تعلیق')) {
+                        statusBadge = `<span class="text-[8px] font-black px-2 py-0.5 rounded-md bg-orange-500/20 text-orange-300 border border-orange-400/30">🟠 ${ss}</span>`;
+                    } else {
+                        statusBadge = `<span class="text-[8px] font-black px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700">⚪️ ${ss}</span>`;
+                    }
+                } else if (isGrad) {
+                    statusBadge = `<span class="text-[8px] font-black px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30">🎓 فارغ‌التحصیل</span>`;
+                }
+
                 // آخرین نمره درون‌بخشی
                 const lastGrade = (r.grades && r.grades.length > 0) ? r.grades[r.grades.length - 1] : null;
                 const intScore = lastGrade ? Number(lastGrade.internal || 0) : null;
@@ -461,7 +389,7 @@
 
                 const natHonors = (r.honors || []).filter(h => h.category === 'national');
                 const honorTag = natHonors.length > 0
-                    ? `<span class="text-[8px] font-black text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">🌟 رتبه برتر کشوری</span>`
+                    ? `<span class="text-[8px] font-black text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">🌟 بورد کشوری</span>`
                     : '';
 
                 const card = document.createElement('div');
@@ -477,7 +405,7 @@
                                 <p class="text-[10px] font-bold text-slate-400 mt-0.5">📚 ${r.group} | 🎓 ${toFa(r.year)}</p>
                             </div>
                         </div>
-                        <div class="flex items-center gap-1.5">${honorTag}</div>
+                        <div class="flex flex-col items-end gap-1">${statusBadge}${honorTag}</div>
                     </div>
                     <div class="flex justify-between items-center pt-1.5 border-t border-white/[0.04] text-[10px]">
                         ${scoreBadge}
@@ -497,7 +425,37 @@
             document.getElementById('detName').innerText = `دکتر ${r.name}`;
             document.getElementById('detDept').innerText = `دپارتمان ${r.group}`;
             document.getElementById('detYear').innerText = toFa(r.year);
-            document.getElementById('detStatus').innerText = r.status || 'شاغل به تحصیل';
+            document.getElementById('detDurationText').innerText = `طول دوره: ${toFa(r.duration || 4)} ساله`;
+
+            const isGrad = String(r.status || '').includes('فارغ');
+            const statusEl = document.getElementById('detStatus');
+            if (isGrad) {
+                statusEl.className = "text-sm font-black text-purple-300 mt-0.5 flex items-center gap-1.5";
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-purple-400"></span> فارغ‌التحصیل`;
+            } else {
+                statusEl.className = "text-sm font-black text-emerald-400 mt-0.5 flex items-center gap-1.5";
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> در حال تحصیل`;
+            }
+
+            // نمایش بنر وضعیت خاص تحصیلی (ستون N و O)
+            const banner = document.getElementById('specialStatusBanner');
+            if (r.special_status && r.special_status.trim() !== '') {
+                banner.classList.remove('hidden');
+                let bClass = "bg-slate-900 border-slate-700 text-slate-300";
+                if (r.special_status.includes('انتقال خروجی') || r.special_status.includes('اخراج')) {
+                    bClass = "bg-rose-500/10 border-rose-500/30 text-rose-300";
+                } else if (r.special_status.includes('مهمان')) {
+                    bClass = "bg-amber-500/10 border-amber-500/30 text-amber-300";
+                } else if (r.special_status.includes('انتقال ورودی')) {
+                    bClass = "bg-emerald-500/10 border-emerald-500/30 text-emerald-300";
+                } else if (r.special_status.includes('تعلیق')) {
+                    bClass = "bg-orange-500/10 border-orange-500/30 text-orange-300";
+                }
+                banner.className = `p-3 rounded-2xl text-[10px] font-bold leading-relaxed border slide-up ${bClass}`;
+                banner.innerHTML = `⚠️ <b>وضعیت تحصیلی خاص:</b> ${r.special_status}${r.special_desc ? ' — ' + r.special_desc : ''}`;
+            } else {
+                banner.classList.add('hidden');
+            }
 
             renderRoadmap(r);
             renderGauge(r);
@@ -516,28 +474,30 @@
             document.getElementById('listView').classList.remove('hidden');
         }
 
-        // نقشه راه دوره دستیاری تخصصی (همگام‌سازی کامل با سال تحصیلی دستیار)
+        // نقشه راه دوره دستیاری تخصصی (متناسب با رشته ۳، ۴ یا ۵ ساله)
         function renderRoadmap(r) {
             const container = document.getElementById('roadmapContainer');
             container.innerHTML = '';
             
-            // استخراج سال تحصیلی دستیار به صورت عدد (مثلاً از «سال ۲» عدد ۲ استخراج می‌شود)
-            const cleanYearStr = String(r.year || 'سال ۱')
-                .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
-                .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
-            const yearMatch = cleanYearStr.match(/\d+/);
-            const currentYearNum = yearMatch ? parseInt(yearMatch[0], 10) : 1;
+            const currentYearNum = getResidentYearNumber(r.year);
+            const duration = Number(r.duration || 4); // ۳ یا ۴ یا ۵ ساله
 
-            // مراحل استاندارد کوریکولوم تخصصی
-            const stages = [
-                { id: 'R1', label: 'سال اول', minYear: 1 },
-                { id: '1 به 2', label: 'ارتقا ۱ به ۲', minYear: 2 },
-                { id: '2 به 3', label: 'ارتقا ۲ به ۳', minYear: 3 },
-                { id: '3 به 4', label: 'ارتقا ۳ به ۴', minYear: 4 },
-                { id: 'گواهینامه', label: 'گواهینامه تخصصی', minYear: 5 },
-                { id: 'دانشنامه کتبی', label: 'دانشنامه کتبی', minYear: 99 },
-                { id: 'دانشنامه شفاهی', label: 'دانشنامه شفاهی', minYear: 99 }
-            ];
+            // ساخت ایستگاه‌های داینامیک متناسب با طول دوره رشته
+            const stages = [{ id: 'R1', label: 'سال اول', passYear: 1, currentTarget: 1 }];
+
+            for (let yr = 1; yr < duration; yr++) {
+                stages.push({
+                    id: `${yr} به ${yr+1}`,
+                    label: `ارتقا ${toFa(yr)} به ${toFa(yr+1)}`,
+                    passYear: yr + 1,
+                    currentTarget: yr
+                });
+            }
+
+            // سال آخر همیشه ایستگاه گواهینامه و دانشنامه است
+            stages.push({ id: 'گواهینامه', label: 'گواهینامه تخصصی', passYear: duration + 1, currentTarget: duration });
+            stages.push({ id: 'دانشنامه کتبی', label: 'دانشنامه کتبی', passYear: 99, currentTarget: 99 });
+            stages.push({ id: 'دانشنامه شفاهی', label: 'دانشنامه شفاهی', passYear: 99, currentTarget: 99 });
 
             const grades = r.grades || [];
             let html = '<div class="flex items-center gap-2 min-w-max px-1 py-1">';
@@ -547,12 +507,12 @@
                 let icon = "⚪️";
                 let stagePassed = false;
 
-                // ۱. بررسی بر اساس سال تحصیلی جاری دستیار (هماهنگی کامل با مدیریت اعضای گروه)
-                if (currentYearNum >= st.minYear) {
+                // ۱. قبولی بر اساس سال تحصیلی جاری دستیار
+                if (currentYearNum >= st.passYear) {
                     stagePassed = true;
                 }
 
-                // ۲. بررسی تکمیلی بر اساس سوابق آزمون‌های ثبت‌شده در کارنامه
+                // ۲. قبولی بر اساس آزمون‌های ثبت‌شده در کارنامه
                 grades.forEach(g => {
                     const stg = g.exam_stage || '';
                     if (stg.includes(st.id) || (st.id === 'دانشنامه کتبی' && Number(g.board_written) >= 105)) {
@@ -563,14 +523,17 @@
                     }
                 });
 
-                // ۳. وضعیت ایستگاه جاری (دستیار هم‌اکنون برای کدام مقطع می‌خواند)
-                const isCurrentActive = (currentYearNum === st.minYear - 1);
+                const isCurrentActive = (!stagePassed && currentYearNum === st.currentTarget);
 
-                if (stagePassed) {
+                // توقف نقشه راه در صورت انصراف یا انتقال خروجی
+                if (r.special_status && (r.special_status.includes('انتقال خروجی') || r.special_status.includes('انصراف')) && isCurrentActive) {
+                    statusColor = "bg-rose-500/20 text-rose-300 border-rose-500/40";
+                    icon = "⛔️";
+                } else if (stagePassed) {
                     statusColor = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
                     icon = "✅";
                 } else if (isCurrentActive) {
-                    statusColor = "bg-blue-500/15 text-blue-300 border-blue-400/40";
+                    statusColor = "bg-blue-500/15 text-blue-300 border-blue-400/40 shadow-[0_0_12px_rgba(59,130,246,0.2)]";
                     icon = "⏳";
                 }
 
@@ -587,30 +550,18 @@
 
             html += '</div>';
             container.innerHTML = html;
-
-            // فعال‌سازی کشیدن نقشه راه با ماوس در نسخه وب و دسکتاپ (Drag to scroll)
             setupMouseDragScroll(container);
         }
 
-        // تابع فعال‌ساز درگ با ماوس در نسخه ویندوز و مرورگر
         function setupMouseDragScroll(el) {
-            let isDown = false;
-            let startX;
-            let scrollLeft;
-
-            el.onmousedown = (e) => {
-                isDown = true;
-                startX = e.pageX - el.offsetLeft;
-                scrollLeft = el.scrollLeft;
-            };
+            let isDown = false, startX, scrollLeft;
+            el.onmousedown = (e) => { isDown = true; startX = e.pageX - el.offsetLeft; scrollLeft = el.scrollLeft; };
             el.onmouseleave = () => { isDown = false; };
             el.onmouseup = () => { isDown = false; };
             el.onmousemove = (e) => {
                 if (!isDown) return;
                 e.preventDefault();
-                const x = e.pageX - el.offsetLeft;
-                const walk = (x - startX) * 1.5;
-                el.scrollLeft = scrollLeft - walk;
+                el.scrollLeft = scrollLeft - ((e.pageX - el.offsetLeft) - startX) * 1.5;
             };
         }
 
@@ -625,22 +576,20 @@
             const path = document.getElementById('gaugePath');
             const box = document.getElementById('gaugeNoticeBox');
 
-            // محاسبه درصد پیشرفت روی محیط نیم‌دایره (251.2)
             const maxScore = 150;
             const pct = Math.min(Math.max(score / maxScore, 0), 1);
-            const offset = 251.2 - (pct * 251.2);
-            path.style.strokeDashoffset = offset;
+            path.style.strokeDashoffset = 251.2 - (pct * 251.2);
 
             if (score < 105) {
-                path.style.stroke = "#ef4444"; // قرمز
+                path.style.stroke = "#ef4444";
                 box.className = "p-3 rounded-2xl text-[10px] font-bold leading-relaxed border bg-rose-500/10 border-rose-500/30 text-rose-300";
                 box.innerHTML = `⚠️ <b>عدم احراز حد نصاب:</b> به دلیل عدم کسب حد نصاب نمره درون‌بخشی (حداقل ۱۰۵)، طبق آیین‌نامه مجاز به شرکت در آزمون ارتقای دستیاری نمی‌باشید.`;
             } else if (score < 120) {
-                path.style.stroke = "#f59e0b"; // کهربایی/زرد
+                path.style.stroke = "#f59e0b";
                 box.className = "p-3 rounded-2xl text-[10px] font-bold leading-relaxed border bg-amber-500/10 border-amber-500/30 text-amber-200";
                 box.innerHTML = `🟡 <b>مرز قبولی مشروط:</b> نمره درون‌بخشی در منطقه مرزی است؛ دستیار نیازمند توجه و تقویت آموزش بالینی دپارتمان می‌باشد.`;
             } else {
-                path.style.stroke = "#10b981"; // سبز زمردی
+                path.style.stroke = "#10b981";
                 box.className = "p-3 rounded-2xl text-[10px] font-bold leading-relaxed border bg-emerald-500/10 border-emerald-500/30 text-emerald-200";
                 box.innerHTML = `🟢 <b>عملکرد مطلوب:</b> نمره ارزیابی درون‌بخشی بالاتر از ۱۲۰ و در تراز ممتاز دپارتمان ثبت شده است.`;
             }
@@ -689,7 +638,7 @@
                     <div class="p-3 rounded-2xl border ${borderClass} flex justify-between items-center text-xs slide-up">
                         <div class="min-w-0 pr-1">
                             <p class="font-extrabold text-slate-100 truncate">${icon} ${h.title}</p>
-                            <p class="text-[9px] text-slate-400 mt-0.5">سال: ${toFa(h.year)} ${h.rank ? '| ' + toFa(h.rank) : ''}</p>
+                            <p class="text-[9px] text-slate-400 mt-0.5">سال آزمون: ${toFa(h.year)} ${h.rank ? '| ' + toFa(h.rank) : ''}</p>
                         </div>
                         <span class="text-[9px] font-black ${tagColor} shrink-0 mr-2">${isNat ? 'بورد ملی' : 'دانشگاهی'}</span>
                     </div>
@@ -697,7 +646,7 @@
             });
         }
 
-        // سوابق آزمون‌ها
+        // سوابق تفصیلی آزمون‌ها
         function renderGradesCards(grades) {
             const container = document.getElementById('gradesCardsContainer');
             container.innerHTML = '';
@@ -720,7 +669,6 @@
                 }
 
                 let boardSection = '';
-                // استخراج نمره یا وضعیت متنی در صورت خالی بودن نمره
                 const bwDisplay = bwSc > 0 ? toFa(bwSc) : (g.status && g.status.includes('کتبی:') ? g.status.split('کتبی:')[1].split('|')[0].trim() : '-');
                 const boDisplay = boSc > 0 ? toFa(boSc) : (g.status && g.status.includes('شفاهی:') ? g.status.split('شفاهی:')[1].trim() : '-');
 
@@ -737,15 +685,24 @@
                     `;
                 }
 
+                // نمایش علت تکرار مقطع یا تصمیم گروه
+                let decisionTag = '';
+                if (g.description && g.description.includes('عدم')) {
+                    decisionTag = `<span class="text-[8px] font-black px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 mr-1">${g.description.split('|')[0].trim()}</span>`;
+                }
+
                 container.innerHTML += `
                     <div class="aurora-card p-3.5 rounded-2xl border border-white/[0.08] slide-up space-y-2">
                         <div class="flex justify-between items-center">
                             <span class="text-[10px] font-black text-blue-300 bg-blue-950 px-2.5 py-0.5 rounded-lg border border-blue-800">
                                 مقطع: ${toFa(g.exam_stage || g.year || 'سال ۱')} ${g.exam_year ? '(' + toFa(g.exam_year) + ')' : ''}
                             </span>
-                            <span class="text-[9px] font-black px-2 py-0.5 rounded-lg ${intSc < 105 ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}">
-                                درون‌بخشی: ${toFa(intSc)} / ۱۵۰
-                            </span>
+                            <div class="flex items-center">
+                                ${decisionTag}
+                                <span class="text-[9px] font-black px-2 py-0.5 rounded-lg ${intSc < 105 ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}">
+                                    درون‌بخشی: ${toFa(intSc)} / ۱۵۰
+                                </span>
+                            </div>
                         </div>
                         <div class="flex justify-between text-[10px] font-bold text-slate-300 pt-1">
                             <span>ارتقاء کتبی: <b class="text-white">${toFa(promSc)}</b></span>
@@ -757,7 +714,6 @@
             });
         }
 
-        // نمودار روند درون‌بخشی
         function initTrendChart(grades) {
             const ctx = document.getElementById('trendChart').getContext('2d');
             if (chartInstance) chartInstance.destroy();
@@ -785,14 +741,13 @@
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: {
-                        y: { min: 80, max: 150, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { family: 'Vazirmatn', size: 9 } } },
+                        y: { min: 60, max: 150, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { family: 'Vazirmatn', size: 9 } } },
                         x: { grid: { display: false }, ticks: { color: '#cbd5e1', font: { family: 'Vazirmatn', size: 10, weight: 'bold' } } }
                     }
                 }
             });
         }
 
-        // مدال کارت پرواز دیجیتال دستیار
         function openPassModal() {
             if (activeResidentIndex === null) return;
             const r = dashboardPayload.residents[activeResidentIndex];
@@ -804,52 +759,6 @@
             document.getElementById('passModal').classList.remove('hidden');
         }
         function closePassModal() { document.getElementById('passModal').classList.add('hidden'); }
-
-        // مدال‌های ادمین
-        function openGradeModal() { document.getElementById('gradeModal').classList.remove('hidden'); }
-        function closeGradeModal() { document.getElementById('gradeModal').classList.add('hidden'); }
-        function openHonorModal() { document.getElementById('honorModal').classList.remove('hidden'); }
-        function closeHonorModal() { document.getElementById('honorModal').classList.add('hidden'); }
-
-        function saveGradeLocally() {
-            if (activeResidentIndex === null) return;
-            const r = dashboardPayload.residents[activeResidentIndex];
-            const payload = {
-                action: "save_academic_grades",
-                member_id: r.id,
-                year: document.getElementById('m_grade_year').value.trim() || 'سال ۱',
-                exam_year: document.getElementById('m_exam_year').value.trim(),
-                exam_stage: document.getElementById('m_exam_stage').value.trim(),
-                internal: parseFloat(document.getElementById('m_internal').value) || 0,
-                promotion: parseFloat(document.getElementById('m_promotion').value) || 0,
-                certificate: parseFloat(document.getElementById('m_certificate').value) || 0,
-                board_written: parseFloat(document.getElementById('m_bw').value) || 0,
-                board_oral: parseFloat(document.getElementById('m_bo').value) || 0,
-                board_result: document.getElementById('m_board_result').value,
-                academic_status: 'فعال'
-            };
-            window.Bale.WebApp.sendData(JSON.stringify(payload));
-            closeGradeModal();
-            setTimeout(() => window.Bale.WebApp.close(), 150);
-        }
-
-        function saveHonorLocally() {
-            if (activeResidentIndex === null) return;
-            const r = dashboardPayload.residents[activeResidentIndex];
-            const title = document.getElementById('m_honor_title').value.trim();
-            if (!title) return;
-            const payload = {
-                action: "save_resident_honor",
-                member_id: r.id,
-                category: document.getElementById('m_honor_cat').value,
-                title: title,
-                year: document.getElementById('m_honor_year').value.trim() || '۱۴۰۴',
-                rank: document.getElementById('m_honor_rank').value.trim()
-            };
-            window.Bale.WebApp.sendData(JSON.stringify(payload));
-            closeHonorModal();
-            setTimeout(() => window.Bale.WebApp.close(), 150);
-        }
 
         function closeApp() { try { window.Bale.WebApp.close(); } catch(e) {} }
         window.Bale.WebApp.ready();
