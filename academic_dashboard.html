@@ -305,23 +305,57 @@
                     const bytes = new Uint8Array(binaryString.length);
                     for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
                     const decompressed = pako.inflate(bytes, { to: 'string' });
-                    dashboardPayload = JSON.parse(decompressed);
+                    const rawData = JSON.parse(decompressed);
 
-                    // بازگشایی آنی آرایه‌های فشرده به آبجکت کامل (بدون تغییر هیچ کدی در فرانت‌اند)
-                    (dashboardPayload.residents || []).forEach(r => {
-                        r.grades = (r.grades || []).map(g => Array.isArray(g) ? {
-                            id: g[0], year: g[1], internal: g[2], promotion: g[3], certificate: g[4],
-                            board_written: g[5], board_oral: g[6], board_result: g[7], exam_year: g[8],
-                            exam_stage: g[9], status: g[10]
-                        } : g);
+                    // پشتیبانی هوشمند دوگانه از پکیج برداری و ساختار قبلی
+                    const groupsList = rawData.g || rawData.groups || [];
+                    
+                    let residentsList = [];
+                    if (rawData.r) {
+                        residentsList = rawData.r.map(row => ({
+                            id: row[0],
+                            name: row[1],
+                            group: groupsList[row[2]] || 'عمومی',
+                            year: row[3],
+                            status: row[4],
+                            duration: row[5],
+                            special_status: row[6],
+                            special_desc: row[7],
+                            grades: (row[8] || []).map(g => ({
+                                exam_year: g[0],
+                                exam_stage: g[1],
+                                internal: g[2],
+                                promotion: g[3],
+                                certificate: g[4],
+                                board_written: g[5],
+                                board_oral: g[6],
+                                board_result: g[7],
+                                status: g[8],
+                                description: g[9]
+                            })),
+                            honors: (row[9] || []).map(h => ({
+                                title: h[0],
+                                year: h[1],
+                                rank: h[2],
+                                category: h[3]
+                            }))
+                        }));
+                    } else {
+                        residentsList = rawData.residents || [];
+                    }
 
-                        r.honors = (r.honors || []).map(h => Array.isArray(h) ? {
-                            title: h[0], year: h[1], rank: h[2], category: h[3]
-                        } : h);
-                    });
+                    dashboardPayload = {
+                        residents: residentsList,
+                        groups: groupsList,
+                        is_admin: rawData.a || rawData.is_admin || 0,
+                        can_edit: rawData.e || rawData.can_edit || 0,
+                        access_scope: rawData.s || rawData.access_scope || "all",
+                        viewer_role: rawData.v || rawData.viewer_role || "",
+                        local_group: rawData.lg || rawData.local_group || ""
+                    };
 
                     const grpSelect = document.getElementById('groupFilter');
-                    (dashboardPayload.groups || []).forEach(g => {
+                    groupsList.forEach(g => {
                         const opt = document.createElement('option');
                         opt.value = g;
                         opt.innerText = `📁 گروه ${g}`;
