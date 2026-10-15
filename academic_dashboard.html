@@ -87,13 +87,14 @@
                     <input type="text" id="searchInput" onkeyup="renderResidentCards()" class="w-full bg-slate-900/70 border border-white/[0.08] rounded-2xl py-2.5 pr-8 pl-3 text-xs font-bold text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none placeholder-slate-500" placeholder="جستجوی نام، کدملی یا افتخار دستیار...">
                 </div>
 
-                <div class="grid grid-cols-3 gap-1.5">
-                    <select id="groupFilter" onchange="renderResidentCards()" class="bg-slate-900/70 border border-white/[0.08] rounded-xl p-2 text-[10px] font-bold text-indigo-300 outline-none cursor-pointer truncate">
+                <!-- فیلترهای ۴ گانه در ماتریس ۲×۲ بهینه برای موبایل و دسکتاپ -->
+                <div class="grid grid-cols-2 gap-1.5">
+                    <select id="groupFilter" onchange="renderResidentCards()" class="bg-slate-900/80 border border-white/[0.08] rounded-xl p-2 text-[10px] font-bold text-indigo-300 outline-none cursor-pointer truncate">
                         <option value="all">🌐 تمام دپارتمان‌ها</option>
                     </select>
                     
-                    <select id="yearFilter" onchange="renderResidentCards()" class="bg-slate-900/70 border border-white/[0.08] rounded-xl p-2 text-[10px] font-bold text-indigo-300 outline-none cursor-pointer">
-                        <option value="all">🎓 همه سال‌ها</option>
+                    <select id="yearFilter" onchange="renderResidentCards()" class="bg-slate-900/80 border border-white/[0.08] rounded-xl p-2 text-[10px] font-bold text-indigo-300 outline-none cursor-pointer">
+                        <option value="all">🎓 همه دوره‌ها (R1 تا R5)</option>
                         <option value="سال ۱">سال ۱ (R1)</option>
                         <option value="سال ۲">سال ۲ (R2)</option>
                         <option value="سال ۳">سال ۳ (R3)</option>
@@ -101,11 +102,26 @@
                         <option value="سال ۵">سال ۵ (R5)</option>
                     </select>
 
-                    <select id="statusFilter" onchange="renderResidentCards()" class="bg-slate-900/70 border border-white/[0.08] rounded-xl p-2 text-[10px] font-bold text-emerald-400 outline-none cursor-pointer">
+                    <!-- فیلتر وضعیت کلان تحصیلی -->
+                    <select id="statusFilter" onchange="renderResidentCards()" class="bg-slate-900/80 border border-white/[0.08] rounded-xl p-2 text-[10px] font-bold text-emerald-400 outline-none cursor-pointer">
                         <option value="active">🟢 در حال تحصیل</option>
-                        <option value="graduated">🎓 فارغ‌التحصیلان</option>
-                        <option value="special">⚠️ وضعیت‌های خاص</option>
-                        <option value="all">همه موارد</option>
+                        <option value="graduated">🎓 فارغ‌التحصیلان (۱۴۰۰ به بعد)</option>
+                        <option value="inactive">⛔️ انصراف / تعلیق / خروجی</option>
+                        <option value="all">🌐 همه وضعیت‌ها</option>
+                    </select>
+
+                    <!-- فیلتر تفکیکی شرح وضعیت و ترددها -->
+                    <select id="specialFilter" onchange="renderResidentCards()" class="bg-slate-900/80 border border-white/[0.08] rounded-xl p-2 text-[10px] font-bold text-amber-300 outline-none cursor-pointer truncate">
+                        <option value="all">🏷 همه ترددها و شرایط</option>
+                        <option value="عادی">⚪️ دوره عادی (بدون تردد)</option>
+                        <option value="مهمان از">🔵 مهمان از (ورودی)</option>
+                        <option value="مهمان به">🟡 مهمان به (خروجی)</option>
+                        <option value="انتقال از">🟢 انتقال از (ورودی)</option>
+                        <option value="انتقال به">🔴 انتقال به (خروجی)</option>
+                        <option value="تعلیق">🟠 تعلیق تحصیلی</option>
+                        <option value="انصراف">⛔️ انصراف</option>
+                        <option value="اتمام مهمانی">🔄 اتمام مهمانی</option>
+                        <option value="تغییر رشته">🟣 تغییر رشته</option>
                     </select>
                 </div>
             </div>
@@ -382,6 +398,131 @@
             } catch(e) { console.error("Init Error:", e); }
         }
 
+        // موتور هوشمند کالبدشکافی و استانداردسازی وضعیت تحصیلی دستیار
+        function resolveResidentStatus(r) {
+            const spec = String(r.special_status || '').trim();
+            const rawStatus = String(r.status || '').trim();
+
+            // ۱. فارغ‌التحصیلان
+            if (rawStatus.includes('فارغ') || spec.includes('فارغ')) {
+                return {
+                    macro: 'graduated',
+                    specialType: 'فارغ‌التحصیل',
+                    badgeHtml: '<span class="text-[8px] font-black px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30">🎓 فارغ‌التحصیل</span>',
+                    dotClass: 'bg-purple-400',
+                    detailTitle: '🎓 فارغ‌التحصیل (متخصص)',
+                    isStudying: false
+                };
+            }
+
+            // ۲. انصراف
+            if (spec.includes('انصراف')) {
+                return {
+                    macro: 'inactive',
+                    specialType: 'انصراف',
+                    badgeHtml: '<span class="text-[8px] font-black px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30">⛔️ انصراف</span>',
+                    dotClass: 'bg-rose-500',
+                    detailTitle: '⛔️ انصراف قطعی از تحصیل',
+                    isStudying: false
+                };
+            }
+
+            // ۳. انتقال به (خروج قطعی از دانشگاه)
+            if (spec.includes('انتقال به') || spec.includes('انتقال خروجی') || spec.includes('اخراج')) {
+                const label = spec.includes('اخراج') ? 'اخراج' : 'انتقال به (خروجی)';
+                return {
+                    macro: 'inactive',
+                    specialType: 'انتقال به',
+                    badgeHtml: `<span class="text-[8px] font-black px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30">🔴 ${spec}</span>`,
+                    dotClass: 'bg-rose-400',
+                    detailTitle: `🔴 ${spec} (خروج از دانشگاه)`,
+                    isStudying: false
+                };
+            }
+
+            // ۴. تعلیق تحصیلی
+            if (spec.includes('تعلیق')) {
+                return {
+                    macro: 'inactive',
+                    specialType: 'تعلیق',
+                    badgeHtml: '<span class="text-[8px] font-black px-2 py-0.5 rounded-md bg-orange-500/20 text-orange-300 border border-orange-400/30 animate-pulse">🟠 تعلیق تحصیلی</span>',
+                    dotClass: 'bg-orange-400 animate-pulse',
+                    detailTitle: '🟠 پرونده معلق (تعلیق تحصیلی)',
+                    isStudying: false
+                };
+            }
+
+            // ۵. مهمان به (خروجی - همچنان در حال تحصیل)
+            if (spec.includes('مهمان به') || spec.includes('مهمان خروجی')) {
+                return {
+                    macro: 'active',
+                    specialType: 'مهمان به',
+                    badgeHtml: '<span class="text-[8px] font-black px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">🟡 مهمان خروجی</span>',
+                    dotClass: 'bg-amber-400 animate-pulse',
+                    detailTitle: '🟡 در حال تحصیل (مهمان در دانشگاه دیگر)',
+                    isStudying: true
+                };
+            }
+
+            // ۶. مهمان از (ورودی - در حال تحصیل در این دانشگاه)
+            if (spec.includes('مهمان از') || spec.includes('مهمان ورودی')) {
+                return {
+                    macro: 'active',
+                    specialType: 'مهمان از',
+                    badgeHtml: '<span class="text-[8px] font-black px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">🔵 مهمان ورودی</span>',
+                    dotClass: 'bg-cyan-400 animate-pulse',
+                    detailTitle: '🔵 در حال تحصیل (مهمان از دانشگاه دیگر)',
+                    isStudying: true
+                };
+            }
+
+            // ۷. انتقال از (ورودی - دانشجوی رسمی این دانشگاه)
+            if (spec.includes('انتقال از') || spec.includes('انتقال ورودی')) {
+                return {
+                    macro: 'active',
+                    specialType: 'انتقال از',
+                    badgeHtml: '<span class="text-[8px] font-black px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">🟢 انتقال از (ورودی)</span>',
+                    dotClass: 'bg-emerald-400',
+                    detailTitle: '🟢 در حال تحصیل (انتقالی از دانشگاه دیگر)',
+                    isStudying: true
+                };
+            }
+
+            // ۸. اتمام مهمانی
+            if (spec.includes('اتمام مهمانی')) {
+                return {
+                    macro: 'active',
+                    specialType: 'اتمام مهمانی',
+                    badgeHtml: '<span class="text-[8px] font-black px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 border border-blue-400/30">🔄 اتمام مهمانی</span>',
+                    dotClass: 'bg-blue-400',
+                    detailTitle: '🟢 در حال تحصیل (اتمام مهمانی)',
+                    isStudying: true
+                };
+            }
+
+            // ۹. تغییر رشته
+            if (spec.includes('تغییر رشته')) {
+                return {
+                    macro: 'active',
+                    specialType: 'تغییر رشته',
+                    badgeHtml: `<span class="text-[8px] font-black px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">🟣 ${spec}</span>`,
+                    dotClass: 'bg-indigo-400',
+                    detailTitle: `🟣 در حال تحصیل (${spec})`,
+                    isStudying: true
+                };
+            }
+
+            // ۱۰. پیش‌فرض: دستیار عادی در حال تحصیل
+            return {
+                macro: 'active',
+                specialType: 'عادی',
+                badgeHtml: '<span class="text-[8px] font-black px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">🟢 در حال تحصیل</span>',
+                dotClass: 'bg-emerald-400 animate-pulse',
+                detailTitle: '🟢 در حال تحصیل (عادی)',
+                isStudying: true
+            };
+        }
+
         function renderResidentCards() {
             const container = document.getElementById('residentsContainer');
             container.innerHTML = '';
@@ -389,6 +530,7 @@
             const groupVal = document.getElementById('groupFilter').value;
             const yearVal = document.getElementById('yearFilter').value;
             const statusVal = document.getElementById('statusFilter').value;
+            const specialVal = document.getElementById('specialFilter').value;
 
             const list = dashboardPayload.residents || [];
             let count = 0;
@@ -398,36 +540,26 @@
                 if (groupVal !== 'all' && r.group !== groupVal) return;
                 if (yearVal !== 'all' && r.year !== yearVal) return;
 
-                // فیلتر هوشمند وضعیت (در حال تحصیل / فارغ‌التحصیل / وضعیت خاص)
-                const isGrad = String(r.status || '').includes('فارغ');
-                const hasSpecial = Boolean(r.special_status && r.special_status.trim() !== '');
+                // محاسبه دقیق وضعیت
+                const stInfo = resolveResidentStatus(r);
 
-                if (statusVal === 'active' && (isGrad || hasSpecial)) return;
-                if (statusVal === 'graduated' && !isGrad) return;
-                if (statusVal === 'special' && !hasSpecial) return;
+                // فیلتر ۱: وضعیت کلان (در حال تحصیل / فارغ‌التحصیل / غیرفعال)
+                if (statusVal !== 'all' && stInfo.macro !== statusVal) return;
+
+                // فیلتر ۲: تفکیک ترددها و شرایط خاص
+                if (specialVal !== 'all') {
+                    if (specialVal === 'عادی') {
+                        if (stInfo.specialType !== 'عادی') return;
+                    } else {
+                        const spec = String(r.special_status || '');
+                        if (!spec.includes(specialVal)) return;
+                    }
+                }
 
                 count++;
                 
-                // نشانگر رنگی وضعیت تحصیلی خاص (ستون N)
-                let statusBadge = '';
-                if (hasSpecial) {
-                    const ss = r.special_status;
-                    if (ss.includes('انتقال خروجی') || ss.includes('اخراج')) {
-                        statusBadge = `<span class="text-[8px] font-black px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30">🔴 ${ss}</span>`;
-                    } else if (ss.includes('انتقال ورودی')) {
-                        statusBadge = `<span class="text-[8px] font-black px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">🟢 ${ss}</span>`;
-                    } else if (ss.includes('مهمان خروجی')) {
-                        statusBadge = `<span class="text-[8px] font-black px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">🟡 ${ss}</span>`;
-                    } else if (ss.includes('مهمان ورودی')) {
-                        statusBadge = `<span class="text-[8px] font-black px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">🔵 ${ss}</span>`;
-                    } else if (ss.includes('تعلیق')) {
-                        statusBadge = `<span class="text-[8px] font-black px-2 py-0.5 rounded-md bg-orange-500/20 text-orange-300 border border-orange-400/30">🟠 ${ss}</span>`;
-                    } else {
-                        statusBadge = `<span class="text-[8px] font-black px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700">⚪️ ${ss}</span>`;
-                    }
-                } else if (isGrad) {
-                    statusBadge = `<span class="text-[8px] font-black px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30">🎓 فارغ‌التحصیل</span>`;
-                }
+                // نشانگر رنگی وضعیت
+                const statusBadge = stInfo.badgeHtml;
 
                 // آخرین نمره درون‌بخشی
                 const lastGrade = (r.grades && r.grades.length > 0) ? r.grades[r.grades.length - 1] : null;
@@ -484,32 +616,38 @@
             document.getElementById('detYear').innerText = toFa(r.year);
             document.getElementById('detDurationText').innerText = `طول دوره: ${toFa(r.duration || 4)} ساله`;
 
-            const isGrad = String(r.status || '').includes('فارغ');
+            // استخراج وضعیت داینامیک و جامع دستیار
+            const stInfo = resolveResidentStatus(r);
             const statusEl = document.getElementById('detStatus');
-            if (isGrad) {
-                statusEl.className = "text-sm font-black text-purple-300 mt-0.5 flex items-center gap-1.5";
-                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-purple-400"></span> فارغ‌التحصیل`;
-            } else {
-                statusEl.className = "text-sm font-black text-emerald-400 mt-0.5 flex items-center gap-1.5";
-                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> در حال تحصیل`;
-            }
 
-            // نمایش بنر وضعیت خاص تحصیلی (ستون N و O)
+            // تنظیم رنگ متن و نشانگر متناسب با وضعیت واقعی
+            if (stInfo.macro === 'graduated') {
+                statusEl.className = "text-sm font-black text-purple-300 mt-0.5 flex items-center gap-2";
+            } else if (stInfo.macro === 'inactive') {
+                statusEl.className = "text-sm font-black text-rose-300 mt-0.5 flex items-center gap-2";
+            } else if (stInfo.specialType.includes('مهمان')) {
+                statusEl.className = "text-sm font-black text-amber-300 mt-0.5 flex items-center gap-2";
+            } else {
+                statusEl.className = "text-sm font-black text-emerald-400 mt-0.5 flex items-center gap-2";
+            }
+            statusEl.innerHTML = `<span class="w-2.5 h-2.5 rounded-full ${stInfo.dotClass}"></span> ${stInfo.detailTitle}`;
+
+            // نمایش بنر تکمیلی توضیحات (ستون O در صورت وجود)
             const banner = document.getElementById('specialStatusBanner');
             if (r.special_status && r.special_status.trim() !== '') {
                 banner.classList.remove('hidden');
-                let bClass = "bg-slate-900 border-slate-700 text-slate-300";
-                if (r.special_status.includes('انتقال خروجی') || r.special_status.includes('اخراج')) {
-                    bClass = "bg-rose-500/10 border-rose-500/30 text-rose-300";
+                let bClass = "bg-slate-900/80 border-slate-700 text-slate-300";
+                if (r.special_status.includes('انتقال به') || r.special_status.includes('انصراف') || r.special_status.includes('اخراج')) {
+                    bClass = "bg-rose-500/15 border-rose-500/30 text-rose-200";
                 } else if (r.special_status.includes('مهمان')) {
-                    bClass = "bg-amber-500/10 border-amber-500/30 text-amber-300";
-                } else if (r.special_status.includes('انتقال ورودی')) {
-                    bClass = "bg-emerald-500/10 border-emerald-500/30 text-emerald-300";
+                    bClass = "bg-amber-500/15 border-amber-500/30 text-amber-200";
+                } else if (r.special_status.includes('انتقال از')) {
+                    bClass = "bg-emerald-500/15 border-emerald-500/30 text-emerald-200";
                 } else if (r.special_status.includes('تعلیق')) {
-                    bClass = "bg-orange-500/10 border-orange-500/30 text-orange-300";
+                    bClass = "bg-orange-500/15 border-orange-500/30 text-orange-200";
                 }
                 banner.className = `p-3 rounded-2xl text-[10px] font-bold leading-relaxed border slide-up ${bClass}`;
-                banner.innerHTML = `⚠️ <b>وضعیت تحصیلی خاص:</b> ${r.special_status}${r.special_desc ? ' — ' + r.special_desc : ''}`;
+                banner.innerHTML = `📌 <b>شرح سوابق آموزشی:</b> ${r.special_status}${r.special_desc ? ' — ' + r.special_desc : ''}`;
             } else {
                 banner.classList.add('hidden');
             }
