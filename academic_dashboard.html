@@ -394,6 +394,8 @@
                             const mid = row[0];
                             const rawStatus = typeof row[4] === 'number' ? (statusReverseMap[row[4]] || "در حال تحصیل") : row[4];
                             const yrStr = typeof row[3] === 'number' ? `سال ${row[3]}` : (row[3] || "سال ۱");
+                            const lastScore = row[8] || 0;
+                            const hasNatHonor = row[9] === 1;
 
                             return {
                                 id: mid,
@@ -404,8 +406,10 @@
                                 duration: row[5] || 4,
                                 special_status: row[6] || "",
                                 special_desc: row[7] || "",
-                                grades: gradesByMember[mid] || [],
-                                honors: honorsByMember[mid] || []
+                                last_score: lastScore,
+                                has_honor: hasNatHonor,
+                                grades: row[10] || [{ internal: lastScore, exam_year: '', exam_stage: yrStr }],
+                                honors: hasNatHonor ? [{ title: "رتبه برتر آزمون دانشنامه کشوری", category: "national" }] : []
                             };
                         });
                     }
@@ -605,8 +609,7 @@
                 const statusBadge = stInfo.badgeHtml;
 
                 // آخرین نمره درون‌بخشی
-                const lastGrade = (r.grades && r.grades.length > 0) ? r.grades[r.grades.length - 1] : null;
-                const intScore = lastGrade ? Number(lastGrade.internal || 0) : null;
+                const intScore = r.last_score !== undefined ? Number(r.last_score) : ((r.grades && r.grades.length > 0) ? Number(r.grades[r.grades.length - 1].internal || 0) : null);
                 
                 let scoreBadge = `<span class="text-[9px] font-bold text-slate-500 bg-slate-800 px-2.5 py-1 rounded-xl">بدون آزمون</span>`;
                 if (intScore !== null) {
