@@ -195,11 +195,19 @@
                     for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
                     const decompressed = pako.inflate(bytes, { to: 'string' });
                     const data = JSON.parse(decompressed);
-                    db_members = data.m || [];
                     db_groups = data.g || [];
                     isAdmin = data.a || 0;
                     isResearch = data.res || 0;
                     isLocal = data.local || "";
+
+                    // بازگشایی خودکار ایندکس‌های عددی دپارتمان به نام کامل بدون تغییر UI
+                    db_members = (data.m || []).map(m => [
+                        m[0],
+                        m[1],
+                        (typeof m[2] === 'number' && db_groups[m[2]]) ? db_groups[m[2]] : m[2],
+                        m[3],
+                        m[4]
+                    ]);
                 }
                 
                 const grpSelect = document.getElementById('filterGroup');

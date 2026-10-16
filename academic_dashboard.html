@@ -337,35 +337,42 @@
                     const groupsList = rawData.g || rawData.groups || [];
                     
                     let residentsList = [];
+                    const statusReverseMap = { 0: "در حال تحصیل", 1: "فارغ‌التحصیل", 2: "انصرافی", 3: "تعلیق", 4: "انتقال به" };
+                    
                     if (rawData.r) {
-                        residentsList = rawData.r.map(row => ({
-                            id: row[0],
-                            name: row[1],
-                            group: groupsList[row[2]] || 'عمومی',
-                            year: row[3],
-                            status: row[4],
-                            duration: row[5],
-                            special_status: row[6],
-                            special_desc: row[7],
-                            grades: (row[8] || []).map(g => ({
-                                exam_year: g[0],
-                                exam_stage: g[1],
-                                internal: g[2],
-                                promotion: g[3],
-                                certificate: g[4],
-                                board_written: g[5],
-                                board_oral: g[6],
-                                board_result: g[7],
-                                status: g[8],
-                                description: g[9]
-                            })),
-                            honors: (row[9] || []).map(h => ({
-                                title: h[0],
-                                year: h[1],
-                                rank: h[2],
-                                category: h[3]
-                            }))
-                        }));
+                        residentsList = rawData.r.map(row => {
+                            const rawStatus = typeof row[4] === 'number' ? (statusReverseMap[row[4]] || "در حال تحصیل") : row[4];
+                            const yrStr = typeof row[3] === 'number' ? `سال ${row[3]}` : (row[3] || "سال ۱");
+                            
+                            return {
+                                id: row[0],
+                                name: row[1],
+                                group: groupsList[row[2]] || 'عمومی',
+                                year: yrStr,
+                                status: rawStatus,
+                                duration: row[5] || 4,
+                                special_status: row[6] || "",
+                                special_desc: row[7] || "",
+                                grades: (row[8] || []).map(g => ({
+                                    exam_year: g[0],
+                                    exam_stage: g[1],
+                                    internal: g[2],
+                                    promotion: g[3],
+                                    certificate: g[4],
+                                    board_written: g[5],
+                                    board_oral: g[6],
+                                    board_result: g[7],
+                                    status: g[8],
+                                    description: g[9]
+                                })),
+                                honors: (row[9] || []).map(h => ({
+                                    title: h[0],
+                                    year: h[1],
+                                    rank: h[2],
+                                    category: h[3]
+                                }))
+                            };
+                        });
                     } else {
                         residentsList = rawData.residents || [];
                     }
