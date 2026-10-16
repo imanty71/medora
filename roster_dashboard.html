@@ -185,16 +185,26 @@
             'دفاع شده': { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', icon: '🎓' }
         };
 
-        function init() {
+        async function init() {
             const urlParams = new URLSearchParams(window.location.search);
             try {
+                let data = null;
+                const pid = urlParams.get('pid');
                 const compressedData = urlParams.get('d');
-                if (compressedData) {
+
+                if (pid) {
+                    const response = await fetch(`webapp_payloads/${pid}.json`);
+                    if (!response.ok) throw new Error("Payload Cache Expired or Missing");
+                    data = await response.json();
+                } else if (compressedData) {
                     const binaryString = window.atob(compressedData.replace(/-/g, '+').replace(/_/g, '/'));
                     const bytes = new Uint8Array(binaryString.length);
                     for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
                     const decompressed = pako.inflate(bytes, { to: 'string' });
-                    const data = JSON.parse(decompressed);
+                    data = JSON.parse(decompressed);
+                }
+
+                if (data) {
                     db_groups = data.g || [];
                     isAdmin = data.a || 0;
                     isResearch = data.res || 0;

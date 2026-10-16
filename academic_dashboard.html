@@ -322,17 +322,26 @@
             return match ? parseInt(match[0], 10) : 1;
         }
 
-        function init() {
+        async function init() {
             const urlParams = new URLSearchParams(window.location.search);
             try {
+                let rawData = null;
+                const pid = urlParams.get('pid');
                 const compressedData = urlParams.get('d');
-                if (compressedData) {
+
+                if (pid) {
+                    const response = await fetch(`webapp_payloads/${pid}.json`);
+                    if (!response.ok) throw new Error("Payload Cache Expired or Missing");
+                    rawData = await response.json();
+                } else if (compressedData) {
                     const binaryString = window.atob(compressedData.replace(/-/g, '+').replace(/_/g, '/'));
                     const bytes = new Uint8Array(binaryString.length);
                     for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
                     const decompressed = pako.inflate(bytes, { to: 'string' });
-                    const rawData = JSON.parse(decompressed);
+                    rawData = JSON.parse(decompressed);
+                }
 
+                if (rawData) {
                     const groupsList = rawData.g || rawData.groups || [];
                     const statusReverseMap = { 0: "در حال تحصیل", 1: "فارغ‌التحصیل", 2: "انصرافی", 3: "تعلیق", 4: "انتقال به" };
                     
