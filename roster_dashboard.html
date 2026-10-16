@@ -185,26 +185,16 @@
             'دفاع شده': { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', icon: '🎓' }
         };
 
-        async function init() {
+        function init() {
             const urlParams = new URLSearchParams(window.location.search);
             try {
-                let data = null;
-                const pid = urlParams.get('pid');
                 const compressedData = urlParams.get('d');
-
-                if (pid) {
-                    const response = await fetch(`webapp_payloads/${pid}.json`);
-                    if (!response.ok) throw new Error("Payload Cache Expired or Missing");
-                    data = await response.json();
-                } else if (compressedData) {
+                if (compressedData) {
                     const binaryString = window.atob(compressedData.replace(/-/g, '+').replace(/_/g, '/'));
                     const bytes = new Uint8Array(binaryString.length);
                     for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
                     const decompressed = pako.inflate(bytes, { to: 'string' });
-                    data = JSON.parse(decompressed);
-                }
-
-                if (data) {
+                    const data = JSON.parse(decompressed);
                     db_groups = data.g || [];
                     isAdmin = data.a || 0;
                     isResearch = data.res || 0;
@@ -221,17 +211,25 @@
                 }
                 
                 const grpSelect = document.getElementById('filterGroup');
-                db_groups.forEach(g => {
-                    grpSelect.innerHTML += `<option value="${g}">${g}</option>`;
-                });
+                if (grpSelect) {
+                    grpSelect.innerHTML = '<option value="all">همه گروه‌ها</option>';
+                    db_groups.forEach(g => {
+                        grpSelect.innerHTML += `<option value="${g}">${g}</option>`;
+                    });
+                }
 
                 if (isResearch === 1) {
-                    document.getElementById('dashTitle').innerText = "🎓 کارتابل پایش پایان‌نامه دستیاران";
-                    document.getElementById('dashSubtitle').innerText = "ثبت و تعیین وضعیت پایان‌نامه‌ها (اختصاصی پژوهش)";
+                    const t = document.getElementById('dashTitle');
+                    const st = document.getElementById('dashSubtitle');
+                    if (t) t.innerText = "🎓 کارتابل پایش پایان‌نامه دستیاران";
+                    if (st) st.innerText = "ثبت و تعیین وضعیت پایان‌نامه‌ها (اختصاصی پژوهش)";
                 } else if (isLocal) {
-                    document.getElementById('dashTitle').innerText = `آرشیو دستیاران دپارتمان ${isLocal}`;
-                    document.getElementById('stat_groups_container').classList.add('hidden');
-                    document.getElementById('filterGroup').classList.add('hidden');
+                    const t = document.getElementById('dashTitle');
+                    const c = document.getElementById('stat_groups_container');
+                    const f = document.getElementById('filterGroup');
+                    if (t) t.innerText = `آرشیو دستیاران دپارتمان ${isLocal}`;
+                    if (c) c.classList.add('hidden');
+                    if (f) f.classList.add('hidden');
                 }
 
                 renderStats();
