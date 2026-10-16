@@ -340,13 +340,21 @@
                     const bResultsDict = rawData.br || [];
                     const statusesDict = rawData.st || [];
 
-                    // بازسازی سریع نمرات بر اساس member_id
+                    // بازسازی سریع نمرات بر اساس member_id با بازیابی هوشمند سال
                     const gradesByMember = {};
                     (rawData.grd || []).forEach(g => {
                         const mid = g[0];
                         if (!gradesByMember[mid]) gradesByMember[mid] = [];
+                        
+                        // تبدیل سال ۲ رقمی به سال کامل (مثلاً 2 ➔ 1402 یا 98 ➔ 1398)
+                        let fullYr = '';
+                        if (g[1] !== undefined && g[1] !== null && g[1] !== '') {
+                            const yNum = Number(g[1]);
+                            fullYr = yNum >= 90 ? `13${yNum}` : `14${String(yNum).padStart(2, '0')}`;
+                        }
+
                         gradesByMember[mid].push({
-                            exam_year: String(g[1] || ''),
+                            exam_year: fullYr,
                             exam_stage: (g[2] >= 0 && stagesDict[g[2]]) ? stagesDict[g[2]] : '',
                             internal: g[3] || 0,
                             promotion: g[4] || 0,
@@ -359,16 +367,30 @@
                         });
                     });
 
-                    // بازسازی افتخارات کشوری
+                    // بازسازی افتخارات کشوری با تولید خودکار متن رسمی در فرانت‌اند
                     const honorsByMember = {};
                     (rawData.hnr || []).forEach(h => {
                         const mid = h[0];
                         if (!honorsByMember[mid]) honorsByMember[mid] = [];
+                        
+                        let fullYr = '';
+                        if (h[1]) {
+                            const yNum = Number(h[1]);
+                            fullYr = yNum >= 90 ? `13${yNum}` : `14${String(yNum).padStart(2, '0')}`;
+                        }
+                        
+                        const rk = String(h[2] || '');
+                        const isNat = h[3] === 1;
+                        let hTitle = rk;
+                        if (isNat && rk) {
+                            hTitle = rk.includes('رتبه') ? `رتبه ${rk} آزمون دانشنامه تخصصی کشور` : `تراز ${rk} برتر آزمون دانشنامه تخصصی کشور`;
+                        }
+
                         honorsByMember[mid].push({
-                            title: h[1],
-                            year: String(h[2] || ''),
-                            rank: String(h[3] || ''),
-                            category: h[4] === 1 ? 'national' : 'university'
+                            title: hTitle,
+                            year: fullYr,
+                            rank: rk,
+                            category: isNat ? 'national' : 'university'
                         });
                     });
 
