@@ -346,7 +346,6 @@
                             const mid = row[0];
                             const rawStatus = typeof row[4] === 'number' ? (statusReverseMap[row[4]] || "در حال تحصیل") : row[4];
                             
-                            // نمایش دقیق سال یا برچسب فارغ‌التحصیل
                             let yrStr = "سال ۱";
                             if (row[3] === 6 || rawStatus === "فارغ‌التحصیل") {
                                 yrStr = "فارغ‌التحصیل";
@@ -356,48 +355,8 @@
                                 yrStr = row[3] || "سال ۱";
                             }
 
-                            // بازسازی سوابق کارنامه برای همین دستیار
-                            const rawGrades = row[8] || [];
-                            const residentGrades = rawGrades.map(g => {
-                                let fullYr = '';
-                                if (g[0] !== undefined && g[0] !== null && g[0] !== '') {
-                                    const yNum = Number(g[0]);
-                                    fullYr = yNum >= 90 ? `13${yNum}` : `14${String(yNum).padStart(2, '0')}`;
-                                }
-                                return {
-                                    exam_year: fullYr,
-                                    exam_stage: (g[1] >= 0 && stagesDict[g[1]]) ? stagesDict[g[1]] : '',
-                                    internal: g[2] || 0,
-                                    promotion: g[3] || 0,
-                                    certificate: g[4] || 0,
-                                    board_written: g[5] || 0,
-                                    board_oral: g[6] || 0,
-                                    board_result: (g[7] >= 0 && bResultsDict[g[7]]) ? bResultsDict[g[7]] : '',
-                                    description: g[8] === 1 ? 'عدم معرفی توسط دپارتمان' : ''
-                                };
-                            });
-
-                            // بازسازی افتخارات کشوری برای همین دستیار
-                            const rawHonors = row[9] || [];
-                            const residentHonors = rawHonors.map(h => {
-                                let fullYr = '';
-                                if (h[0]) {
-                                    const yNum = Number(h[0]);
-                                    fullYr = yNum >= 90 ? `13${yNum}` : `14${String(yNum).padStart(2, '0')}`;
-                                }
-                                const rk = String(h[1] || '');
-                                const isNat = h[2] === 1;
-                                let hTitle = rk;
-                                if (isNat && rk) {
-                                    hTitle = rk.includes('رتبه') ? `رتبه ${rk} آزمون دانشنامه تخصصی کشور` : `تراز ${rk} برتر آزمون دانشنامه تخصصی کشور`;
-                                }
-                                return {
-                                    title: hTitle,
-                                    year: fullYr,
-                                    rank: rk,
-                                    category: isNat ? 'national' : 'university'
-                                };
-                            });
+                            const lastScore = row[8] || 0;
+                            const hasNatHonor = row[9] === 1;
 
                             return {
                                 id: mid,
@@ -408,8 +367,10 @@
                                 duration: row[5] || 4,
                                 special_status: row[6] || "",
                                 special_desc: row[7] || "",
-                                grades: residentGrades,
-                                honors: residentHonors
+                                last_score: lastScore,
+                                has_honor: hasNatHonor,
+                                grades: [{ internal: lastScore, exam_year: '', exam_stage: yrStr }],
+                                honors: hasNatHonor ? [{ title: "رتبه برتر آزمون دانشنامه کشوری", category: "national" }] : []
                             };
                         });
                     }
@@ -606,6 +567,7 @@
                 count++;
                 
                 // نشانگر رنگی وضعیت
+// نشانگر رنگی وضعیت
                 const statusBadge = stInfo.badgeHtml;
 
                 // آخرین نمره درون‌بخشی
