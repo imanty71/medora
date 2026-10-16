@@ -183,9 +183,11 @@
                     <h3 class="text-xs font-black text-slate-200 flex items-center gap-1.5">
                         <span class="text-blue-400">🧭</span> نقشه راه دوره دستیاری تخصصی
                     </h3>
-                    <span class="text-[9px] font-bold text-slate-400" id="detRoadmapInfo">سیر پیشرفت</span>
+                    <span class="text-[9px] font-bold text-blue-300/80 bg-blue-500/10 px-2.5 py-0.5 rounded-full border border-blue-400/20" id="detRoadmapInfo">گاه‌شمار ارتقا</span>
                 </div>
                 <div class="roadmap-scroll py-2.5 cursor-grab active:cursor-grabbing select-none" id="roadmapContainer"></div>
+                <!-- کارت هوشمند نمایش نمرات و ریزنتایج مرحله انتخاب‌شده نقشه راه -->
+                <div id="roadmapStageDetailBox" class="hidden p-3.5 rounded-2xl border transition-all slide-up text-xs space-y-2"></div>
             </div>
 
             <!-- ۳. گیج دینامیک نمره ارزیابی درون‌بخشی (۰ تا ۱۵۰) -->
@@ -715,15 +717,20 @@
             document.getElementById('listView').classList.remove('hidden');
         }
 
-        // نقشه راه دوره دستیاری تخصصی (متناسب با رشته ۳، ۴ یا ۵ ساله)
+        // متغیر نگهداری داده‌های مراحل جهت نمایش در پاپ‌آپ
+        let activeRoadmapStages = [];
+
+        // نقشه راه دوره دستیاری تخصصی (متناسب با رشته ۳، ۴ یا ۵ ساله با پاپ‌آپ تعاملی نمرات)
         function renderRoadmap(r) {
             const container = document.getElementById('roadmapContainer');
+            const detailBox = document.getElementById('roadmapStageDetailBox');
             container.innerHTML = '';
+            if (detailBox) detailBox.classList.add('hidden');
             
             const currentYearNum = getResidentYearNumber(r.year);
-            const duration = Number(r.duration || 4); // ۳ یا ۴ یا ۵ ساله
+            const duration = Number(r.duration || 4);
 
-            // ساخت ایستگاه‌های داینامیک متناسب با طول دوره رشته
+            // ساخت ایستگاه‌های داینامیک متناسب با طول دوره
             const stages = [{ id: 'R1', label: 'سال اول', passYear: 1, currentTarget: 1 }];
 
             for (let yr = 1; yr < duration; yr++) {
@@ -735,52 +742,67 @@
                 });
             }
 
-            // سال آخر همیشه ایستگاه گواهینامه و دانشنامه است
             stages.push({ id: 'گواهینامه', label: 'گواهینامه تخصصی', passYear: duration + 1, currentTarget: duration });
             stages.push({ id: 'دانشنامه کتبی', label: 'دانشنامه کتبی', passYear: 99, currentTarget: 99 });
             stages.push({ id: 'دانشنامه شفاهی', label: 'دانشنامه شفاهی', passYear: 99, currentTarget: 99 });
 
             const grades = r.grades || [];
+            activeRoadmapStages = [];
             let html = '<div class="flex items-center gap-2 min-w-max px-1 py-1">';
 
             stages.forEach((st, i) => {
                 let statusColor = "bg-slate-800/80 text-slate-500 border-slate-700/80";
                 let icon = "⚪️";
                 let stagePassed = false;
+                let matchedGrade = null;
 
                 // ۱. قبولی بر اساس سال تحصیلی جاری دستیار
                 if (currentYearNum >= st.passYear) {
                     stagePassed = true;
                 }
 
-                // ۲. قبولی بر اساس آزمون‌های ثبت‌شده در کارنامه
+                // ۲. تطبیق با سوابق آزمون واقعی ثبت‌شده
                 grades.forEach(g => {
                     const stg = g.exam_stage || '';
-                    if (stg.includes(st.id) || (st.id === 'دانشنامه کتبی' && Number(g.board_written) >= 105)) {
-                        stagePassed = true;
+                    if (stg.includes(st.id)) {
+                        matchedGrade = g;
+                        if (Number(g.internal) >= 105 || Number(g.promotion) >= 105) stagePassed = true;
                     }
-                    if (st.id === 'دانشنامه شفاهی' && String(g.board_result).includes('قبول کتبی و شفاهی')) {
-                        stagePassed = true;
+                    if (st.id === 'دانشنامه کتبی' && Number(g.board_written) > 0) {
+                        matchedGrade = g;
+                        if (Number(g.board_written) >= 105) stagePassed = true;
+                    }
+                    if (st.id === 'دانشنامه شفاهی' && (Number(g.board_oral) > 0 || g.board_result)) {
+                        matchedGrade = g;
+                        if (String(g.board_result).includes('قبول کتبی و شفاهی')) stagePassed = true;
                     }
                 });
 
                 const isCurrentActive = (!stagePassed && currentYearNum === st.currentTarget);
 
-                // توقف نقشه راه در صورت انصراف یا انتقال خروجی
-                if (r.special_status && (r.special_status.includes('انتقال خروجی') || r.special_status.includes('انصراف')) && isCurrentActive) {
+                if (r.special_status && (r.special_status.includes('انتقال به') || r.special_status.includes('انصراف')) && isCurrentActive) {
                     statusColor = "bg-rose-500/20 text-rose-300 border-rose-500/40";
                     icon = "⛔️";
                 } else if (stagePassed) {
                     statusColor = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
                     icon = "✅";
                 } else if (isCurrentActive) {
-                    statusColor = "bg-blue-500/15 text-blue-300 border-blue-400/40 shadow-[0_0_12px_rgba(59,130,246,0.2)]";
+                    statusColor = "bg-blue-500/15 text-blue-300 border-blue-400/40 shadow-[0_0_12px_rgba(59,130,246,0.25)]";
                     icon = "⏳";
                 }
 
+                // ذخیره متادیتای هر ایستگاه برای نمایش پاپ‌آپ
+                activeRoadmapStages.push({
+                    stage: st,
+                    grade: matchedGrade,
+                    passed: stagePassed,
+                    active: isCurrentActive,
+                    resident: r
+                });
+
                 html += `
                     <div class="flex items-center gap-2">
-                        <div class="px-3.5 py-1.5 rounded-2xl border ${statusColor} text-[10px] font-black flex items-center gap-1.5 shrink-0 shadow-sm">
+                        <div onclick="showStageDetails(${i})" id="st_node_${i}" class="px-3.5 py-1.5 rounded-2xl border ${statusColor} text-[10px] font-black flex items-center gap-1.5 shrink-0 shadow-sm cursor-pointer hover:scale-105 active:scale-95 transition-all">
                             <span>${icon}</span>
                             <span>${st.label}</span>
                         </div>
@@ -792,6 +814,120 @@
             html += '</div>';
             container.innerHTML = html;
             setupMouseDragScroll(container);
+        }
+
+        // تابع نمایش پاپ‌آپ ریزنمرات و نتیجه آزمون با کلیک روی هر ایستگاه نقشه راه
+        function showStageDetails(idx) {
+            const data = activeRoadmapStages[idx];
+            if (!data) return;
+
+            const box = document.getElementById('roadmapStageDetailBox');
+            if (!box) return;
+
+            // هایلایت کردن بصری ایستگاه کلیک‌شده
+            activeRoadmapStages.forEach((_, i) => {
+                const el = document.getElementById(`st_node_${i}`);
+                if (el) el.classList.remove('ring-2', 'ring-blue-400');
+            });
+            const activeEl = document.getElementById(`st_node_${idx}`);
+            if (activeEl) activeEl.classList.add('ring-2', 'ring-blue-400');
+
+            const st = data.stage;
+            const g = data.grade;
+            const r = data.resident;
+
+            let contentHtml = '';
+            let boxTheme = 'bg-slate-900/90 border-slate-700 text-slate-200';
+
+            // حالت ۱: مرحله سال اول (دوره پایه)
+            if (st.id === 'R1') {
+                boxTheme = 'bg-emerald-950/40 border-emerald-500/30 text-emerald-200';
+                contentHtml = `
+                    <div class="flex justify-between items-center pb-1.5 border-b border-emerald-500/20">
+                        <b class="text-white text-xs">🌱 دوره پایه دستیاری (سال اول)</b>
+                        <span class="text-[9px] font-black text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-lg">شروع رسمی دوره</span>
+                    </div>
+                    <p class="text-[10px] text-slate-300 leading-relaxed mt-1">
+                        دستیار از ابتدای سال ورود در این مقطع پذیرش شده و جهت صعود به سال دوم، نیازمند کسب حدنصاب ارزیابی درون‌بخشی (حداقل ۱۰۵) و قبولی در آزمون ارتقای ۱ به ۲ می‌باشد.
+                    </p>
+                `;
+            }
+            // حالت ۲: آزمون برگزار شده و سابقه آن در کارنامه موجود است
+            else if (g) {
+                const iSc = Number(g.internal || 0);
+                const pSc = Number(g.promotion || 0);
+                const cSc = Number(g.certificate || 0);
+                const bwSc = Number(g.board_written || 0);
+                const boSc = Number(g.board_oral || 0);
+
+                let isPassed = data.passed;
+                let failReason = '';
+
+                // علت‌سنجی دقیق آیین‌نامه‌ای مردودی یا عدم معرفی
+                if (g.description && g.description.includes('عدم')) {
+                    failReason = `⚠️ عدم معرفی توسط دپارتمان (${g.description.split('|')[0].trim()})`;
+                } else if (iSc > 0 && iSc < 105) {
+                    failReason = '⚠️ عدم احراز حدنصاب نمره درون‌بخشی (حداقل ۱۰۵)';
+                } else if (pSc > 0 && pSc < 105) {
+                    failReason = '⚠️ عدم کسب حدنصاب آزمون کتبی ارتقا (زیر ۱۰۵)';
+                } else if (bwSc > 0 && bwSc < 105) {
+                    failReason = '⚠️ عدم قبولی در آزمون کتبی دانشنامه (زیر ۱۰۵)';
+                }
+
+                if (failReason) {
+                    boxTheme = 'bg-rose-950/50 border-rose-500/40 text-rose-200';
+                } else {
+                    boxTheme = 'bg-blue-950/40 border-blue-500/30 text-blue-200';
+                }
+
+                const yrText = g.exam_year ? `(سال آزمون: ${toFa(g.exam_year)})` : '';
+                const resultBadge = failReason 
+                    ? `<span class="bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[9px] font-black px-2 py-0.5 rounded-lg">مردود / مشروط</span>` 
+                    : `<span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[9px] font-black px-2 py-0.5 rounded-lg">قبول دوره</span>`;
+
+                contentHtml = `
+                    <div class="flex justify-between items-center pb-1.5 border-b border-white/[0.08]">
+                        <b class="text-white text-xs">📑 نتایج آزمون ${st.label} ${yrText}</b>
+                        ${resultBadge}
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-[10px] pt-1">
+                        <div>⏱ ارزیابی درون‌بخشی: <b class="${iSc < 105 && iSc > 0 ? 'text-rose-400' : 'text-white'}">${iSc > 0 ? toFa(iSc) + ' از ۱۵۰' : 'ثبت نشده'}</b></div>
+                        <div>📝 نمره آزمون: <b class="text-white">${toFa(pSc || cSc || bwSc || 0)}</b></div>
+                    </div>
+                    ${g.board_result ? `<div class="text-[10px] text-amber-300 font-bold">🎖 نتیجه بورد: ${g.board_result}</div>` : ''}
+                    ${failReason ? `<div class="p-2 bg-rose-500/15 border border-rose-500/30 rounded-xl text-[10px] font-bold text-rose-300 mt-1">${failReason}</div>` : ''}
+                `;
+            }
+            // حالت ۳: در حال گذراندن همین مرحله (آزمون هنوز نرسیده)
+            else if (data.active) {
+                boxTheme = 'bg-amber-950/40 border-amber-500/30 text-amber-200';
+                contentHtml = `
+                    <div class="flex justify-between items-center pb-1.5 border-b border-amber-500/20">
+                        <b class="text-white text-xs">⏳ وضعیت جاری: در حال گذراندن ${st.label}</b>
+                        <span class="text-[9px] font-black text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded-lg">دوره فعال</span>
+                    </div>
+                    <p class="text-[10px] text-slate-300 leading-relaxed mt-1">
+                        دستیار هم‌اکنون در حال آموزش بالینی و کشیک‌های این دوره است. ارزیابی نهایی در پایان سال تحصیلی جاری در کارنامه ثبت خواهد شد.
+                    </p>
+                `;
+            }
+            // حالت ۴: مراحل سال‌های آینده
+            else {
+                boxTheme = 'bg-slate-900/80 border-slate-700/80 text-slate-400';
+                contentHtml = `
+                    <div class="flex justify-between items-center pb-1.5 border-b border-slate-700">
+                        <b class="text-slate-300 text-xs">⚪️ ${st.label} (مرحله آتی)</b>
+                        <span class="text-[9px] font-bold text-slate-500">پیش‌رو</span>
+                    </div>
+                    <p class="text-[10px] text-slate-400 leading-relaxed mt-1">
+                        ورود به این مقطع، منوط به موفقیت در آزمون‌ها و احراز نصاب مراحل پیشین می‌باشد.
+                    </p>
+                `;
+            }
+
+            box.className = `p-3.5 rounded-2xl border transition-all slide-up text-xs space-y-2 ${boxTheme}`;
+            box.innerHTML = contentHtml;
+            box.classList.remove('hidden');
         }
 
         function setupMouseDragScroll(el) {
