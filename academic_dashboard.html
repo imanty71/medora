@@ -340,63 +340,13 @@
                     const stagesDict = rawData.stg || [];
                     const bResultsDict = rawData.br || [];
 
-                    // بازسازی کارنامه‌ها بدون نیاز به فایل خارجی
-                    const gradesByMember = {};
-                    (rawData.grd || []).forEach(g => {
-                        const mid = g[0];
-                        if (!gradesByMember[mid]) gradesByMember[mid] = [];
-                        
-                        let fullYr = '';
-                        if (g[1] !== undefined && g[1] !== null && g[1] !== '') {
-                            const yNum = Number(g[1]);
-                            fullYr = yNum >= 90 ? `13${yNum}` : `14${String(yNum).padStart(2, '0')}`;
-                        }
-
-                        gradesByMember[mid].push({
-                            exam_year: fullYr,
-                            exam_stage: (g[2] >= 0 && stagesDict[g[2]]) ? stagesDict[g[2]] : '',
-                            internal: g[3] || 0,
-                            promotion: g[4] || 0,
-                            certificate: g[5] || 0,
-                            board_written: g[6] || 0,
-                            board_oral: g[7] || 0,
-                            board_result: (g[8] >= 0 && bResultsDict[g[8]]) ? bResultsDict[g[8]] : '',
-                            description: g[9] === 1 ? 'عدم معرفی توسط دپارتمان' : ''
-                        });
-                    });
-
-                    // بازسازی افتخارات
-                    const honorsByMember = {};
-                    (rawData.hnr || []).forEach(h => {
-                        const mid = h[0];
-                        if (!honorsByMember[mid]) honorsByMember[mid] = [];
-                        
-                        let fullYr = '';
-                        if (h[1]) {
-                            const yNum = Number(h[1]);
-                            fullYr = yNum >= 90 ? `13${yNum}` : `14${String(yNum).padStart(2, '0')}`;
-                        }
-                        const rk = String(h[2] || '');
-                        const isNat = h[3] === 1;
-                        let hTitle = rk;
-                        if (isNat && rk) {
-                            hTitle = rk.includes('رتبه') ? `رتبه ${rk} آزمون دانشنامه تخصصی کشور` : `تراز ${rk} برتر آزمون دانشنامه تخصصی کشور`;
-                        }
-                        honorsByMember[mid].push({
-                            title: hTitle,
-                            year: fullYr,
-                            rank: rk,
-                            category: isNat ? 'national' : 'university'
-                        });
-                    });
-
                     let residentsList = [];
                     if (rawData.r) {
                         residentsList = rawData.r.map(row => {
                             const mid = row[0];
                             const rawStatus = typeof row[4] === 'number' ? (statusReverseMap[row[4]] || "در حال تحصیل") : row[4];
                             
-                            // تصحیح نمایش دوره دستیار: اگر فارغ‌التحصیل است، «فارغ‌التحصیل» نمایش داده شود
+                            // نمایش دقیق سال یا برچسب فارغ‌التحصیل
                             let yrStr = "سال ۱";
                             if (row[3] === 6 || rawStatus === "فارغ‌التحصیل") {
                                 yrStr = "فارغ‌التحصیل";
