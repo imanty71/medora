@@ -333,19 +333,54 @@
                     const decompressed = pako.inflate(bytes, { to: 'string' });
                     const rawData = JSON.parse(decompressed);
 
-                    // پشتیبانی هوشمند دوگانه از پکیج برداری و ساختار قبلی
                     const groupsList = rawData.g || rawData.groups || [];
-                    
-                    let residentsList = [];
                     const statusReverseMap = { 0: "در حال تحصیل", 1: "فارغ‌التحصیل", 2: "انصرافی", 3: "تعلیق", 4: "انتقال به" };
                     
+                    const stagesDict = rawData.stg || [];
+                    const bResultsDict = rawData.br || [];
+                    const statusesDict = rawData.st || [];
+
+                    // بازسازی سریع نمرات بر اساس member_id
+                    const gradesByMember = {};
+                    (rawData.grd || []).forEach(g => {
+                        const mid = g[0];
+                        if (!gradesByMember[mid]) gradesByMember[mid] = [];
+                        gradesByMember[mid].push({
+                            exam_year: String(g[1] || ''),
+                            exam_stage: (g[2] >= 0 && stagesDict[g[2]]) ? stagesDict[g[2]] : '',
+                            internal: g[3] || 0,
+                            promotion: g[4] || 0,
+                            certificate: g[5] || 0,
+                            board_written: g[6] || 0,
+                            board_oral: g[7] || 0,
+                            board_result: (g[8] >= 0 && bResultsDict[g[8]]) ? bResultsDict[g[8]] : '',
+                            status: (g[9] >= 0 && statusesDict[g[9]]) ? statusesDict[g[9]] : 'قبول',
+                            description: g[10] === 1 ? 'عدم معرفی توسط دپارتمان' : ''
+                        });
+                    });
+
+                    // بازسازی افتخارات کشوری
+                    const honorsByMember = {};
+                    (rawData.hnr || []).forEach(h => {
+                        const mid = h[0];
+                        if (!honorsByMember[mid]) honorsByMember[mid] = [];
+                        honorsByMember[mid].push({
+                            title: h[1],
+                            year: String(h[2] || ''),
+                            rank: String(h[3] || ''),
+                            category: h[4] === 1 ? 'national' : 'university'
+                        });
+                    });
+
+                    let residentsList = [];
                     if (rawData.r) {
                         residentsList = rawData.r.map(row => {
+                            const mid = row[0];
                             const rawStatus = typeof row[4] === 'number' ? (statusReverseMap[row[4]] || "در حال تحصیل") : row[4];
                             const yrStr = typeof row[3] === 'number' ? `سال ${row[3]}` : (row[3] || "سال ۱");
-                            
+
                             return {
-                                id: row[0],
+                                id: mid,
                                 name: row[1],
                                 group: groupsList[row[2]] || 'عمومی',
                                 year: yrStr,
@@ -353,24 +388,8 @@
                                 duration: row[5] || 4,
                                 special_status: row[6] || "",
                                 special_desc: row[7] || "",
-                                grades: (row[8] || []).map(g => ({
-                                    exam_year: g[0],
-                                    exam_stage: g[1],
-                                    internal: g[2],
-                                    promotion: g[3],
-                                    certificate: g[4],
-                                    board_written: g[5],
-                                    board_oral: g[6],
-                                    board_result: g[7],
-                                    status: g[8],
-                                    description: g[9]
-                                })),
-                                honors: (row[9] || []).map(h => ({
-                                    title: h[0],
-                                    year: h[1],
-                                    rank: h[2],
-                                    category: h[3]
-                                }))
+                                grades: gradesByMember[mid] || [],
+                                honors: honorsByMember[mid] || []
                             };
                         });
                     } else {
